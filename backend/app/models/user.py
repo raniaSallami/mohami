@@ -60,6 +60,9 @@ class User(Base):
     avatar: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     phone: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     allowed_ip: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    # Two‑factor authentication (TOTP)
+    totp_secret: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    totp_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     
     # Multi-tenant / Organization
     # If set, this user belongs to an organization (team)

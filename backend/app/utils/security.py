@@ -194,3 +194,33 @@ def require_role(*allowed_roles: str):
     
     return role_checker
 
+
+# --------- TOTP helpers ---------
+try:
+    import pyotp
+except ImportError:  # pyotp may be added later via requirements
+    pyotp = None  # type: ignore
+
+
+def generate_totp_secret() -> str:
+    """Create a new base32 secret usable by authenticator apps."""
+    if pyotp is None:
+        raise RuntimeError("pyotp is not installed")
+    return pyotp.random_base32()
+
+
+def get_totp_uri(secret: str, email: str, issuer: str = "Mohami") -> str:
+    """Return provisioning URI that can be encoded as QR code."""
+    if pyotp is None:
+        raise RuntimeError("pyotp is not installed")
+    return pyotp.totp.TOTP(secret).provisioning_uri(name=email, issuer_name=issuer)
+
+
+def verify_totp(secret: str, code: str) -> bool:
+    """Verify a 6‑digit TOTP code against stored secret."""
+    if pyotp is None:
+        raise RuntimeError("pyotp is not installed")
+    totp = pyotp.totp.TOTP(secret)
+    # allow a window of one step either side (30s each)
+    return totp.verify(code, valid_window=1)
+

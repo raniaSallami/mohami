@@ -53,6 +53,7 @@ class UserResponse(BaseModel):
     phone: Optional[str] = None
     allowed_ip: Optional[str] = None
     organization_owner_id: Optional[str] = None
+    totp_enabled: bool = False
     created_at: datetime
     updated_at: Optional[datetime] = None
 

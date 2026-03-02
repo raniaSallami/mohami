@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, and_
 from jose import JWTError, jwt
+from pydantic import BaseModel, Field
 
 from app.database import get_db
 from app.models.user import User, UserRole
@@ -28,6 +29,9 @@ from app.utils.security import (
     create_token_pair,
     decode_token,
     get_current_user,
+    verify_totp,
+    generate_totp_secret,
+    get_totp_uri,
 )
 from app.config import settings
 
@@ -47,7 +51,9 @@ async def login(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Authenticate user and return JWT tokens.
+    Authenticate user and return JWT tokens.  If the user has
+    two‑factor authentication enabled the `totp_code` field must
+    also be provided and valid.
     """
     # Find user by email
     result = await db.execute(
@@ -62,6 +68,21 @@ async def login(
             detail="Invalid email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    # if TOTP enabled, require code
+    if user.totp_enabled:
+        if not request.totp_code:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="TOTP code required",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        if not verify_totp(user.totp_secret or "", request.totp_code):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid TOTP code",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
     
     # Create tokens
     tokens = create_token_pair(user.id, user.email, user.role)
@@ -163,6 +184,62 @@ async def logout(current_user: User = Depends(get_current_user)):
     In a more advanced implementation, we could blacklist the token.
     """
     return {"message": "Successfully logged out"}
+
+
+# --- Two factor endpoints --------------------------------------------------
+
+class TwoFactorSetupResponse(BaseModel):
+    secret: str
+    provisioning_uri: str
+
+
+@router.post("/2fa/setup", response_model=TwoFactorSetupResponse)
+async def setup_two_factor(
+    current_user: User = Depends(get_current_user)
+):
+    """Generate a new secret for the authenticated user (not yet saved)."""
+    secret = generate_totp_secret()
+    uri = get_totp_uri(secret, current_user.email)
+    return TwoFactorSetupResponse(secret=secret, provisioning_uri=uri)
+
+
+class TwoFactorVerifyRequest(BaseModel):
+    secret: str
+    code: str = Field(..., min_length=6, max_length=6)
+
+
+@router.post("/2fa/verify")
+async def verify_two_factor(
+    request: TwoFactorVerifyRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Validate the code for a given secret and persist it to the user."""
+    if not verify_totp(request.secret, request.code):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid two-factor code",
+        )
+    # save secret
+    current_user.totp_secret = request.secret
+    current_user.totp_enabled = True
+    db.add(current_user)
+    await db.commit()
+    await db.refresh(current_user)
+    return {"message": "Two-factor authentication enabled"}
+
+
+@router.post("/2fa/disable")
+async def disable_two_factor(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Turn off two-factor authentication for the current user."""
+    current_user.totp_secret = None
+    current_user.totp_enabled = False
+    db.add(current_user)
+    await db.commit()
+    return {"message": "Two-factor authentication disabled"}
 
 
 @router.post("/password-reset/request")
