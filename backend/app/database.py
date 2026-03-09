@@ -3,7 +3,6 @@ Database connection and session management using SQLAlchemy 2.0 async.
 """
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import create_engine
 from typing import AsyncGenerator
 
 from app.config import settings
@@ -14,9 +13,12 @@ class Base(DeclarativeBase):
     pass
 
 
-# Async engine for PostgreSQL
+# Async engine for PostgreSQL (asyncpg driver)
+_db_url = settings.database_url
+if _db_url.startswith("postgresql://"):
+    _db_url = _db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 engine = create_async_engine(
-    settings.database_url,
+    _db_url,
     echo=settings.debug,
     pool_pre_ping=True,
     pool_size=10,

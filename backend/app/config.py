@@ -9,14 +9,14 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
     
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file="../.env",
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore"
     )
     
     # Database
-    database_url: str = "postgresql://neondb_owner:npg_xxx@ep-xxx.neon.tech/neondb?sslmode=require"
+    database_url: str = "postgresql://neondb_owner:npg_bvgKwtHJ72ln@ep-dry-cloud-airaa41g-pooler.c-4.us-east-1.aws.neon.tech/test_bd?sslmode=require&channel_binding=require"
     
     # JWT
     jwt_secret_key: str = "mouhami-secret-key-change-in-production"

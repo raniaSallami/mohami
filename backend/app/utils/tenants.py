@@ -134,7 +134,7 @@ class TenantFilter:
         return query
     
     @staticmethod
-    def get_user_tenant_ids(db: AsyncSession, user_id: str) -> List[str]:
+    async def get_user_tenant_ids(db: AsyncSession, user_id: str) -> List[str]:
         """
         Get all tenant IDs a user has access to.
         Includes the user's own ID and any organizations they belong to.

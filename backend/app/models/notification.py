@@ -30,8 +30,8 @@ class Notification(Base):
     # Optional link for clickable notifications
     link: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     
-    # Additional metadata (JSON)
-    metadata: Mapped[dict] = mapped_column(JSONB, default=dict)
+    # Additional metadata (JSON) - 'metadata' is reserved in SQLAlchemy, use extra_data
+    extra_data: Mapped[dict] = mapped_column(JSONB, default=dict, name="metadata")
     
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

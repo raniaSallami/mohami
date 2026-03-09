@@ -160,7 +160,7 @@ async def create_notification(
         title=notification_data.title,
         message=notification_data.message,
         link=notification_data.link,
-        metadata=notification_data.metadata or {}
+        extra_data=notification_data.metadata or {}
     )
     
     db.add(notification)

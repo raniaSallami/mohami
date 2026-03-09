@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.database import get_db
+from app.models.user import User
 
 
 # Password hashing
@@ -120,7 +121,6 @@ async def get_current_user(
         HTTPException: If token is invalid or user not found
     """
     from sqlalchemy import select
-    from app.models.user import User
     
     token = credentials.credentials
     payload = decode_token(token)

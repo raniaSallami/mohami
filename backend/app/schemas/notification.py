@@ -3,7 +3,7 @@ Pydantic schemas for notification operations.
 """
 from datetime import datetime
 from typing import Optional, List, Any
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class NotificationBase(BaseModel):
@@ -27,7 +27,7 @@ class NotificationUpdate(BaseModel):
 
 class NotificationResponse(BaseModel):
     """Schema for notification response."""
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
     
     id: str
     user_id: str
@@ -36,7 +36,7 @@ class NotificationResponse(BaseModel):
     message: str
     read: bool
     link: Optional[str] = None
-    metadata: dict = {}
+    metadata: dict = Field(default={}, validation_alias="extra_data")
     created_at: datetime
 
 
