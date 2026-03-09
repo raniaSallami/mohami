@@ -19,19 +19,19 @@ async def lifespan(app: FastAPI):
     Lifespan context manager for startup and shutdown events.
     """
     # Startup
-    print("🚀 Starting Mouhami API...")
+    print("Starting Mouhami API...")
     try:
         await init_db()
-        print("✅ Database initialized")
+        print("Database initialized")
     except Exception as e:
-        print(f"⚠️ Database initialization warning: {e}")
+        print(f"Database initialization warning: {e}")
     
     yield
     
     # Shutdown
-    print("🔄 Shutting down Mouhami API...")
+    print("Shutting down Mouhami API...")
     await close_db()
-    print("✅ Database connections closed")
+    print("Database connections closed")
 
 
 # Create FastAPI application
@@ -70,7 +70,7 @@ async def add_process_time_header(request: Request, call_next):
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """Handle uncaught exceptions."""
-    print(f"❌ Unhandled exception: {exc}")
+    print(f"Unhandled exception: {exc}")
     return JSONResponse(
         status_code=500,
         content={"detail": "Internal server error"}
