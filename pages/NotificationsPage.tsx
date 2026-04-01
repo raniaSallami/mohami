@@ -9,9 +9,20 @@ export const NotificationsPage = ({ onNavigate }: { onNavigate: (page: string) =
 
   useEffect(() => {
     const load = async () => {
-      const list = await notificationService.getNotifications(true, 200);
-      setNotifications(list);
-      setLoading(false);
+      try {
+        const data = await notificationService.getNotifications(1, 200);
+        // Map API response to our typescript Notification type
+        const mapped = (data.notifications || []).map((n: any) => ({
+          ...n,
+          createdAt: n.created_at,
+          userId: n.user_id,
+        }));
+        setNotifications(mapped);
+      } catch (error) {
+        console.error('Failed to load notifications:', error);
+      } finally {
+        setLoading(false);
+      }
     };
     load();
   }, []);

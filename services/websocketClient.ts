@@ -1,28 +1,39 @@
-export class WebSocketClient {
+/**
+ * WebSocket Client - Handles real-time chat communication
+ */
+import { storageService } from './storageService';
+
+export type MessageType = 'message' | 'typing' | 'user_left' | 'history';
+
+export interface WSMessage {
+  type: MessageType;
+  data?: any;
+  user?: string;
+  messages?: any[];
+  timestamp?: string;
+}
+
+type MessageHandler = (message: WSMessage) => void;
+
+class WebSocketClient {
   private ws: WebSocket | null = null;
   private url: string;
+  private messageHandlers: Map<MessageType, Set<MessageHandler>> = new Map();
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
-  private reconnectDelay = 1000;
-  private listeners: Map<string, Set<(data: any) => void>> = new Map();
-  private conversationId: string | null = null;
+  private reconnectDelay = 3000;
 
-  constructor(url?: string) {
-    if (url) {
-      this.url = url;
-    } else {
-      // Auto-detect URL based on environment
-      const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost';
-      const protocol = isProduction ? 'wss:' : 'ws:';
-      const host = isProduction ? window.location.host : 'localhost:8082';
-      this.url = `${protocol}//${host}${isProduction ? '/ws' : ''}`;
-    }
+  constructor(baseUrl: string = 'ws://localhost:3001') {
+    this.url = baseUrl;
   }
 
-  connect(): Promise<void> {
+  connect(conversationId: string): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
-        this.ws = new WebSocket(this.url);
+        const token = storageService.getAccessToken();
+        const wsUrl = `${this.url}/api/ws/conversations/${conversationId}`;
+        
+        this.ws = new WebSocket(wsUrl);
 
         this.ws.onopen = () => {
           console.log('✅ WebSocket connected');
@@ -32,10 +43,10 @@ export class WebSocketClient {
 
         this.ws.onmessage = (event) => {
           try {
-            const data = JSON.parse(event.data);
-            this.handleMessage(data);
-          } catch (error) {
-            console.error('Error parsing message:', error);
+            const message: WSMessage = JSON.parse(event.data);
+            this.handleMessage(message);
+          } catch (e) {
+            console.error('Failed to parse WebSocket message:', e);
           }
         };
 
@@ -45,9 +56,8 @@ export class WebSocketClient {
         };
 
         this.ws.onclose = () => {
-          console.log('🔌 WebSocket closed');
-          this.ws = null;
-          this.attemptReconnect();
+          console.log('WebSocket disconnected');
+          this.attemptReconnect(conversationId);
         };
       } catch (error) {
         reject(error);
@@ -55,100 +65,66 @@ export class WebSocketClient {
     });
   }
 
-  private attemptReconnect() {
+  private attemptReconnect(conversationId: string): void {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
+      console.log(`Reconnecting... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
       setTimeout(() => {
-        console.log(`🔄 Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
-        this.connect().catch(() => {
-          // Reconnection will be attempted again
-        });
-      }, this.reconnectDelay * this.reconnectAttempts);
+        this.connect(conversationId).catch(e => console.error('Reconnect failed:', e));
+      }, this.reconnectDelay);
     }
   }
 
-  private handleMessage(data: any) {
-    if (data.type && this.listeners.has(data.type)) {
-      this.listeners.get(data.type)!.forEach(callback => {
-        try {
-          callback(data);
-        } catch (error) {
-          console.error('Error in message handler:', error);
-        }
-      });
+  send(message: WSMessage): void {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(message));
+    } else {
+      console.warn('WebSocket is not open');
     }
   }
 
-  on(event: string, callback: (data: any) => void) {
-    if (!this.listeners.has(event)) {
-      this.listeners.set(event, new Set());
-    }
-    this.listeners.get(event)!.add(callback);
-  }
-
-  off(event: string, callback: (data: any) => void) {
-    if (this.listeners.has(event)) {
-      this.listeners.get(event)!.delete(callback);
-    }
-  }
-
-  joinConversation(conversationId: string, userId?: string, userName?: string, isAdmin: boolean = false) {
-    this.conversationId = conversationId;
-    this.send({
-      type: 'join',
-      conversationId,
-      userId,
-      userName,
-      isAdmin
-    });
-  }
-
-  sendMessage(text: string, senderName: string, attachments?: any[]) {
-    if (!this.conversationId) {
-      throw new Error('Not joined to a conversation');
-    }
+  sendMessage(content: string): void {
     this.send({
       type: 'message',
-      text,
-      senderName,
-      attachments: attachments || []
+      data: { message: content },
     });
   }
 
-  sendTyping(isTyping: boolean, senderName: string) {
-    if (!this.conversationId) return;
+  sendTyping(user: string): void {
     this.send({
       type: 'typing',
-      isTyping,
-      senderName
+      user,
     });
   }
 
-  markAsRead() {
-    if (!this.conversationId) return;
-    this.send({
-      type: 'read'
-    });
+  on(messageType: MessageType, handler: MessageHandler): void {
+    if (!this.messageHandlers.has(messageType)) {
+      this.messageHandlers.set(messageType, new Set());
+    }
+    this.messageHandlers.get(messageType)?.add(handler);
   }
 
-  private send(data: any) {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify(data));
-    } else {
-      console.warn('WebSocket is not connected');
+  off(messageType: MessageType, handler: MessageHandler): void {
+    this.messageHandlers.get(messageType)?.delete(handler);
+  }
+
+  private handleMessage(message: WSMessage): void {
+    const handlers = this.messageHandlers.get(message.type);
+    if (handlers) {
+      handlers.forEach(handler => handler(message));
     }
   }
 
-  disconnect() {
+  disconnect(): void {
     if (this.ws) {
       this.ws.close();
       this.ws = null;
     }
-    this.listeners.clear();
-    this.conversationId = null;
   }
 
   isConnected(): boolean {
-    return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
+    return this.ws?.readyState === WebSocket.OPEN;
   }
 }
+
+export const websocketClient = new WebSocketClient();

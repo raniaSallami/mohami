@@ -6,17 +6,14 @@ from typing import Optional
 from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
 
 
-# Token schemas
 class Token(BaseModel):
-    """JWT token response schema."""
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
 
 
 class TokenPayload(BaseModel):
-    """JWT token payload schema."""
-    sub: str  # user_id
+    sub: str
     email: Optional[str] = None
     role: str
     exp: Optional[datetime] = None
@@ -24,16 +21,15 @@ class TokenPayload(BaseModel):
 
 
 class RefreshTokenRequest(BaseModel):
-    """Request schema for refreshing access token."""
     refresh_token: str
 
 
-# Login schemas
 class LoginRequest(BaseModel):
-    """User login request schema."""
     email: EmailStr
     password: str
+    recaptcha_token: str
     totp_code: Optional[str] = None
+    fingerprint: Optional[str] = None
 
     @field_validator('totp_code')
     def check_totp_length(cls, v):
@@ -43,41 +39,43 @@ class LoginRequest(BaseModel):
 
 
 class LoginResponse(BaseModel):
-    """User login response schema."""
     token: Token
     user: "UserResponse"
 
 
-# Registration schemas
 class RegisterRequest(BaseModel):
-    """User registration request schema."""
     email: EmailStr
+    recaptcha_token: str
     password: str = Field(..., min_length=8)
     name: str = Field(..., min_length=2, max_length=255)
-    role: Optional[str] = "CLIENT"
+    role: Optional[str] = "LAWYER"  # Rôle par défaut : avocat
 
     @field_validator('password')
     def password_complexity(cls, v: str):
         import re
         if not re.search(r'[A-Z]', v) or not re.search(r'[a-z]', v) or not re.search(r'\d', v):
-            raise ValueError('Password must contain upper case, lower case and a digit')
+            raise ValueError('كلمة المرور يجب أن تحتوي على حرف كبير وحرف صغير ورقم على الأقل.')
         return v
+
+    @field_validator('role')
+    def validate_role(cls, v: str):
+        allowed = {"LAWYER", "CLIENT"}
+        if v and v.upper() not in allowed:
+            return "LAWYER"
+        return v.upper() if v else "LAWYER"
 
 
 class RegisterResponse(BaseModel):
-    """User registration response schema."""
     token: Token
     user: "UserResponse"
 
 
-# Password reset schemas
 class PasswordResetRequest(BaseModel):
-    """Request password reset OTP."""
     email: EmailStr
+    recaptcha_token: str
 
 
 class PasswordResetConfirm(BaseModel):
-    """Confirm password reset with OTP."""
     email: EmailStr
     otp: str = Field(..., min_length=6, max_length=6)
     new_password: str = Field(..., min_length=8)
@@ -86,7 +84,7 @@ class PasswordResetConfirm(BaseModel):
     def new_password_complexity(cls, v: str):
         import re
         if not re.search(r'[A-Z]', v) or not re.search(r'[a-z]', v) or not re.search(r'\d', v):
-            raise ValueError('Password must contain upper case, lower case and a digit')
+            raise ValueError('كلمة المرور يجب أن تحتوي على حرف كبير وحرف صغير ورقم على الأقل.')
         return v
 
 
@@ -94,4 +92,3 @@ class PasswordResetConfirm(BaseModel):
 from app.schemas.user import UserResponse
 RegisterResponse.model_rebuild()
 LoginResponse.model_rebuild()
-

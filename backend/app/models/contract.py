@@ -16,7 +16,7 @@ class Contract(Base):
     """
     __tablename__ = "contracts"
     
-    # Primary key
+    # Primary key - use String(36) to store UUID as string
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # Contract details
@@ -32,7 +32,7 @@ class Contract(Base):
     # Metadata
     status: Mapped[str] = mapped_column(String(50), default="draft")  # draft, signed, expired
     
-    # Foreign keys
+    # Foreign keys - use String(36) to store UUID as string
     user_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     
     # Tenant (organization)

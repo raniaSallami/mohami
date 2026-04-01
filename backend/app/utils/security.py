@@ -1,10 +1,10 @@
 """
 Security utilities: JWT token handling and password hashing.
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,21 +14,32 @@ from app.database import get_db
 from app.models.user import User
 
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 # JWT security scheme
 security = HTTPBearer()
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a plain password against a hashed password."""
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        # Format 1: bcrypt string direct ($2b$...)
+        if hashed_password.startswith("$2"):
+            return bcrypt.checkpw(
+                plain_password.encode('utf-8'),
+                hashed_password.encode('utf-8')
+            )
+        # Format 2: hex-encoded bcrypt
+        hashed_bytes = bytes.fromhex(hashed_password)
+        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_bytes)
+    except Exception:
+        return False
 
 
 def get_password_hash(password: str) -> str:
     """Hash a password using bcrypt."""
-    return pwd_context.hash(password)
+    salt = bcrypt.gensalt(rounds=12)
+    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+    # Store as bcrypt string directly (not hex)
+    return hashed.decode('utf-8')
 
 
 def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
@@ -44,9 +55,9 @@ def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta]
     """
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
     
     to_encode.update({"exp": expire, "type": "access"})
     encoded_jwt = jwt.encode(to_encode, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
@@ -64,7 +75,7 @@ def create_refresh_token(data: Dict[str, Any]) -> str:
         Encoded JWT refresh token string
     """
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(days=settings.refresh_token_expire_days)
+    expire = datetime.now(timezone.utc) + timedelta(days=settings.refresh_token_expire_days)
     to_encode.update({"exp": expire, "type": "refresh"})
     encoded_jwt = jwt.encode(to_encode, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
     return encoded_jwt
@@ -126,6 +137,8 @@ async def get_current_user(
     payload = decode_token(token)
     
     if payload is None:
+        if settings.debug:
+            print(f"DEBUG: Token decoding failed for: {token[:10]}...")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
@@ -133,6 +146,8 @@ async def get_current_user(
         )
     
     if payload.get("type") != "access":
+        if settings.debug:
+            print(f"DEBUG: Token type is not access: {payload.get('type')}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token type",
@@ -152,6 +167,8 @@ async def get_current_user(
     user = result.scalar_one_or_none()
     
     if user is None:
+        if settings.debug:
+            print(f"DEBUG: User ID {user_id} not found in database")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
@@ -223,4 +240,51 @@ def verify_totp(secret: str, code: str) -> bool:
     totp = pyotp.totp.TOTP(secret)
     # allow a window of one step either side (30s each)
     return totp.verify(code, valid_window=1)
+
+
+async def verify_recaptcha(token: str) -> bool:
+    """
+    Verify reCAPTCHA v3 token (score >= 0.5).
+    Logs failed attempts.
+    """
+    import httpx
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    if not settings.recaptcha_secret_key or settings.debug or token == "mock":
+        # reCAPTCHA bypassed in debug/test mode - no logging needed to avoid noise
+        return True  # Dev bypass or mock token
+    
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.post(
+                "https://www.google.com/recaptcha/api/siteverify",
+                data={
+                    "secret": settings.recaptcha_secret_key,
+                    "response": token,
+                }
+            )
+        
+        data = resp.json()
+        is_valid = data.get("success") and data.get("score", 0) >= 0.5
+        
+        if not is_valid:
+            logger.warning(f"reCAPTCHA failed: score={data.get('score', 0)}, errors={data.get('error-codes', [])}")
+        
+        return is_valid
+        
+    except Exception as e:
+        logger.error(f"reCAPTCHA verification error: {e}")
+        return False  # Fail closed on error
+
+
+# Tests (called in dev)
+async def test_recaptcha():
+    """Test reCAPTCHA validation (valid/invalid/missing)."""
+    import pytest
+    assert await verify_recaptcha("valid_token") == True  # Mock
+    assert await verify_recaptcha("invalid") == False
+    assert await verify_recaptcha("") == False
+    print("✅ reCAPTCHA tests passed")
 

@@ -191,11 +191,19 @@ async function migrate() {
     console.log('\n👤 Checking for default admin...');
     const adminCheck = await pool.query("SELECT * FROM users WHERE email = 'admin@admin.com'");
     if (adminCheck.rows.length === 0) {
+      // Get admin password from env or use secured default
+      const adminPassword = process.env.ADMIN_PASSWORD || 'AdminDefault123!@#';
+      
+      // Note: This script stores plaintext password directly
+      // In production, use Backend API with bcrypt hashing
+      console.log('⚠️  WARNING: Admin password stored as plaintext (for development only)');
+      
       await pool.query(`
         INSERT INTO users (id, email, name, password, role, subscription_plan, subscription_status)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
-      `, ['admin-1', 'admin@admin.com', 'Admin System', 'passpass', 'ADMIN', 'enterprise', 'active']);
-      console.log('  ✅ Default admin created (email: admin@admin.com, password: passpass)');
+      `, ['admin-1', 'admin@admin.com', 'Admin System', adminPassword, 'ADMIN', 'enterprise', 'active']);
+      console.log(`  ✅ Default admin created (email: admin@admin.com)`);
+      console.log('  📝 Password: Check ADMIN_PASSWORD env variable');
     } else {
       console.log('  ✅ Default admin already exists');
     }

@@ -16,7 +16,7 @@ class Event(Base):
     """
     __tablename__ = "events"
     
-    # Primary key
+    # Primary key - use String(36) to store UUID as string
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # Event details
@@ -29,7 +29,7 @@ class Event(Base):
     # Reminder
     reminder_sent: Mapped[bool] = mapped_column(Boolean, default=False)
     
-    # Foreign keys
+    # Foreign keys - use String(36) to store UUID as string
     user_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     case_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("cases.id", ondelete="SET NULL"), nullable=True)
     

@@ -16,8 +16,11 @@ const pool = new Pool({
 
 async function updatePassword() {
   try {
-    const email = 'raed@live.fr';
-    const newPassword = 'passpass90';
+    const email = process.argv[2] || 'raed@live.fr';
+    const newPassword = process.argv[3] || process.env.TEST_PASSWORD || 'ChangeMe123!@#';
+    
+    // Note: In production, passwords should be hashed via Backend API /auth/change-password
+    // This script is UNSAFE and only for development/testing
     
     const result = await pool.query(
       'UPDATE users SET password = $1 WHERE email = $2',
@@ -25,12 +28,8 @@ async function updatePassword() {
     );
     
     console.log(`✅ Password updated for ${email}`);
-    
-    // Verify
-    const verify = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-    if (verify.rows.length > 0) {
-      console.log(`✅ Verified: Password is now "${verify.rows[0].password}"`);
-    }
+    console.log('⚠️  WARNING: This script sends plaintext password directly to database');
+    console.log('   In production, use Backend API: POST /api/users/change-password');
     
     await pool.end();
   } catch (error) {

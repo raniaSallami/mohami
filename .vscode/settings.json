@@ -1,0 +1,6 @@
+{
+    "python.defaultInterpreterPath": "C:\\PySchool\\3.10-32-bit\\python.exe",
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}\\backend"
+    ]
+}

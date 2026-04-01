@@ -18,28 +18,18 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNotificati
     loadNotifications();
     loadUnreadCount();
 
-    // Start polling
-    notificationService.startPolling(3000); // Check every 3 seconds
+    const handleNotifications = (apiNotifs: any[]) => {
+      // Map API notifications to app NotificationType
+      const newNotifs: NotificationType[] = apiNotifs.map(n => ({
+        ...n,
+        userId: n.user_id,
+        createdAt: n.created_at,
+      }));
+      setNotifications(newNotifs);
+      setUnreadCount(newNotifs.filter(n => !n.read).length);
+    };
 
-    // Subscribe to new notifications
-    const unsubscribe = notificationService.subscribe((notification) => {
-      setNotifications(prev => [notification, ...prev]);
-      setUnreadCount(prev => prev + 1);
-      
-      // Show browser notification if permission granted
-      if ('Notification' in window && window.Notification.permission === 'granted') {
-        new window.Notification(notification.title, {
-          body: notification.message,
-          icon: '/favicon.ico',
-          tag: notification.id
-        });
-      }
-    });
-
-    // Check for upcoming appointments every 5 minutes
-    const appointmentInterval = setInterval(() => {
-      notificationService.checkUpcomingAppointments();
-    }, 5 * 60 * 1000);
+    notificationService.subscribe(handleNotifications);
 
     // Request notification permission
     if ('Notification' in window && window.Notification.permission === 'default') {
@@ -47,9 +37,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNotificati
     }
 
     return () => {
-      notificationService.stopPolling();
-      unsubscribe();
-      clearInterval(appointmentInterval);
+      notificationService.unsubscribe(handleNotifications);
     };
   }, []);
 
@@ -71,8 +59,15 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNotificati
   }, [isOpen]);
 
   const loadNotifications = async () => {
-    const notifs = await notificationService.getNotifications(false);
-    setNotifications(notifs);
+    try {
+      const data = await notificationService.getNotifications(1, 20);
+      const notifs: NotificationType[] = (data.notifications || []).map((n: any) => ({
+        ...n,
+        userId: n.user_id,
+        createdAt: n.created_at,
+      }));
+      setNotifications(notifs);
+    } catch {}
   };
 
   const loadUnreadCount = async () => {

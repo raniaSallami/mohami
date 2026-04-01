@@ -17,19 +17,14 @@ export const Dashboard = ({ onNavigate, user }: { onNavigate: (page: string, cas
         const data = await storageService.getCases();
         setCases(data);
         if (user?.subscriptionPlan === 'enterprise') {
-          const ownerId = user.organizationOwnerId || user.id;
-          const team = await storageService.getTeamMembers(ownerId);
-          let allCases: CaseFile[] = [...data];
-          for (const m of team) {
-            if (m.id !== user.id) {
-              const mc = await storageService.getCasesByUserId(m.id);
-              allCases = allCases.concat(mc);
-            }
-          }
-          setTeamCases(allCases);
+          // TODO: implement getTeamMembers and getCasesByUserId properly inside storageService
+          const teamCasesMock: any[] = [];
+          setTeamCases([...data, ...teamCasesMock]);
         }
-        const contracts = await storageService.getContracts();
-        setContractsCount(contracts.length);
+        
+        // TODO: implement getContracts
+        const contractsCountMock = 0;
+        setContractsCount(contractsCountMock);
       } catch (error) {
         console.error('Error loading data:', error);
       } finally {

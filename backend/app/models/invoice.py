@@ -26,7 +26,7 @@ class Invoice(Base):
     """
     __tablename__ = "invoices"
     
-    # Primary key
+    # Primary key - use String(36) to store UUID as string
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # Invoice details
@@ -42,7 +42,7 @@ class Invoice(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Foreign keys
+    # Foreign keys - use String(36) to store UUID as string
     user_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     
     # Tenant (organization)

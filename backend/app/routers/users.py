@@ -244,6 +244,16 @@ async def change_password(
     """
     Change user password.
     """
+    from app.utils.password_validator import validate_password
+    
+    # Validate new password meets security requirements
+    validation = validate_password(request.new_password)
+    if not validation.is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=" | ".join(validation.errors)
+        )
+    
     if not verify_password(request.current_password, current_user.password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

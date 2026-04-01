@@ -2,12 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { storageService } from '../services/storageService';
 import { User } from '../types';
 import { Spinner, Modal } from '../components/UI';
+import { Recaptcha, executeRecaptcha } from '../components/Recaptcha';
+import { validatePassword, type PasswordValidation } from '../utils/passwordValidator';
+
 
 export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: User) => void, onNavigate: (page: string) => void }) => {
   const [step, setStep] = useState(1); // 1: Info, 2: Plan Selection, 3: OTP Verification
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordValidation, setPasswordValidation] = useState<PasswordValidation>({
+    isValid: false,
+    minLength: false,
+    hasUppercase: false,
+    hasLowercase: false,
+    hasDigit: false,
+    errors: [],
+  });
   const [selectedPlan, setSelectedPlan] = useState<'basic' | 'pro' | 'enterprise'>('basic');
   const [otp, setOtp] = useState('');
   
@@ -24,6 +35,9 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: User) =>
     pro: { cases: 50, contracts: 100 },
     enterprise: { cases: 9999, contracts: 9999 }
   });
+  const [recaptchaToken, setRecaptchaToken] = useState('');
+
+  // Initial load of pricing and limits
   useEffect(() => {
     const load = async () => {
       try {
@@ -35,12 +49,31 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: User) =>
     load();
   }, []);
 
+  // Validate password in real-time
+  useEffect(() => {
+    const validation = validatePassword(password);
+    setPasswordValidation(validation);
+  }, [password]);
+
   const handleRequestOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    let token = recaptchaToken;
+    if (!token) {
+      const freshToken = await executeRecaptcha('register');
+      if (freshToken) {
+        token = freshToken;
+        setRecaptchaToken(freshToken);
+      }
+    }
+
+    if (!token) {
+      setError('reCAPTCHA requis - يرجى الانتظار حتى يتم تحميل التحقق الأمني');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
-      const { ok, message } = await storageService.createSignupEmailOtp(email.trim(), name.trim());
+      const { ok, message } = await storageService.createSignupEmailOtp(email.trim(), name.trim(), token);
       if (ok) {
         setStep(3);
       } else {
@@ -52,6 +85,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: User) =>
       setLoading(false);
     }
   };
+
 
   const handleVerifyAndRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,10 +117,15 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: User) =>
   };
 
   const handleResendOtp = async () => {
+    const freshToken = await executeRecaptcha('register_resend');
+    if (!freshToken) {
+      setError('reCAPTCHA requis - يرجى الانتظار حتى يتم تحميل التحقق الأمني');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
-      const { ok, message } = await storageService.createSignupEmailOtp(email.trim(), name.trim());
+      const { ok, message } = await storageService.createSignupEmailOtp(email.trim(), name.trim(), freshToken);
       if (ok) {
         setOtp('');
         setError('');
@@ -173,9 +212,49 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: User) =>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">كلمة المرور</label>
-                  <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500" />
+                  <input 
+                    type="password" 
+                    required 
+                    value={password} 
+                    onChange={(e) => setPassword(e.target.value)} 
+                    placeholder="أدخل كلمة المرور"
+                    className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 ${
+                      password && !passwordValidation.isValid ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                  
+                  {/* Password Requirements Checklist */}
+                  {password && (
+                    <div className="mt-3 p-3 bg-gray-50 rounded-md border border-gray-200">
+                      <p className="text-xs font-medium text-gray-600 mb-2">متطلبات كلمة المرور:</p>
+                      <div className="space-y-1 text-xs">
+                        <div className={`flex items-center ${passwordValidation.minLength ? 'text-green-600' : 'text-gray-500'}`}>
+                          <span className="mr-2">{passwordValidation.minLength ? '✓' : '✗'}</span>
+                          <span>8 أحرف على الأقل</span>
+                        </div>
+                        <div className={`flex items-center ${passwordValidation.hasUppercase ? 'text-green-600' : 'text-gray-500'}`}>
+                          <span className="mr-2">{passwordValidation.hasUppercase ? '✓' : '✗'}</span>
+                          <span>حرف كبير (A-Z)</span>
+                        </div>
+                        <div className={`flex items-center ${passwordValidation.hasLowercase ? 'text-green-600' : 'text-gray-500'}`}>
+                          <span className="mr-2">{passwordValidation.hasLowercase ? '✓' : '✗'}</span>
+                          <span>حرف صغير (a-z)</span>
+                        </div>
+                        <div className={`flex items-center ${passwordValidation.hasDigit ? 'text-green-600' : 'text-gray-500'}`}>
+                          <span className="mr-2">{passwordValidation.hasDigit ? '✓' : '✗'}</span>
+                          <span>رقم (0-9)</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <button type="submit" className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-slate-900 hover:bg-slate-800">التالي: اختر الباقة</button>
+                <button 
+                  type="submit" 
+                  disabled={!name.trim() || !email.trim() || !passwordValidation.isValid}
+                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  التالي: اختر الباقة
+                </button>
               </form>
           )}
 
@@ -194,6 +273,11 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: User) =>
                       <button type="submit" disabled={loading} className="flex-1 flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-slate-900 hover:bg-slate-800">
                           {loading ? <Spinner /> : 'متابعة - إرسال رمز التحقق للبريد'}
                       </button>
+                  </div>
+                  
+                  {/* Invisible reCAPTCHA initialization */}
+                  <div style={{ display: 'none' }}>
+                    <Recaptcha onVerify={(token) => setRecaptchaToken(token)} action="register" />
                   </div>
               </form>
           )}

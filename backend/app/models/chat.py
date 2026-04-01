@@ -17,10 +17,10 @@ class ChatConversation(Base):
     """
     __tablename__ = "chat_conversations"
     
-    # Primary key
+    # Primary key - use String(36) to store UUID as string
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     
-    # User info (nullable for guest conversations)
+    # User info (nullable for guest conversations) - use String(36) to store UUID as string
     user_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     user_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     user_email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
@@ -55,10 +55,10 @@ class ChatMessage(Base):
     """
     __tablename__ = "chat_messages"
     
-    # Primary key
+    # Primary key - use String(36) to store UUID as string
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     
-    # Conversation reference
+    # Conversation reference - use String(36) to store UUID as string
     conversation_id: Mapped[str] = mapped_column(
         String(36), 
         ForeignKey("chat_conversations.id", ondelete="CASCADE"), 
@@ -98,7 +98,7 @@ class TeamChatMessage(Base):
     """
     __tablename__ = "team_chat_messages"
     
-    # Primary key
+    # Primary key - use String(36) to store UUID as string
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # Owner (organization)

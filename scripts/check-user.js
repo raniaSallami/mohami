@@ -25,8 +25,7 @@ async function checkUser() {
       console.log('='.repeat(80));
       console.log(`Email: ${user.email}`);
       console.log(`Name: ${user.name}`);
-      console.log(`Password stored: ${user.password}`);
-      console.log(`Password length: ${user.password?.length || 0}`);
+      console.log(`Password: [REDACTED - ${user.password?.length || 0} chars]`);
       console.log(`Role: ${user.role}`);
       console.log(`ID: ${user.id}`);
       console.log('='.repeat(80));
@@ -40,12 +39,9 @@ async function checkUser() {
       console.log(`Login query result: ${loginResult.rows.length} rows found`);
       
       if (loginResult.rows.length === 0) {
-        console.log('\n❌ Password mismatch!');
-        console.log(`Expected: passpass90`);
-        console.log(`Stored: ${user.password}`);
-        console.log(`Match: ${user.password === 'passpass90'}`);
+        console.log('\n❌ Authentication test: test password did not match');
       } else {
-        console.log('✅ Password matches!');
+        console.log('✅ Authentication test passed!');
       }
     } else {
       console.log(`\n❌ User with email ${email} not found!`);

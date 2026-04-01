@@ -22,7 +22,7 @@ async function checkUsers() {
     result.rows.forEach((user, index) => {
       console.log(`\n${index + 1}. Email: ${user.email}`);
       console.log(`   Name: ${user.name}`);
-      console.log(`   Password: ${user.password}`);
+      console.log(`   Password: [REDACTED - ${user.password?.length || 0} chars]`);
       console.log(`   Role: ${user.role}`);
       console.log(`   ID: ${user.id}`);
     });

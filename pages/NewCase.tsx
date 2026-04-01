@@ -14,41 +14,46 @@ export const NewCase = ({ onNavigate }: { onNavigate: (page: string) => void }) 
     e.preventDefault();
     setLoading(true);
 
-    const hasLimit = await storageService.checkUsageLimit('cases');
-    if (!hasLimit) {
-      setLoading(false);
-      alert('عفواً، لقد تجاوزت عدد القضايا المسموح به في باقتك الحالية. يرجى الترقية لإضافة المزيد.');
-      onNavigate('settings');
-      return;
-    }
-
-    const newCase: CaseFile = {
-      id: Date.now().toString(),
-      title,
-      clientName,
-      type: type as any,
-      status: 'active',
-      dateCreated: new Date().toISOString(),
-      documents: []
-    };
-    
-    const { pendingApproval } = await storageService.addCase(newCase);
-    
-    if (!pendingApproval) {
-      try {
-        const user = storageService.getCurrentUser();
-        if (user) {
-          const { emailService } = await import('../services/emailService');
-          await emailService.sendCaseCreatedEmail(user.email, user.name, newCase.title);
-        }
-      } catch (emailError) {
-        console.error('Failed to send case created email:', emailError);
+    try {
+      const hasLimit = await storageService.checkUsageLimit('cases');
+      if (!hasLimit) {
+        setLoading(false);
+        alert('عفواً، لقد تجاوزت عدد القضايا المسموح به في باقتك الحالية. يرجى الترقية لإضافة المزيد.');
+        onNavigate('settings');
+        return;
       }
+
+      const newCase: CaseFile = {
+        id: Date.now().toString(),
+        title,
+        clientName,
+        type: type as any,
+        status: 'active',
+        dateCreated: new Date().toISOString(),
+        documents: []
+      };
+      
+      const { pendingApproval } = await storageService.addCase(newCase);
+      
+      if (!pendingApproval) {
+        try {
+          const user = storageService.getCurrentUser();
+          if (user) {
+            const { emailService } = await import('../services/emailService');
+            await emailService.sendCaseCreatedEmail(user.email, user.name, newCase.title);
+          }
+        } catch (emailError) {
+          console.error('Failed to send case created email:', emailError);
+        }
+        onNavigate('cases');
+      } else {
+        setShowPendingModal(true);
+      }
+    } catch (err: any) {
+      console.error('Failed to create case:', err);
+      alert('فشل إنشاء القضية. يرجى التحقق من صحة البيانات والمحاولة مرة أخرى.');
+    } finally {
       setLoading(false);
-      onNavigate('cases');
-    } else {
-      setLoading(false);
-      setShowPendingModal(true);
     }
   };
 

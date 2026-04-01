@@ -86,6 +86,20 @@ async def get_contract(
     return ContractResponse.model_validate(contract)
 
 
+from pydantic import BaseModel
+
+class GenerateContractRequest(BaseModel):
+    type: str
+    details: str
+
+@router.post("/generate")
+async def generate_contract_content(
+    request: GenerateContractRequest,
+    current_user: User = Depends(get_current_active_user)
+):
+    """Mock AI generation endpoint for contracts."""
+    return {"contract_content": f"<p>تم إنشاء <b>{request.type}</b> بالذكاء الاصطناعي.</p><br><p>هذا النص تجريبي مبدئي بناءً على التفاصيل:</p><p>{request.details}</p>"}
+
 @router.post("", response_model=ContractResponse)
 async def create_contract(
     contract_data: ContractCreate,

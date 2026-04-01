@@ -29,6 +29,7 @@ class CaseType(str, enum.Enum):
     FAMILY = "family"
     LABOR = "labor"
     ADMINISTRATIVE = "administrative"
+    COURSE = "course"
     OTHER = "other"
 
 
@@ -38,7 +39,7 @@ class Case(Base):
     """
     __tablename__ = "cases"
     
-    # Primary key
+    # Primary key - use String(36) to store UUID as string
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # Case details
@@ -61,7 +62,7 @@ class Case(Base):
     # AI Chat history
     chat_history: Mapped[list] = mapped_column(JSONB, default=list)
     
-    # Foreign keys
+    # Foreign keys - use String(36) to store UUID as string
     user_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_by_user_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
     assigned_to_user_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)

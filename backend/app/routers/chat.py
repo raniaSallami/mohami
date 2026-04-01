@@ -2,10 +2,12 @@
 Chat management routes.
 """
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from datetime import datetime
+import json
+import logging
 
 from app.database import get_db
 from app.models.user import User
@@ -24,6 +26,10 @@ from app.schemas.chat import (
 )
 from app.utils.security import get_current_active_user
 
+logger = logging.getLogger(__name__)
+
+# Store active WebSocket connections
+connections: dict = {}  # {conversation_id: set of WebSocket connections}
 
 router = APIRouter(tags=["Chat"])
 
@@ -220,3 +226,64 @@ async def send_team_message(
     
     return TeamMessageResponse.model_validate(message)
 
+
+# WebSocket endpoint for real-time chat
+@router.websocket("/ws/conversations/{conversation_id}")
+async def websocket_endpoint(websocket: WebSocket, conversation_id: str):
+    """WebSocket endpoint for real-time conversation updates."""
+    await websocket.accept()
+    
+    # Add connection to tracking
+    if conversation_id not in connections:
+        connections[conversation_id] = set()
+    connections[conversation_id].add(websocket)
+    
+    try:
+        while True:
+            # Receive message from client
+            data = await websocket.receive_text()
+            message_data = json.loads(data)
+            
+            logger.info(f"WebSocket message in {conversation_id}: {message_data.get('type')}")
+            
+            # Handle different message types
+            if message_data.get("type") == "message":
+                # Broadcast message to all connected clients
+                for connection in connections[conversation_id]:
+                    try:
+                        await connection.send_text(json.dumps({
+                            "type": "message",
+                            "data": message_data.get("data"),
+                            "timestamp": datetime.utcnow().isoformat()
+                        }))
+                    except Exception as e:
+                        logger.error(f"Error sending to WebSocket: {e}")
+            
+            elif message_data.get("type") == "typing":
+                # Broadcast typing indicator
+                for connection in connections[conversation_id]:
+                    if connection != websocket:
+                        try:
+                            await connection.send_text(json.dumps({
+                                "type": "typing",
+                                "user": message_data.get("user")
+                            }))
+                        except Exception as e:
+                            logger.error(f"Error broadcasting typing: {e}")
+    
+    except WebSocketDisconnect:
+        if conversation_id in connections:
+            connections[conversation_id].discard(websocket)
+            # Notify others that user disconnected
+            for connection in connections[conversation_id]:
+                try:
+                    await connection.send_text(json.dumps({
+                        "type": "user_left",
+                        "timestamp": datetime.utcnow().isoformat()
+                    }))
+                except Exception as e:
+                    logger.error(f"Error notifying disconnect: {e}")
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+        if conversation_id in connections:
+            connections[conversation_id].discard(websocket)

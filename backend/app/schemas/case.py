@@ -11,7 +11,7 @@ class CaseBase(BaseModel):
     """Base case schema."""
     title: str = Field(..., min_length=1, max_length=500)
     client_name: str = Field(..., min_length=1, max_length=255)
-    type: str = Field(..., pattern="^(civil|criminal|commercial|family|labor|administrative|other)$")
+    type: str = Field(..., pattern="^(civil|criminal|commercial|family|labor|administrative|course|other)$")
     description: Optional[str] = None
 
 

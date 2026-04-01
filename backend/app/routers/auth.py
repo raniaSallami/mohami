@@ -1,340 +1,994 @@
 """
-Authentication routes: login, register, refresh token, password reset.
+FLUX 1 : CHANGEMENT DE MOT DE PASSE (Simple, pas d'OTP)
+FLUX 2 : NOUVEL APPAREIL (OTP par email + 2 actions)
+FLUX 3 : LOGIN step1 / step2 (compatible frontend)
 """
+
 from datetime import datetime, timedelta
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_, and_
-from jose import JWTError, jwt
-from pydantic import BaseModel, Field
+from sqlalchemy import select, and_, text
+from pydantic import BaseModel, Field, EmailStr
 
 from app.database import get_db
 from app.models.user import User, UserRole
-from app.models.tenant import PasswordResetOTP
-from app.schemas.auth import (
-    LoginRequest,
-    LoginResponse,
-    RegisterRequest,
-    RegisterResponse,
-    Token,
-    RefreshTokenRequest,
-    PasswordResetRequest,
-    PasswordResetConfirm,
-)
+from app.schemas.auth import Token, LoginRequest, LoginResponse, RegisterRequest, RegisterResponse
 from app.schemas.user import UserResponse
 from app.utils.security import (
     verify_password,
     get_password_hash,
     create_token_pair,
-    decode_token,
     get_current_user,
-    verify_totp,
-    generate_totp_secret,
-    get_totp_uri,
 )
-from app.config import settings
-
+from app.utils.device_security import (
+    check_known_device,
+    save_known_device,
+    parse_device_name,
+    get_location_from_ip,
+)
+from app.utils.token_manager import save_refresh_token, verify_refresh_token
+from app.utils.password_validator import validate_password
+from app.utils.rate_limiter import check_rate_limit, record_failed_attempt, reset_failed_attempts
+from app.utils.otp_manager import create_login_otp
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
+# ═══════════════════════════════════════════════════════════
+# RATE LIMITING — Database-backed (persistent & scalable)
+# ═══════════════════════════════════════════════════════════
 
-def generate_otp() -> str:
-    """Generate a 6-digit OTP."""
-    import random
-    return ''.join([str(random.randint(0, 9)) for _ in range(6)])
+def _get_client_ip(request: Request) -> str:
+    """Extract client IP from request, handling proxies"""
+    if not request:
+        return "unknown"
+        
+    cf_ip = request.headers.get("CF-Connecting-IP")
+    if cf_ip: return cf_ip.strip()
+        
+    real_ip = request.headers.get("X-Real-IP")
+    if real_ip: return real_ip.strip()
+        
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+        
+    return request.client.host if request.client else "unknown"
 
+
+# ═══════════════════════════════════════════════════════════
+# SCHEMAS
+# ═══════════════════════════════════════════════════════════
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str = Field(..., min_length=8)
+    new_password: str = Field(..., min_length=8)
+    logout_all_devices: bool = False
+
+
+class ChangePasswordResponse(BaseModel):
+    message: str
+    tokens: Optional[Token] = None
+    user: Optional[UserResponse] = None
+
+
+class NewDeviceOTPRequest(BaseModel):
+    user_id: str
+    otp: str = Field(..., min_length=6, max_length=6)
+    action: str = Field(..., pattern="^(confirm|secure)$")
+
+
+class NewDeviceOTPResponse(BaseModel):
+    message: str
+    tokens: Optional[Token] = None
+    user: Optional[UserResponse] = None
+
+
+class EmergencyResetRequest(BaseModel):
+    email: EmailStr
+    new_password: str = Field(..., min_length=8)
+    logout_all_devices: bool = True
+
+
+class EmergencyResetResponse(BaseModel):
+    message: str
+
+
+class LoginStep1Request(BaseModel):
+    email: EmailStr
+    password: str
+    fingerprint: Optional[str] = None
+    recaptcha_token: str  # obligatoire
+
+
+class LoginStep1Response(BaseModel):
+    needs_otp: bool
+    user_id: Optional[str] = None
+    message: Optional[str] = None
+    user: Optional[UserResponse] = None
+    token: Optional[Token] = None
+
+
+class LoginStep2Request(BaseModel):
+    user_id: str
+    otp: str = Field(..., min_length=6, max_length=6)
+    fingerprint: Optional[str] = None
+
+
+class LoginStep2Response(BaseModel):
+    user: Optional[UserResponse] = None
+    token: Optional[Token] = None
+    message: Optional[str] = None
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str = Field(..., min_length=10)
+
+
+class RefreshTokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int = 900  # 15 minutes in seconds
+
+
+class LogoutRequest(BaseModel):
+    logout_all_devices: bool = False
+
+
+class LogoutResponse(BaseModel):
+    message: str
+
+
+# ═══════════════════════════════════════════════════════════
+# HELPER OTP
+# ═══════════════════════════════════════════════════════════
+
+async def _create_and_send_device_otp(user: User, req: Request, db: AsyncSession) -> None:
+    """
+    Create OTP for new device and send alert email with professional template.
+    
+    Flow:
+    1. Generate 6-digit OTP (5 minute expiry)
+    2. Store in login_email_otp table
+    3. Send professional Arabic email with OTP and action buttons
+    """
+    try:
+        # Create OTP (using manager to ensure consistency)
+        otp_code = await create_login_otp(user.id, db, expiry_minutes=5)
+        
+        # Send email with template
+        await send_new_device_otp_email(user.email, user.name, otp_code, req, db)
+        
+        print(f"✅ New device OTP sent to {user.email} (OTP: {otp_code[:3]}***)")
+    except Exception as e:
+        print(f"❌ Error in _create_and_send_device_otp: {e}")
+
+
+# ═══════════════════════════════════════════════════════════
+# EMAILS
+# ═══════════════════════════════════════════════════════════
+
+async def send_password_change_email(
+    user_email: str,
+    user_name: str,
+    request: Request,
+    db: AsyncSession,
+    logged_out_all: bool = False
+) -> None:
+    try:
+        ip = _get_client_ip(request)
+        ua = request.headers.get("User-Agent", "") if request else ""
+        device_name = parse_device_name(ua)
+        location = await get_location_from_ip(ip)
+        now = datetime.utcnow().strftime("%d/%m/%Y - %H:%M UTC")
+
+        logout_notice = (
+            "تم تسجيل خروجك من <strong>جميع الأجهزة الأخرى</strong> بناءً على طلبك."
+            if logged_out_all else
+            "جلسة تسجيل الدخول الحالية نشطة. يمكنك إدارة الأجهزة الأخرى من إعدادات الأمان."
+        )
+
+        html_content = f"""<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:40px 20px;background:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+<table width="580" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+<tr><td style="background:linear-gradient(135deg,#1e40af,#1e3a8a);padding:36px 40px;text-align:center;">
+<p style="color:#93c5fd;font-size:12px;font-weight:600;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">MOUHAMI AI</p>
+<h1 style="color:#fff;font-size:20px;font-weight:700;margin:0;">تم تغيير كلمة المرور بنجاح</h1>
+</td></tr>
+<tr><td style="padding:40px;">
+<p style="color:#475569;font-size:15px;line-height:1.8;margin-bottom:28px;">
+مرحباً <strong style="color:#1e293b;">{user_name}</strong>،<br>
+نُعلمكم بأنه تم تغيير كلمة المرور الخاصة بحسابكم بنجاح.
+</p>
+<div style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:12px;padding:24px;margin-bottom:24px;">
+<table width="100%" cellpadding="8">
+<tr><td style="color:#64748b;font-size:13px;width:130px;">التاريخ والوقت</td><td style="color:#1e293b;font-size:13px;font-weight:600;">{now}</td></tr>
+<tr style="background:#f8fafc;"><td style="color:#64748b;font-size:13px;">الجهاز</td><td style="color:#1e293b;font-size:13px;font-weight:600;">{device_name}</td></tr>
+<tr><td style="color:#64748b;font-size:13px;">الموقع الجغرافي</td><td style="color:#1e293b;font-size:13px;font-weight:600;">{location.get('country', 'غير معروف')} — {location.get('city', 'غير معروف')}</td></tr>
+<tr style="background:#f8fafc;"><td style="color:#64748b;font-size:13px;">عنوان IP</td><td style="color:#1e293b;font-size:13px;font-weight:600;font-family:monospace;">{ip}</td></tr>
+</table>
+</div>
+<div style="background:#fef9ec;border-right:4px solid #d97706;border-radius:8px;padding:16px 20px;margin-bottom:24px;">
+<p style="color:#92400e;font-size:13px;margin:0;">{logout_notice}</p>
+</div>
+<p style="color:#94a3b8;font-size:13px;line-height:1.7;">إذا لم تكن أنت من أجرى هذا التغيير، يرجى التواصل مع فريق الدعم فوراً.</p>
+</td></tr>
+<tr><td style="padding:0 40px 32px 40px;">
+<a href="https://mouhami-ai.tn/settings/security" style="display:inline-block;background:#1e40af;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:14px;">إدارة الأمان</a>
+</td></tr>
+<tr><td style="background:#f8fafc;padding:20px 40px;border-top:1px solid #e2e8f0;text-align:center;">
+<p style="color:#94a3b8;font-size:12px;margin:0;">منصة المحامي الذكية &middot; <a href="https://mouhami-ai.tn" style="color:#d97706;text-decoration:none;">mouhami-ai.tn</a></p>
+</td></tr>
+</table></td></tr></table>
+</body></html>"""
+
+        await db.execute(
+            text("""
+                INSERT INTO email_queue (id, to_email, subject, html_content, text_content, status, created_at)
+                VALUES (:id, :to_email, :subject, :html_content, :text_content, :status, :created_at)
+            """),
+            {
+                "id": f"changepass_{datetime.utcnow().timestamp()}",
+                "to_email": user_email,
+                "subject": "إشعار: تم تغيير كلمة المرور",
+                "html_content": html_content,
+                "text_content": "تم تغيير كلمة المرور بنجاح.",
+                "status": "pending",
+                "created_at": datetime.utcnow(),
+            },
+        )
+        await db.commit()
+    except Exception:
+        pass
+
+
+async def send_new_device_otp_email(
+    user_email: str,
+    user_name: str,
+    otp_code: str,
+    request: Request,
+    db: AsyncSession
+) -> None:
+    try:
+        from app.templates.email_templates_ar import new_device_login_alert
+        
+        ip = _get_client_ip(request)
+        ua = request.headers.get("User-Agent", "") if request else ""
+        device_name = parse_device_name(ua)
+        location = await get_location_from_ip(ip)
+        now_dt = datetime.utcnow()
+        login_time = f"{now_dt.strftime('%d/%m/%Y')} الساعة {now_dt.strftime('%H:%M')}"
+        
+        # Generate device confirmation link
+        os_name = ua.split(";")[1].strip() if ";" in ua else "Unknown OS"
+        
+        # Use professional template
+        subject, html_content = new_device_login_alert(
+            user_name=user_name,
+            user_email=user_email,
+            device_name=device_name,
+            os_name=os_name,
+            ip_address=ip,
+            city=location.get('city', 'Unknown'),
+            country=location.get('country', 'Unknown'),
+            login_time=login_time,
+            otp_code=otp_code
+        )
+        
+        await db.execute(
+            text("""
+                INSERT INTO email_queue (id, to_email, subject, html_content, text_content, status, created_at)
+                VALUES (:id, :to_email, :subject, :html_content, :text_content, :status, :created_at)
+            """),
+            {
+                "id": f"newdevice_{datetime.utcnow().timestamp()}",
+                "to_email": user_email,
+                "subject": subject,
+                "html_content": html_content,
+                "text_content": f"جهاز جديد: {device_name} — الرمز: {otp_code} — صالح 5 دقائق",
+                "status": "pending",
+                "created_at": datetime.utcnow(),
+            },
+        )
+        await db.commit()
+    except Exception as e:
+        print(f"Error sending new device OTP email: {e}")
+
+
+# ═══════════════════════════════════════════════════════════
+# ROUTE LOGIN/STEP1
+# ═══════════════════════════════════════════════════════════
+
+@router.post("/login/step1", response_model=LoginStep1Response)
+async def login_step1(
+    request: LoginStep1Request,
+    req: Request,
+    db: AsyncSession = Depends(get_db)
+):
+    from app.utils.security import verify_recaptcha
+    if not await verify_recaptcha(request.recaptcha_token):
+        raise HTTPException(status_code=400, detail="reCAPTCHA verification failed")
+    
+    # ✓ Check rate limit (blocks if IP has exceeded attempts)
+    await check_rate_limit(req, db, request.email)
+
+    result = await db.execute(select(User).where(User.email == request.email))
+    user = result.scalar_one_or_none()
+
+    if not user or not verify_password(request.password, user.password):
+        # ✗ Record failed attempt (raises HTTPException with appropriate message)
+        await record_failed_attempt(req, db, request.email)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="البريد الإلكتروني أو كلمة المرور غير صحيحة."
+        )
+
+    if user.role not in (UserRole.LAWYER.value, UserRole.ADMIN.value, UserRole.CLIENT.value):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="هذا الحساب غير مصرح له بالوصول إلى المنصة."
+        )
+
+    # ✓ Extract device fingerprint and IP address
+    fingerprint = request.fingerprint or req.headers.get("User-Agent", "unknown")
+    ip_address = _get_client_ip(req)
+    
+    # ✓ Check if IP is known (only IP verification, not fingerprint)
+    from app.utils.device_security import check_ip_known
+    is_ip_known = await check_ip_known(user.id, ip_address, db)
+
+    if not is_ip_known:
+        await _create_and_send_device_otp(user, req, db)
+        return LoginStep1Response(
+            needs_otp=True,
+            user_id=user.id,
+            message="تم إرسال رمز التحقق إلى بريدكم الإلكتروني. يرجى إدخاله للمتابعة."
+        )
+
+    # ✓ Reset rate limit attempts on successful login
+    await reset_failed_attempts(req, db, request.email)
+    tokens = create_token_pair(user.id, user.email, user.role)
+    await save_refresh_token(user.id, tokens["refresh_token"], req, db)
+
+    return LoginStep1Response(
+        needs_otp=False,
+        user=UserResponse.model_validate(user),
+        token=Token(**tokens)
+    )
+
+
+# ═══════════════════════════════════════════════════════════
+# ROUTE LOGIN/STEP2
+# ═══════════════════════════════════════════════════════════
+
+@router.post("/login/step2", response_model=LoginStep2Response)
+async def login_step2(
+    request: LoginStep2Request,
+    req: Request,
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(select(User).where(User.id == request.user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="المستخدم غير موجود.")
+
+    otp_result = await db.execute(
+        text("""
+            SELECT otp, expires_at FROM login_email_otp
+            WHERE user_id = :user_id
+            ORDER BY created_at DESC LIMIT 1
+        """),
+        {"user_id": request.user_id}
+    )
+    otp_row = otp_result.fetchone()
+
+    if not otp_row:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="لم يتم العثور على رمز تحقق. يرجى إعادة تسجيل الدخول."
+        )
+
+    otp_value, expires_at = otp_row
+    if datetime.utcnow() > expires_at:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="انتهت صلاحية رمز التحقق. يرجى إعادة تسجيل الدخول."
+        )
+
+    if request.otp != otp_value:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="رمز التحقق غير صحيح."
+        )
+
+    await db.execute(
+        text("DELETE FROM login_email_otp WHERE user_id = :user_id"),
+        {"user_id": request.user_id}
+    )
+    await db.commit()
+
+    fingerprint = request.fingerprint or req.headers.get("User-Agent", "unknown")
+    await save_known_device(user.id, fingerprint, req, db)
+
+    tokens = create_token_pair(user.id, user.email, user.role)
+    await save_refresh_token(user.id, tokens["refresh_token"], req, db)
+
+    return LoginStep2Response(
+        user=UserResponse.model_validate(user),
+        token=Token(**tokens)
+    )
+
+
+# ═══════════════════════════════════════════════════════════
+# ROUTE LOGIN (fallback direct)
+# ═══════════════════════════════════════════════════════════
 
 @router.post("/login", response_model=LoginResponse)
 async def login(
     request: LoginRequest,
+    req: Request,
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Authenticate user and return JWT tokens.  If the user has
-    two‑factor authentication enabled the `totp_code` field must
-    also be provided and valid.
-    """
-    # Find user by email
-    result = await db.execute(
-        select(User).where(User.email == request.email)
-    )
+    # Use database-backed rate limiter
+    await check_rate_limit(req, db, request.email)
+
+    result = await db.execute(select(User).where(User.email == request.email))
     user = result.scalar_one_or_none()
-    
-    # Verify user exists and password matches
+
     if not user or not verify_password(request.password, user.password):
+        await record_failed_attempt(req, db, request.email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password",
-            headers={"WWW-Authenticate": "Bearer"},
+            detail="البريد الإلكتروني أو كلمة المرور غير صحيحة."
         )
 
-    # if TOTP enabled, require code
-    if user.totp_enabled:
-        if not request.totp_code:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="TOTP code required",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        if not verify_totp(user.totp_secret or "", request.totp_code):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid TOTP code",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-    
-    # Create tokens
+    if user.role not in (UserRole.LAWYER.value, UserRole.ADMIN.value, UserRole.CLIENT.value):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="هذا الحساب غير مصرح له بالوصول إلى المنصة."
+        )
+
+    await reset_failed_attempts(req, db, request.email)
     tokens = create_token_pair(user.id, user.email, user.role)
-    
+    await save_refresh_token(user.id, tokens["refresh_token"], req, db)
+
     return LoginResponse(
         token=Token(**tokens),
         user=UserResponse.model_validate(user)
     )
 
 
+# ═══════════════════════════════════════════════════════════
+# ROUTE REGISTER
+# ═══════════════════════════════════════════════════════════
+
 @router.post("/register", response_model=RegisterResponse)
 async def register(
     request: RegisterRequest,
+    req: Request,
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Register a new user account.
-    """
-    # Check if email already exists
-    result = await db.execute(
-        select(User).where(User.email == request.email)
-    )
+    from app.utils.security import verify_recaptcha
+    if not await verify_recaptcha(request.recaptcha_token):
+        raise HTTPException(status_code=400, detail="reCAPTCHA verification failed")
+    
+    # Validate password meets security requirements
+    validation = validate_password(request.password)
+    if not validation.is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=" | ".join(validation.errors)
+        )
+    
+    result = await db.execute(select(User).where(User.email == request.email))
     if result.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+            detail="البريد الإلكتروني مستخدم بالفعل."
         )
-    
-    # Create new user
+
+    allowed_roles = {UserRole.LAWYER.value, UserRole.CLIENT.value}
+    role = request.role if request.role in allowed_roles else UserRole.LAWYER.value
+
     user = User(
         email=request.email,
-        name=request.name,
         password=get_password_hash(request.password),
-        role=request.role or UserRole.CLIENT.value,
+        name=request.name,
+        role=role,
     )
-    
     db.add(user)
     await db.commit()
     await db.refresh(user)
-    
-    # Create tokens
+
+    # Register the current device so user doesn't get OTP on first login
+    fingerprint = req.headers.get("User-Agent", "unknown")
+    await save_known_device(user.id, fingerprint, req, db)
+
     tokens = create_token_pair(user.id, user.email, user.role)
-    
+    await save_refresh_token(user.id, tokens["refresh_token"], req, db)
+
     return RegisterResponse(
         token=Token(**tokens),
         user=UserResponse.model_validate(user)
     )
 
 
-@router.post("/refresh", response_model=Token)
-async def refresh_token(
-    request: RefreshTokenRequest,
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Refresh access token using refresh token.
-    """
-    # Decode refresh token
-    payload = decode_token(request.refresh_token)
-    
-    if payload is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired refresh token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    if payload.get("type") != "refresh":
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token type",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    # Get user
-    user_id = payload.get("sub")
-    result = await db.execute(
-        select(User).where(User.id == user_id)
-    )
-    user = result.scalar_one_or_none()
-    
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    # Create new token pair
-    tokens = create_token_pair(user.id, user.email, user.role)
-    
-    return Token(**tokens)
+# ═══════════════════════════════════════════════════════════
+# ROUTE CHANGEMENT MOT DE PASSE
+# ═══════════════════════════════════════════════════════════
 
-
-@router.post("/logout")
-async def logout(current_user: User = Depends(get_current_user)):
-    """
-    Logout user (client-side token deletion).
-    In a more advanced implementation, we could blacklist the token.
-    """
-    return {"message": "Successfully logged out"}
-
-
-# --- Two factor endpoints --------------------------------------------------
-
-class TwoFactorSetupResponse(BaseModel):
-    secret: str
-    provisioning_uri: str
-
-
-@router.post("/2fa/setup", response_model=TwoFactorSetupResponse)
-async def setup_two_factor(
-    current_user: User = Depends(get_current_user)
-):
-    """Generate a new secret for the authenticated user (not yet saved)."""
-    secret = generate_totp_secret()
-    uri = get_totp_uri(secret, current_user.email)
-    return TwoFactorSetupResponse(secret=secret, provisioning_uri=uri)
-
-
-class TwoFactorVerifyRequest(BaseModel):
-    secret: str
-    code: str = Field(..., min_length=6, max_length=6)
-
-
-@router.post("/2fa/verify")
-async def verify_two_factor(
-    request: TwoFactorVerifyRequest,
+@router.post("/change-password", response_model=ChangePasswordResponse)
+async def change_password(
+    request: ChangePasswordRequest,
+    req: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Validate the code for a given secret and persist it to the user."""
-    if not verify_totp(request.secret, request.code):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid two-factor code",
-        )
-    # save secret
-    current_user.totp_secret = request.secret
-    current_user.totp_enabled = True
-    db.add(current_user)
-    await db.commit()
-    await db.refresh(current_user)
-    return {"message": "Two-factor authentication enabled"}
-
-
-@router.post("/2fa/disable")
-async def disable_two_factor(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """Turn off two-factor authentication for the current user."""
-    current_user.totp_secret = None
-    current_user.totp_enabled = False
-    db.add(current_user)
-    await db.commit()
-    return {"message": "Two-factor authentication disabled"}
-
-
-@router.post("/password-reset/request")
-async def request_password_reset(
-    request: PasswordResetRequest,
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Request password reset OTP.
-    """
-    # Find user by email
-    result = await db.execute(
-        select(User).where(User.email == request.email)
-    )
-    user = result.scalar_one_or_none()
-    
-    if not user:
-        # Don't reveal if email exists
-        return {"message": "If the email exists, a reset code has been sent"}
-    
-    # Generate OTP
-    otp_code = generate_otp()
-    expires_at = datetime.utcnow() + timedelta(minutes=15)
-    
-    # Delete old OTPs for this email
-    await db.execute(
-        PasswordResetOTP.__table__.delete().where(
-            PasswordResetOTP.email == request.email
-        )
-    )
-    
-    # Create new OTP
-    otp = PasswordResetOTP(
-        email=request.email,
-        otp=otp_code,
-        expires_at=expires_at
-    )
-    db.add(otp)
-    await db.commit()
-    
-    # TODO: Send email with OTP
-    # For now, just return success (in production, send email here)
-    print(f"Password reset OTP for {request.email}: {otp_code}")
-    
-    return {"message": "If the email exists, a reset code has been sent"}
-
-
-@router.post("/password-reset/confirm")
-async def confirm_password_reset(
-    request: PasswordResetConfirm,
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Confirm password reset with OTP.
-    """
-    # Find valid OTP
-    result = await db.execute(
-        select(PasswordResetOTP).where(
-            and_(
-                PasswordResetOTP.email == request.email,
-                PasswordResetOTP.otp == request.otp,
-                PasswordResetOTP.expires_at > datetime.utcnow()
+    try:
+        # Validate new password meets security requirements
+        validation = validate_password(request.new_password)
+        if not validation.is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=" | ".join(validation.errors)
             )
-        )
-    )
-    otp = result.scalar_one_or_none()
-    
-    if not otp:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired OTP"
-        )
-    
-    # Find and update user
-    user_result = await db.execute(
-        select(User).where(User.email == request.email)
-    )
-    user = user_result.scalar_one_or_none()
-    
-    if user:
-        user.password = get_password_hash(request.new_password)
-    
-    # Delete used OTP
-    await db.delete(otp)
-    await db.commit()
-    
-    return {"message": "Password successfully reset"}
 
+        if request.old_password == request.new_password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="كلمة المرور الجديدة يجب أن تختلف عن كلمة المرور الحالية."
+            )
+
+        if not verify_password(request.old_password, current_user.password):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="كلمة المرور الحالية غير صحيحة."
+            )
+
+        current_user.password = get_password_hash(request.new_password)
+        current_user.password_changed_at = datetime.utcnow()
+        db.add(current_user)
+        await db.commit()
+        await db.refresh(current_user)
+
+        if request.logout_all_devices:
+            await db.execute(
+                text("UPDATE refresh_tokens SET is_revoked = TRUE WHERE user_id = :user_id"),
+                {"user_id": current_user.id}
+            )
+            await db.commit()
+
+        try:
+            await send_password_change_email(
+                user_email=current_user.email,
+                user_name=current_user.name,
+                request=req,
+                db=db,
+                logged_out_all=request.logout_all_devices
+            )
+        except Exception:
+            pass
+
+        new_tokens = create_token_pair(current_user.id, current_user.email, current_user.role)
+        await save_refresh_token(current_user.id, new_tokens["refresh_token"], req, db)
+
+        return ChangePasswordResponse(
+            message="تم تغيير كلمة المرور بنجاح.",
+            tokens=Token(**new_tokens),
+            user=UserResponse.model_validate(current_user)
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+# ═══════════════════════════════════════════════════════════
+# ROUTE VALIDER OTP NOUVEL APPAREIL
+# ═══════════════════════════════════════════════════════════
+
+@router.post("/verify-new-device-otp", response_model=NewDeviceOTPResponse)
+async def verify_new_device_otp(
+    request: NewDeviceOTPRequest,
+    req: Request,
+    db: AsyncSession = Depends(get_db)
+):
+    try:
+        result = await db.execute(select(User).where(User.id == request.user_id))
+        user = result.scalar_one_or_none()
+        if not user:
+            raise HTTPException(status_code=404, detail="المستخدم غير موجود.")
+
+        otp_result = await db.execute(
+            text("""
+                SELECT otp, expires_at FROM login_email_otp
+                WHERE user_id = :user_id
+                ORDER BY created_at DESC LIMIT 1
+            """),
+            {"user_id": request.user_id}
+        )
+        otp_row = otp_result.fetchone()
+
+        if not otp_row:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="لم يتم العثور على رمز تحقق. يرجى طلب رمز جديد."
+            )
+
+        otp_value, expires_at = otp_row
+        if datetime.utcnow() > expires_at:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="انتهت صلاحية رمز التحقق. يرجى تسجيل الدخول مجدداً."
+            )
+
+        if request.otp != otp_value:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="رمز التحقق غير صحيح."
+            )
+
+        await db.execute(
+            text("DELETE FROM login_email_otp WHERE user_id = :user_id"),
+            {"user_id": request.user_id}
+        )
+        await db.commit()
+
+        if request.action == "confirm":
+            fingerprint = req.headers.get("User-Agent", "unknown")
+            await save_known_device(user.id, fingerprint, req, db)
+            tokens = create_token_pair(user.id, user.email, user.role)
+            await save_refresh_token(user.id, tokens["refresh_token"], req, db)
+            return NewDeviceOTPResponse(
+                message="تم التحقق بنجاح. مرحباً بكم في منصة المحامي الذكية.",
+                tokens=Token(**tokens),
+                user=UserResponse.model_validate(user)
+            )
+
+        elif request.action == "secure":
+            import secrets
+            temp_password = secrets.token_urlsafe(12)
+            user.password = get_password_hash(temp_password)
+            user.password_changed_at = datetime.utcnow()
+            db.add(user)
+            await db.commit()
+
+            await db.execute(
+                text("DELETE FROM refresh_tokens WHERE user_id = :user_id"),
+                {"user_id": user.id}
+            )
+            await db.commit()
+
+            html = f"""<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"></head>
+<body style="font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;padding:40px 20px;">
+<table width="100%"><tr><td align="center">
+<table width="560" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+<tr><td style="background:linear-gradient(135deg,#991b1b,#7f1d1d);padding:32px 40px;text-align:center;">
+<h1 style="color:#fff;font-size:20px;font-weight:700;margin:0;">تم تأمين حسابكم بنجاح</h1>
+</td></tr>
+<tr><td style="padding:36px 40px;">
+<p style="color:#475569;font-size:14px;line-height:1.8;margin-bottom:24px;">
+المحامي/ة <strong style="color:#1e293b;">{user.name}</strong>،<br>
+تم تأمين حسابكم وتسجيل الخروج من جميع الأجهزة. كلمة المرور المؤقتة:
+</p>
+<div style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:16px;text-align:center;margin-bottom:24px;">
+<span style="font-size:20px;font-weight:700;letter-spacing:4px;font-family:monospace;color:#1e293b;">{temp_password}</span>
+</div>
+<p style="color:#94a3b8;font-size:13px;">يُرجى تغيير هذه الكلمة المؤقتة فوراً بعد تسجيل الدخول.</p>
+</td></tr>
+<tr><td style="background:#f8fafc;padding:20px 40px;text-align:center;">
+<p style="color:#94a3b8;font-size:11px;margin:0;">منصة المحامي الذكية &middot; mouhami-ai.tn</p>
+</td></tr>
+</table></td></tr></table></body></html>"""
+
+            await db.execute(
+                text("""
+                    INSERT INTO email_queue (id, to_email, subject, html_content, text_content, status, created_at)
+                    VALUES (:id, :to_email, :subject, :html_content, :text_content, :status, :created_at)
+                """),
+                {
+                    "id": f"secure_{datetime.utcnow().timestamp()}",
+                    "to_email": user.email,
+                    "subject": "تأمين الحساب: كلمة مرور مؤقتة",
+                    "html_content": html,
+                    "text_content": "تم تأمين حسابكم.",
+                    "status": "pending",
+                    "created_at": datetime.utcnow(),
+                }
+            )
+            await db.commit()
+
+            return NewDeviceOTPResponse(
+                message="تم تأمين حسابكم بنجاح. تم إرسال كلمة مرور مؤقتة إلى بريدكم الإلكتروني.",
+                tokens=None,
+                user=None
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+# ═══════════════════════════════════════════════════════════
+# ROUTE GET CURRENT USER
+# ═══════════════════════════════════════════════════════════
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Get current authenticated user information.
-    """
+    """Get current authenticated user info"""
     return UserResponse.model_validate(current_user)
 
+
+# ═══════════════════════════════════════════════════════════
+# ENDPOINT: Refresh Token - Renouveler l'access token
+# ═══════════════════════════════════════════════════════════
+
+@router.post("/refresh", response_model=RefreshTokenResponse)
+async def refresh_access_token(
+    request: RefreshTokenRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Renouvelle l'access token en utilisant un refresh token valide.
+    
+    Le refresh token doit:
+    - Exister en base de données
+    - Ne pas être révoqué
+    - Ne pas être expiré
+    
+    Returns: Nouvel access token (15 minutes)
+    """
+    from app.utils.security import decode_token
+    
+    # Vérifier que le refresh token est valide et existe
+    user_id = await verify_refresh_token(request.refresh_token, db)
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="رمز التحديث غير صالح أو منتهي الصلاحية"
+        )
+    
+    # Récupérer l'utilisateur
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="المستخدم غير موجود"
+        )
+    
+    # Créer un nouvel access token
+    from app.utils.security import create_access_token
+    new_access_token = create_access_token({
+        "sub": user.id,
+        "email": user.email,
+        "role": user.role
+    })
+    
+    return RefreshTokenResponse(
+        access_token=new_access_token,
+        token_type="bearer",
+        expires_in=900  # 15 minutes
+    )
+
+
+# ═══════════════════════════════════════════════════════════
+# ENDPOINT: Logout - Révoquer les tokens
+# ═══════════════════════════════════════════════════════════
+
+@router.post("/logout", response_model=LogoutResponse)
+async def logout(
+    request: LogoutRequest,
+    current_user: User = Depends(get_current_user),
+    req: Request = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Logout l'utilisateur en révoquant son/ses refresh token(s).
+    
+    Paramètres:
+    - logout_all_devices: Si True, révoque TOUS les refresh tokens
+                         Si False, révoque seulement le token actuel (déjà supprimé côté client)
+    
+    Returns: Message de confirmation
+    """
+    try:
+        if request.logout_all_devices:
+            # Révoquer TOUS les tokens de tous les appareils
+            await db.execute(
+                text("UPDATE refresh_tokens SET is_revoked = TRUE WHERE user_id = :user_id"),
+                {"user_id": current_user.id}
+            )
+            message = "تم تسجيل الخروج من جميع الأجهزة بنجاح"
+        else:
+            # Simplement confirmer le logout (token supprimé côté client)
+            message = "تم تسجيل الخروج بنجاح"
+        
+        await db.commit()
+        
+        # Log the logout event
+        await db.execute(
+            text("""
+                INSERT INTO security_logs (user_id, ip_address, event_type, details, created_at)
+                VALUES (:user_id, :ip, :event, :details, :now)
+            """),
+            {
+                "user_id": current_user.id,
+                "ip": _get_client_ip(req),
+                "event": "logout",
+                "details": f"User logged out. Logout all devices: {request.logout_all_devices}",
+                "now": datetime.utcnow()
+            }
+        )
+        await db.commit()
+        
+        return LogoutResponse(message=message)
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="حدث خطأ أثناء تسجيل الخروج"
+        )
+
+
+# ═══════════════════════════════════════════════════════════
+# ENDPOINT: Emergency Reset (Compte sécurisé - pas moi)
+# ═══════════════════════════════════════════════════════════
+
+@router.post("/emergency-reset", response_model=EmergencyResetResponse)
+async def emergency_reset(
+    request: EmergencyResetRequest,
+    req: Request,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Security flow "Ce n'est pas moi" (Not me):
+    1. User receives email about suspicious login
+    2. Clicks "Ce n'est pas moi" button
+    3. Frontend redirects to security page
+    4. User changes password (new strong password)
+    5. Optional: Logout from all devices
+    
+    This endpoint secures the account immediately
+    """
+    try:
+        # Validate new password meets security requirements
+        validation = validate_password(request.new_password)
+        if not validation.is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=" | ".join(validation.errors)
+            )
+
+        # Find user by email
+        result = await db.execute(select(User).where(User.email == request.email))
+        user = result.scalar_one_or_none()
+        
+        if not user:
+            # For security, don't reveal if email exists
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="البريد الإلكتروني أو بيانات الدخول غير صحيحة"
+            )
+        
+        # Change password
+        user.password = get_password_hash(request.new_password)
+        user.password_changed_at = datetime.utcnow()
+        db.add(user)
+        await db.commit()
+        
+        # Log security action
+        await db.execute(
+            text("""
+                INSERT INTO security_logs (ip_address, event_type, details, created_at)
+                VALUES (:ip, :event, :details, :now)
+            """),
+            {
+                "ip": _get_client_ip(req),
+                "event": "emergency_reset",
+                "details": f"Emergency reset performed for user: {user.email}. Logout all devices: {request.logout_all_devices}",
+                "now": datetime.utcnow()
+            }
+        )
+        
+        # If requested, logout from all devices
+        if request.logout_all_devices:
+            await db.execute(
+                text("DELETE FROM refresh_tokens WHERE user_id = :user_id"),
+                {"user_id": user.id}
+            )
+        
+        await db.commit()
+        
+        # Send confirmation email
+        try:
+            from app.templates.email_templates_ar import security_alert_response
+            
+            subject, html_content = security_alert_response(
+                user_name=user.name,
+                reset_time=f"{datetime.utcnow().strftime('%d/%m/%Y')} الساعة {datetime.utcnow().strftime('%H:%M')}",
+                ip_address=_get_client_ip(req),
+                logout_all=request.logout_all_devices
+            )
+            
+            await db.execute(
+                text("""
+                    INSERT INTO email_queue (id, to_email, subject, html_content, text_content, status, created_at)
+                    VALUES (:id, :to_email, :subject, :html_content, :text_content, :status, :created_at)
+                """),
+                {
+                    "id": f"emergency_reset_{datetime.utcnow().timestamp()}",
+                    "to_email": user.email,
+                    "subject": subject,
+                    "html_content": html_content,
+                    "text_content": f"تم تغيير كلمة المرور بنجاح في {datetime.utcnow().strftime('%d/%m/%Y')} الساعة {datetime.utcnow().strftime('%H:%M')}",
+                    "status": "pending",
+                    "created_at": datetime.utcnow()
+                }
+            )
+            await db.commit()
+        except Exception as e:
+            print(f"Warning: Could not send confirmation email: {e}")
+        
+        return EmergencyResetResponse(
+            message="تم تأمين حسابك بنجاح. تم تغيير كلمة المرور." + 
+                   (" سيتم تسجيل الخروج من جميع الأجهزة الأخرى." if request.logout_all_devices else "")
+        )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Emergency reset error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="حدث خطأ أثناء تأمين الحساب"
+        )
+
+# ═══════════════════════════════════════════════════════════
+# IP & DEVICE SECURITY (Frontend Migration Compatibility)
+# ═══════════════════════════════════════════════════════════
+
+@router.get("/current-ip")
+async def get_current_ip(request: Request):
+    """Retrieve the current client IP address."""
+    ip = _get_client_ip(request)
+    return {"ip": ip}
+
+@router.get("/ip-info")
+async def get_ip_info(ip: str):
+    """Retrieve details for a specific IP address."""
+    location = await get_location_from_ip(ip)
+    return {
+        "ip": ip,
+        "country": location.get("country", "Unknown"),
+        "city": location.get("city", "Unknown")
+    }
+
+class SendIPVerificationRequest(BaseModel):
+    email: EmailStr
+
+@router.post("/send-ip-verification")
+async def send_ip_verification(request: SendIPVerificationRequest, db: AsyncSession = Depends(get_db)):
+    """Mock endpoint to send IP verification to email."""
+    result = await db.execute(select(User).where(User.email == request.email))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="المستخدم غير موجود.")
+    return {"message": "Verification sent."}
+
+class VerifyIPOTPRequest(BaseModel):
+    code: str
+    ip: str
+
+@router.post("/verify-ip-otp")
+async def verify_ip_otp(request: VerifyIPOTPRequest, current_user: User = Depends(get_current_user)):
+    """Mock endpoint to verify an IP OTP code."""
+    return {"verified": True}

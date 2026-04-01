@@ -100,3 +100,18 @@ export const PLAN_LIMITS = {
   pro: { cases: 50, contracts: 100, maxFileSizeMB: 100 },
   enterprise: { cases: 9999, contracts: 9999, maxFileSizeMB: 1024 }
 };
+export type LoginStep1Response = {
+  ok: boolean;
+  needs_otp: boolean;
+  user_id?: string;
+  message?: string;
+  user?: User;
+  token?: string;
+};
+
+export type LoginStep2Response = {
+  ok: boolean;
+  message?: string;
+  user?: User;
+  token?: string;
+};

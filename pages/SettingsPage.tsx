@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Invoice, PLAN_LIMITS } from '../types';
 import { storageService } from '../services/storageService';
 import { Modal, Spinner, Toast } from '../components/UI';
+import { validatePassword, type PasswordValidation } from '../utils/passwordValidator';
 
 export const SettingsPage = ({ user, onUpdateUser }: { user: User, onUpdateUser: (u: User) => void }) => {
   const [showPlanModal, setShowPlanModal] = useState(false);
@@ -21,7 +22,22 @@ export const SettingsPage = ({ user, onUpdateUser }: { user: User, onUpdateUser:
   // Profile state
   const [name, setName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordValidation, setPasswordValidation] = useState<PasswordValidation>({
+    isValid: false,
+    minLength: false,
+    hasUppercase: false,
+    hasLowercase: false,
+    hasDigit: false,
+    errors: [],
+  });
+
+  useEffect(() => {
+    setPasswordValidation(validatePassword(newPassword));
+  }, [newPassword]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -51,13 +67,24 @@ export const SettingsPage = ({ user, onUpdateUser }: { user: User, onUpdateUser:
   };
 
   const handleChangePassword = async () => {
-    if (!newPassword) return;
+    if (!currentPassword || !newPassword || newPassword !== confirmPassword || !passwordValidation.isValid) {
+      setPasswordError('يرجى التحقق من المدخلات');
+      return;
+    }
     setLoading(true);
-    await storageService.updateUser(user, newPassword);
+    setPasswordError('');
+    const result = await storageService.changePassword(currentPassword, newPassword);
     setLoading(false);
-    setShowPasswordModal(false);
-    setNewPassword('');
-    setNotification({ msg: 'تم تغيير كلمة المرور', type: 'success' });
+    
+    if (result.ok) {
+      setShowPasswordModal(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setNotification({ msg: 'تم تغيير كلمة المرور بنجاح', type: 'success' });
+    } else {
+      setPasswordError(result.message || 'فشل تغيير كلمة المرور');
+    }
   };
 
   const handleSelectPlan = (plan: 'pro' | 'enterprise') => {
@@ -225,11 +252,90 @@ export const SettingsPage = ({ user, onUpdateUser }: { user: User, onUpdateUser:
       </div>
 
       {/* Modals */}
-      <Modal isOpen={showPasswordModal} onClose={() => setShowPasswordModal(false)} title="تغيير كلمة المرور">
+      <Modal isOpen={showPasswordModal} onClose={() => {
+        setShowPasswordModal(false);
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setPasswordError('');
+      }} title="تغيير كلمة المرور">
         <div className="space-y-4">
-          <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full px-4 py-2 border rounded-lg" placeholder="كلمة المرور الجديدة" />
-          <button onClick={handleChangePassword} disabled={loading || !newPassword} className="w-full py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 disabled:bg-gray-400">
-            {loading ? <Spinner /> : 'تحديث'}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">كلمة المرور الحالية</label>
+            <input 
+              type="password" 
+              value={currentPassword} 
+              onChange={(e) => setCurrentPassword(e.target.value)} 
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500" 
+              placeholder="أدخل كلمة المرور الحالية" 
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">كلمة المرور الجديدة</label>
+            <input 
+              type="password" 
+              value={newPassword} 
+              onChange={(e) => setNewPassword(e.target.value)} 
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-primary-500 focus:border-primary-500 ${
+                newPassword && !passwordValidation.isValid ? 'border-red-500' : 'border-gray-300'
+              }`} 
+              placeholder="كلمة المرور الجديدة" 
+            />
+            
+            {newPassword && (
+              <div className="mt-2 p-3 bg-gray-50 rounded-md border border-gray-200">
+                <p className="text-xs font-medium text-gray-600 mb-2">متطلبات كلمة المرور:</p>
+                <div className="space-y-1 text-xs text-right">
+                  <div className={`flex items-center ${passwordValidation.minLength ? 'text-green-600' : 'text-gray-500'}`}>
+                    <span className="mr-2">{passwordValidation.minLength ? '✓' : '✗'}</span>
+                    <span>8 أحرف على الأقل</span>
+                  </div>
+                  <div className={`flex items-center ${passwordValidation.hasUppercase ? 'text-green-600' : 'text-gray-500'}`}>
+                    <span className="mr-2">{passwordValidation.hasUppercase ? '✓' : '✗'}</span>
+                    <span>حرف كبير (A-Z)</span>
+                  </div>
+                  <div className={`flex items-center ${passwordValidation.hasLowercase ? 'text-green-600' : 'text-gray-500'}`}>
+                    <span className="mr-2">{passwordValidation.hasLowercase ? '✓' : '✗'}</span>
+                    <span>حرف صغير (a-z)</span>
+                  </div>
+                  <div className={`flex items-center ${passwordValidation.hasDigit ? 'text-green-600' : 'text-gray-500'}`}>
+                    <span className="mr-2">{passwordValidation.hasDigit ? '✓' : '✗'}</span>
+                    <span>رقم (0-9)</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">تأكيد كلمة المرور الجديدة</label>
+            <input 
+              type="password" 
+              value={confirmPassword} 
+              onChange={(e) => setConfirmPassword(e.target.value)} 
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-primary-500 focus:border-primary-500 ${
+                confirmPassword && newPassword !== confirmPassword ? 'border-red-500' : 'border-gray-300'
+              }`} 
+              placeholder="أعد كتابة كلمة المرور الجديدة" 
+            />
+            {confirmPassword && newPassword !== confirmPassword && (
+              <p className="text-red-500 text-xs mt-1">كلمات المرور غير متطابقة</p>
+            )}
+          </div>
+
+          {passwordError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              {passwordError}
+            </div>
+          )}
+
+          <button 
+            onClick={handleChangePassword} 
+            disabled={loading || !currentPassword || !passwordValidation.isValid || newPassword !== confirmPassword} 
+            className="w-full py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          >
+            {loading ? <Spinner /> : 'تحديث كلمة المرور'}
           </button>
         </div>
       </Modal>

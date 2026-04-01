@@ -24,10 +24,12 @@ import { NotificationsPage } from './pages/NotificationsPage';
 import { InviteAcceptPage } from './pages/InviteAcceptPage';
 import { MaintenancePage } from './pages/MaintenancePage';
 import { Marketing } from './pages/Marketing';
+import { SecurityAlertPage } from './pages/SecurityAlertPage';
 import { Chatbot } from './components/Chatbot';
 import { Toast } from './components/UI';
 import { TermsAcceptanceModal } from './components/TermsAcceptanceModal';
 import { IpVerificationModal } from './components/IpVerificationModal';
+import { DeviceVerificationPage } from './components/DeviceVerificationPage';
 import { visitorService } from './services/visitorService';
 import { ipService } from './services/ipService';
 
@@ -40,6 +42,7 @@ export default function App() {
   const [notification, setNotification] = useState<{msg: string, type: 'success' | 'error' | 'info'} | null>(null);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [pendingIpVerificationUser, setPendingIpVerificationUser] = useState<User | null>(null);
+  const [securityAlertParams, setSecurityAlertParams] = useState<{ alertType: 'confirm' | 'not-me'; userEmail: string } | null>(null);
   const [systemSettings, setSystemSettings] = useState<{ maintenanceMode: boolean; allowRegistrations: boolean; appName: string }>({
     maintenanceMode: false,
     allowRegistrations: true,
@@ -62,6 +65,18 @@ export default function App() {
       const hashPage = parts[0] || null;
       const hashCaseId = parts[1] || null;
       const hashToken = parts[1] || null;
+
+      // Check for security-alert routes
+      if (hashPage === 'security-alert' && parts[1]) {
+        const alertType = parts[1] as 'confirm' | 'not-me';
+        const userEmail = parts[2] || '';
+        if (['confirm', 'not-me'].includes(alertType) && userEmail) {
+          setCurrentPage('security-alert');
+          setSecurityAlertParams({ alertType, userEmail });
+          setLoading(false);
+          return;
+        }
+      }
 
       let currentUser = storageService.getCurrentUser();
       if (currentUser) {
@@ -235,6 +250,14 @@ export default function App() {
   }
 
   if (!user) {
+    if (currentPage === 'security-alert' && securityAlertParams) {
+      return (
+        <SecurityAlertPage
+          onNavigate={handleNavigate}
+          alertType={securityAlertParams.alertType}
+        />
+      );
+    }
     if (currentPage === 'invite' && inviteToken) {
       return (
         <InviteAcceptPage
@@ -254,6 +277,24 @@ export default function App() {
     if (systemSettings.maintenanceMode) {
       if (currentPage === 'login') return <LoginPage onLogin={handleLogin} onNavigate={handleNavigate} allowRegistrations={false} />;
       return <MaintenancePage onNavigate={handleNavigate} appName={systemSettings.appName} />;
+    }
+    if (currentPage === 'deviceVerification') {
+      return (
+        <DeviceVerificationPage
+          onSuccess={() => {
+            // After successful OTP verification, the backend returns tokens
+            // Fetch fresh user data
+            storageService.getCurrentUserFresh().then(u => {
+              if (u) {
+                setUser(u);
+                setCurrentPage('dashboard');
+                setNotification({ msg: 'تم التحقق من الجهاز بنجاح', type: 'success' });
+              }
+            });
+          }}
+          onNavigate={handleNavigate}
+        />
+      );
     }
     if (currentPage === 'login') return <LoginPage onLogin={handleLogin} onNavigate={handleNavigate} allowRegistrations={systemSettings.allowRegistrations} />;
     if (currentPage === 'register') {

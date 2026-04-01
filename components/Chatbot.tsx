@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { WebSocketClient } from '../services/websocketClient';
+import { websocketClient } from '../services/websocketClient';
 import { chatService, ChatMessage } from '../services/chatService';
 import { storageService } from '../services/storageService';
 
@@ -12,7 +12,6 @@ export const Chatbot: React.FC = () => {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<any[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const wsClientRef = useRef<WebSocketClient | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -20,19 +19,8 @@ export const Chatbot: React.FC = () => {
     const initChat = async () => {
       try {
         const user = storageService.getCurrentUser();
-        const wsClient = new WebSocketClient();
-        wsClientRef.current = wsClient;
 
-        // Set a timeout for connection
-        const connectPromise = wsClient.connect();
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Connection timeout - WebSocket server may not be running')), 5000)
-        );
-
-        await Promise.race([connectPromise, timeoutPromise]);
-        setIsConnecting(false);
-
-        // Get or create conversation
+        // Get or create conversation first to get the ID
         const conversation = await chatService.getOrCreateConversation(
           user?.id,
           user?.name,
@@ -40,13 +28,18 @@ export const Chatbot: React.FC = () => {
         );
         setConversationId(conversation.id);
 
-        // Join conversation
-        wsClient.joinConversation(conversation.id, user?.id, user?.name, false);
+        // Connect WebSocket using conversation ID
+        const connectPromise = websocketClient.connect(conversation.id);
+        const timeoutPromise = new Promise<void>((_, reject) =>
+          setTimeout(() => reject(new Error('Connection timeout')), 5000)
+        );
+
+        await Promise.race([connectPromise, timeoutPromise]);
+        setIsConnecting(false);
 
         // Load existing messages
         const existingMessages = await chatService.getMessages(conversation.id);
-        
-        // Send welcome message if no messages exist (only once per conversation)
+
         if (existingMessages.length === 0) {
           const welcomeMessage = await chatService.addMessage(
             conversation.id,
@@ -61,31 +54,32 @@ export const Chatbot: React.FC = () => {
           setMessages(existingMessages);
         }
 
-        // Set up message listeners
-        wsClient.on('new_message', (data: { message: ChatMessage }) => {
-          setMessages(prev => [...prev, data.message]);
-          scrollToBottom();
+        // Listen for new messages
+        websocketClient.on('message', (wsMsg) => {
+          const msg = wsMsg.data?.message as ChatMessage | undefined;
+          if (msg) {
+            setMessages(prev => [...prev, msg]);
+            scrollToBottom();
+          }
         });
 
-        wsClient.on('history', (data: { messages: ChatMessage[] }) => {
-          setMessages(data.messages);
-          scrollToBottom();
+        // Listen for history
+        websocketClient.on('history', (wsMsg) => {
+          if (wsMsg.messages) {
+            setMessages(wsMsg.messages as unknown as ChatMessage[]);
+            scrollToBottom();
+          }
         });
 
-        wsClient.on('typing', (data: { isTyping: boolean; senderName: string }) => {
-          setIsTyping(data.isTyping);
+        // Listen for typing
+        websocketClient.on('typing', (_wsMsg) => {
+          setIsTyping(true);
+          setTimeout(() => setIsTyping(false), 3000);
         });
 
-        wsClient.on('error', (data: { message: string }) => {
-          console.error('WebSocket error:', data.message);
-        });
       } catch (error) {
         console.error('Failed to initialize chat:', error);
         setIsConnecting(false);
-        // Show user-friendly error
-        if (error instanceof Error && error.message.includes('timeout')) {
-          console.warn('⚠️ WebSocket server is not running. Please start it with: npm run ws');
-        }
       }
     };
 
@@ -94,9 +88,7 @@ export const Chatbot: React.FC = () => {
     }
 
     return () => {
-      if (wsClientRef.current) {
-        wsClientRef.current.disconnect();
-      }
+      websocketClient.disconnect();
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
@@ -124,14 +116,13 @@ export const Chatbot: React.FC = () => {
           name: file.name,
           type: file.type,
           size: file.size,
-          data: base64.split(',')[1] || base64 // Remove data:type;base64, prefix
+          data: base64.split(',')[1] || base64,
         };
         setAttachments(prev => [...prev, attachment]);
       };
       reader.readAsDataURL(file);
     });
 
-    // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -143,43 +134,31 @@ export const Chatbot: React.FC = () => {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if ((!input.trim() && attachments.length === 0) || !wsClientRef.current || !conversationId) return;
+    if ((!input.trim() && attachments.length === 0) || !conversationId) return;
 
-    const user = storageService.getCurrentUser();
     const messageText = input.trim() || '📎 ملف مرفق';
     setInput('');
-    const filesToSend = [...attachments];
     setAttachments([]);
 
-    // Send via WebSocket
-    wsClientRef.current.sendMessage(messageText, user?.name || 'Guest', filesToSend);
+    websocketClient.sendMessage(messageText);
 
-    // Clear typing indicator
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
-    wsClientRef.current.sendTyping(false, user?.name || 'Guest');
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
-    
-    if (!wsClientRef.current) return;
 
-    // Send typing indicator
     const user = storageService.getCurrentUser();
-    wsClientRef.current.sendTyping(true, user?.name || 'Guest');
+    websocketClient.sendTyping(user?.name || 'Guest');
 
-    // Clear previous timeout
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
-    // Stop typing after 2 seconds of inactivity
     typingTimeoutRef.current = setTimeout(() => {
-      if (wsClientRef.current) {
-        wsClientRef.current.sendTyping(false, user?.name || 'Guest');
-      }
+      // typing stopped
     }, 2000);
   };
 
@@ -189,7 +168,7 @@ export const Chatbot: React.FC = () => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 left-6 z-50 w-14 h-14 bg-gold-500 hover:bg-gold-400 text-slate-900 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110"
+          className="fixed bottom-6 left-6 z-50 w-14 h-14 bg-yellow-400 hover:bg-yellow-300 text-slate-900 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110"
           aria-label="Open chat"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -202,10 +181,10 @@ export const Chatbot: React.FC = () => {
       {isOpen && (
         <div className="fixed bottom-6 left-6 z-50 w-96 h-[600px] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl flex flex-col border border-slate-200 dark:border-slate-700">
           {/* Header */}
-          <div className="bg-gold-500 text-slate-900 px-6 py-4 rounded-t-2xl flex items-center justify-between">
+          <div className="bg-yellow-400 text-slate-900 px-6 py-4 rounded-t-2xl flex items-center justify-between">
             <div className="flex items-center space-x-3 space-x-reverse">
               <div className="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center">
-                <span className="text-gold-500 font-bold text-lg">م</span>
+                <span className="text-yellow-400 font-bold text-lg">م</span>
               </div>
               <div>
                 <h3 className="font-bold text-lg">مركز المساعدة</h3>
@@ -241,20 +220,19 @@ export const Chatbot: React.FC = () => {
                 <div
                   className={`max-w-[75%] rounded-2xl px-4 py-2 ${
                     msg.senderType === 'user'
-                      ? 'bg-gold-500 text-slate-900'
+                      ? 'bg-yellow-400 text-slate-900'
                       : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700'
                   }`}
                 >
                   <p className="text-sm whitespace-pre-line">{msg.message}</p>
-                  
-                  {/* Attachments */}
+
                   {msg.attachments && msg.attachments.length > 0 && (
                     <div className="mt-2 space-y-2">
                       {msg.attachments.map((att: any) => (
                         <div key={att.id} className="flex items-center space-x-2 space-x-reverse bg-black/10 dark:bg-white/10 rounded-lg p-2">
                           {att.type?.startsWith('image/') ? (
-                            <img 
-                              src={`data:${att.type};base64,${att.data}`} 
+                            <img
+                              src={`data:${att.type};base64,${att.data}`}
                               alt={att.name}
                               className="max-w-[200px] max-h-[150px] rounded object-cover"
                             />
@@ -270,7 +248,7 @@ export const Chatbot: React.FC = () => {
                               <a
                                 href={`data:${att.type};base64,${att.data}`}
                                 download={att.name}
-                                className="text-xs bg-gold-500 hover:bg-gold-400 px-2 py-1 rounded transition"
+                                className="text-xs bg-yellow-400 hover:bg-yellow-300 px-2 py-1 rounded transition"
                               >
                                 تحميل
                               </a>
@@ -280,7 +258,7 @@ export const Chatbot: React.FC = () => {
                       ))}
                     </div>
                   )}
-                  
+
                   <p className={`text-xs mt-1 ${msg.senderType === 'user' ? 'text-slate-700' : 'text-slate-500'}`}>
                     {new Date(msg.createdAt).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}
                   </p>
@@ -292,9 +270,9 @@ export const Chatbot: React.FC = () => {
               <div className="flex justify-start">
                 <div className="bg-white dark:bg-slate-800 rounded-2xl px-4 py-2 border border-slate-200 dark:border-slate-700">
                   <div className="flex space-x-1 space-x-reverse">
-                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
                 </div>
               </div>
@@ -310,10 +288,7 @@ export const Chatbot: React.FC = () => {
                 {attachments.map((att) => (
                   <div key={att.id} className="flex items-center space-x-2 space-x-reverse bg-white dark:bg-slate-700 rounded-lg p-2 text-xs">
                     <span className="truncate max-w-[150px]">{att.name}</span>
-                    <button
-                      onClick={() => removeAttachment(att.id)}
-                      className="text-red-500 hover:text-red-600"
-                    >
+                    <button onClick={() => removeAttachment(att.id)} className="text-red-500 hover:text-red-600">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
@@ -350,13 +325,13 @@ export const Chatbot: React.FC = () => {
                 value={input}
                 onChange={handleInputChange}
                 placeholder="اكتب رسالتك..."
-                className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gold-500"
+                className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                 disabled={isConnecting}
               />
               <button
                 type="submit"
                 disabled={(!input.trim() && attachments.length === 0) || isConnecting}
-                className="bg-gold-500 hover:bg-gold-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-900 px-4 py-2 rounded-lg transition"
+                className="bg-yellow-400 hover:bg-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed text-slate-900 px-4 py-2 rounded-lg transition"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />

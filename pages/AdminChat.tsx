@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { WebSocketClient } from '../services/websocketClient';
+import { websocketClient } from '../services/websocketClient';
 import { chatService, ChatConversation, ChatMessage } from '../services/chatService';
 
 export const AdminChat: React.FC = () => {
@@ -11,17 +11,22 @@ export const AdminChat: React.FC = () => {
   const [isConnecting, setIsConnecting] = useState(true);
   const [attachments, setAttachments] = useState<any[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const wsClientRef = useRef<WebSocketClient | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const currentConversationRef = useRef<string | null>(null);
 
   useEffect(() => {
     loadConversations();
     initWebSocket();
+
+    return () => {
+      websocketClient.disconnect();
+    };
   }, []);
 
   useEffect(() => {
     if (selectedConversation) {
+      currentConversationRef.current = selectedConversation.id;
       loadConversationMessages(selectedConversation.id);
     }
   }, [selectedConversation]);
@@ -41,30 +46,35 @@ export const AdminChat: React.FC = () => {
 
   const initWebSocket = async () => {
     try {
-      const wsClient = new WebSocketClient();
-      wsClientRef.current = wsClient;
-
-      await wsClient.connect();
+      // Connect to a general admin channel
+      await websocketClient.connect('admin');
       setIsConnecting(false);
 
-      // Set up message listeners
-      wsClient.on('new_message', (data: { message: ChatMessage }) => {
-        setMessages(prev => [...prev, data.message]);
-        if (data.message.conversationId === selectedConversation?.id) {
+      // Listen for new messages
+      websocketClient.on('message', (wsMsg) => {
+        const msg = wsMsg.data?.message as ChatMessage | undefined;
+        if (msg) {
+          if (msg.conversationId === currentConversationRef.current) {
+            setMessages(prev => [...prev, msg]);
+          }
+          loadConversations();
+        }
+      });
+
+      // Listen for message history
+      websocketClient.on('history', (wsMsg) => {
+        if (wsMsg.messages) {
+          setMessages(wsMsg.messages as unknown as ChatMessage[]);
           scrollToBottom();
         }
-        // Refresh conversations list
-        loadConversations();
       });
 
-      wsClient.on('history', (data: { messages: ChatMessage[] }) => {
-        setMessages(data.messages);
-        scrollToBottom();
+      // Listen for typing indicator
+      websocketClient.on('typing', (wsMsg) => {
+        setIsTyping(true);
+        setTimeout(() => setIsTyping(false), 3000);
       });
 
-      wsClient.on('typing', (data: { isTyping: boolean; senderName: string }) => {
-        setIsTyping(data.isTyping);
-      });
     } catch (error) {
       console.error('Failed to initialize WebSocket:', error);
       setIsConnecting(false);
@@ -75,15 +85,8 @@ export const AdminChat: React.FC = () => {
     try {
       const conversation = await chatService.getConversationWithMessages(conversationId);
       setMessages(conversation.messages);
-
-      // Join conversation via WebSocket
-      if (wsClientRef.current) {
-        wsClientRef.current.joinConversation(conversationId, undefined, 'Admin', true);
-        wsClientRef.current.markAsRead();
-      }
-
-      // Mark messages as read
       await chatService.markMessagesAsRead(conversationId, 'admin');
+      scrollToBottom();
     } catch (error) {
       console.error('Failed to load messages:', error);
     }
@@ -106,7 +109,7 @@ export const AdminChat: React.FC = () => {
           name: file.name,
           type: file.type,
           size: file.size,
-          data: base64.split(',')[1] || base64
+          data: base64.split(',')[1] || base64,
         };
         setAttachments(prev => [...prev, attachment]);
       };
@@ -124,47 +127,35 @@ export const AdminChat: React.FC = () => {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if ((!input.trim() && attachments.length === 0) || !wsClientRef.current || !selectedConversation) return;
+    if ((!input.trim() && attachments.length === 0) || !selectedConversation) return;
 
     const messageText = input.trim() || '📎 ملف مرفق';
     setInput('');
-    const filesToSend = [...attachments];
     setAttachments([]);
 
     // Send via WebSocket
-    wsClientRef.current.sendMessage(messageText, 'Admin', filesToSend);
+    websocketClient.sendMessage(messageText);
 
     // Clear typing indicator
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
-    wsClientRef.current.sendTyping(false, 'Admin');
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
-    
-    if (!wsClientRef.current || !selectedConversation) return;
 
-    // Send typing indicator
-    wsClientRef.current.sendTyping(true, 'Admin');
+    if (!selectedConversation) return;
 
-    // Clear previous timeout
+    websocketClient.sendTyping('Admin');
+
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
-    // Stop typing after 2 seconds
     typingTimeoutRef.current = setTimeout(() => {
-      if (wsClientRef.current) {
-        wsClientRef.current.sendTyping(false, 'Admin');
-      }
+      // Typing stopped - no explicit stop method in current websocketClient
     }, 2000);
-  };
-
-  const getUnreadCount = (conversation: ChatConversation) => {
-    // This would need to be calculated from messages
-    return 0;
   };
 
   return (
@@ -190,7 +181,7 @@ export const AdminChat: React.FC = () => {
                 onClick={() => setSelectedConversation(conv)}
                 className={`w-full p-4 text-right border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition ${
                   selectedConversation?.id === conv.id
-                    ? 'bg-gold-50 dark:bg-gold-900/20 border-r-4 border-r-gold-500'
+                    ? 'bg-yellow-50 dark:bg-yellow-900/20 border-r-4 border-r-yellow-500'
                     : ''
                 }`}
               >
@@ -203,14 +194,9 @@ export const AdminChat: React.FC = () => {
                         })
                       : ''}
                   </span>
-                  {getUnreadCount(conv) > 0 && (
-                    <span className="bg-gold-500 text-slate-900 text-xs px-2 py-1 rounded-full">
-                      {getUnreadCount(conv)}
-                    </span>
-                  )}
                 </div>
                 <h3 className="font-semibold text-slate-900 dark:text-white mb-1">
-                  {conv.userId ? (conv.userName || 'مستخدم متصل') : (conv.userName || 'ضيف')}
+                  {conv.userId ? conv.userName || 'مستخدم متصل' : conv.userName || 'ضيف'}
                 </h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
                   {conv.userEmail || (conv.userId ? '—' : 'بريد غير متوفر')}
@@ -230,7 +216,9 @@ export const AdminChat: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-bold text-lg text-slate-900 dark:text-white">
-                    {selectedConversation.userId ? (selectedConversation.userName || 'مستخدم متصل') : (selectedConversation.userName || 'ضيف')}
+                    {selectedConversation.userId
+                      ? selectedConversation.userName || 'مستخدم متصل'
+                      : selectedConversation.userName || 'ضيف'}
                   </h3>
                   <p className="text-sm text-slate-500 dark:text-slate-400">
                     {selectedConversation.userEmail || (selectedConversation.userId ? '—' : 'بريد غير متوفر')}
@@ -259,20 +247,22 @@ export const AdminChat: React.FC = () => {
                   <div
                     className={`max-w-[75%] rounded-2xl px-4 py-2 ${
                       msg.senderType === 'admin'
-                        ? 'bg-gold-500 text-slate-900'
+                        ? 'bg-yellow-400 text-slate-900'
                         : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700'
                     }`}
                   >
                     <p className="text-sm whitespace-pre-line">{msg.message}</p>
-                    
-                    {/* Attachments */}
+
                     {msg.attachments && msg.attachments.length > 0 && (
                       <div className="mt-2 space-y-2">
                         {msg.attachments.map((att: any) => (
-                          <div key={att.id} className="flex items-center space-x-2 space-x-reverse bg-black/10 dark:bg-white/10 rounded-lg p-2">
+                          <div
+                            key={att.id}
+                            className="flex items-center space-x-2 space-x-reverse bg-black/10 dark:bg-white/10 rounded-lg p-2"
+                          >
                             {att.type?.startsWith('image/') ? (
-                              <img 
-                                src={`data:${att.type};base64,${att.data}`} 
+                              <img
+                                src={`data:${att.type};base64,${att.data}`}
                                 alt={att.name}
                                 className="max-w-[200px] max-h-[150px] rounded object-cover"
                               />
@@ -288,7 +278,7 @@ export const AdminChat: React.FC = () => {
                                 <a
                                   href={`data:${att.type};base64,${att.data}`}
                                   download={att.name}
-                                  className="text-xs bg-gold-500 hover:bg-gold-400 px-2 py-1 rounded transition"
+                                  className="text-xs bg-yellow-400 hover:bg-yellow-300 px-2 py-1 rounded transition"
                                 >
                                   تحميل
                                 </a>
@@ -298,12 +288,8 @@ export const AdminChat: React.FC = () => {
                         ))}
                       </div>
                     )}
-                    
-                    <p
-                      className={`text-xs mt-1 ${
-                        msg.senderType === 'admin' ? 'text-slate-700' : 'text-slate-500'
-                      }`}
-                    >
+
+                    <p className={`text-xs mt-1 ${msg.senderType === 'admin' ? 'text-slate-700' : 'text-slate-500'}`}>
                       {new Date(msg.createdAt).toLocaleTimeString('ar', {
                         hour: '2-digit',
                         minute: '2-digit',
@@ -317,18 +303,9 @@ export const AdminChat: React.FC = () => {
                 <div className="flex justify-start">
                   <div className="bg-white dark:bg-slate-800 rounded-2xl px-4 py-2 border border-slate-200 dark:border-slate-700">
                     <div className="flex space-x-1 space-x-reverse">
-                      <div
-                        className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
-                        style={{ animationDelay: '0ms' }}
-                      ></div>
-                      <div
-                        className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
-                        style={{ animationDelay: '150ms' }}
-                      ></div>
-                      <div
-                        className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
-                        style={{ animationDelay: '300ms' }}
-                      ></div>
+                      <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                     </div>
                   </div>
                 </div>
@@ -342,12 +319,12 @@ export const AdminChat: React.FC = () => {
               <div className="px-4 pt-2 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
                 <div className="flex flex-wrap gap-2">
                   {attachments.map((att) => (
-                    <div key={att.id} className="flex items-center space-x-2 space-x-reverse bg-white dark:bg-slate-700 rounded-lg p-2 text-xs">
+                    <div
+                      key={att.id}
+                      className="flex items-center space-x-2 space-x-reverse bg-white dark:bg-slate-700 rounded-lg p-2 text-xs"
+                    >
                       <span className="truncate max-w-[150px]">{att.name}</span>
-                      <button
-                        onClick={() => removeAttachment(att.id)}
-                        className="text-red-500 hover:text-red-600"
-                      >
+                      <button onClick={() => removeAttachment(att.id)} className="text-red-500 hover:text-red-600">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -387,13 +364,13 @@ export const AdminChat: React.FC = () => {
                   value={input}
                   onChange={handleInputChange}
                   placeholder="اكتب ردك..."
-                  className="flex-1 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gold-500"
+                  className="flex-1 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                   disabled={isConnecting}
                 />
                 <button
                   type="submit"
                   disabled={(!input.trim() && attachments.length === 0) || isConnecting}
-                  className="bg-gold-500 hover:bg-gold-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-900 px-6 py-2 rounded-lg transition"
+                  className="bg-yellow-400 hover:bg-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed text-slate-900 px-6 py-2 rounded-lg transition"
                 >
                   إرسال
                 </button>

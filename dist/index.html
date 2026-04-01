@@ -5,13 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>المحامي | منصة الذكاء الاصطناعي القانونية</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@200;300;400;500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Tajawal:wght@200;300;400;500;700;800&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
+        darkMode: 'class',
         theme: {
           extend: {
             fontFamily: {
-              sans: ['Tajawal', 'sans-serif'],
+              sans: ['Inter', 'Tajawal', 'sans-serif'],
+              serif: ['Playfair Display', 'serif'],
             },
             colors: {
               primary: {
@@ -23,88 +25,169 @@
                 800: '#075985',
                 900: '#0c4a6e',
               },
+              deepblack: '#0B0B0B',
+              night: '#0F172A',
+              offwhite: '#F8F8F8',
               gold: {
-                400: '#fbbf24',
-                500: '#f59e0b',
-                600: '#d97706',
+                300: '#E2C778',
+                400: '#D4AF37',
+                500: '#C9A34E',
+                600: '#B89645',
               }
+            },
+            animation: {
+              'spin-slow': 'spin 3s linear infinite',
             }
           },
         },
       }
     </script>
     <style>
+      :root {
+        --gold-primary: #C9A34E;
+        --gold-light: #E2C778;
+        --gold-dark: #B89645;
+        --deep-black: #050505;
+        --night-blue: #0A0F1E;
+        --cream: #FDFCF8;
+      }
+      
+      @font-face {
+        font-family: 'Playfair Display';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url(https://fonts.gstatic.com/s/playfairdisplay/v37/nuFvD7K3a7m27pL-mme6uRE.woff2) format('woff2');
+      }
+
+      html {
+        scroll-behavior: smooth;
+        -webkit-tap-highlight-color: transparent;
+      }
+      
       body {
-        font-family: 'Tajawal', sans-serif;
-        background-color: #f8fafc;
+        font-family: 'Inter', 'Tajawal', sans-serif;
+        transition: background-color 1s cubic-bezier(0.4, 0, 0.2, 1), color 1s cubic-bezier(0.4, 0, 0.2, 1);
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
       }
-      /* Custom scrollbar for better aesthetics */
-      ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
+      
+      h1, h2, h3, h4, h5, h6, .font-serif {
+        font-family: 'Playfair Display', serif;
+        letter-spacing: -0.01em;
       }
-      ::-webkit-scrollbar-track {
-        background: #f1f5f9; 
+      
+      /* Advanced Glassmorphism */
+      .glass {
+        background: rgba(255, 255, 255, 0.4);
+        backdrop-filter: blur(20px) saturate(200%);
+        -webkit-backdrop-filter: blur(20px) saturate(200%);
+        border: 1px solid rgba(255, 255, 255, 0.3);
       }
+      html.dark .glass {
+        background: rgba(10, 15, 30, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      
+      /* Shimmer Effect */
+      .shimmer {
+        position: relative;
+        overflow: hidden;
+      }
+      .shimmer::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        background: linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 0) 0%,
+          rgba(255, 255, 255, 0.1) 50%,
+          rgba(255, 255, 255, 0) 100%
+        );
+        transform: translateX(-100%);
+        animation: shimmer 3s infinite;
+      }
+      @keyframes shimmer {
+        100% { transform: translateX(100%); }
+      }
+
+      /* Gold Text Shimmer */
+      .text-shimmer {
+        background: linear-gradient(90deg, #C9A34E, #FDFCF8, #C9A34E);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: textShimmer 4s linear infinite;
+      }
+      @keyframes textShimmer {
+        to { background-position: 200% center; }
+      }
+
+      /* Luxury Background Mesh */
+      .bg-mesh {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        background: radial-gradient(circle at 0% 0%, rgba(201, 163, 78, 0.08) 0%, transparent 50%),
+                    radial-gradient(circle at 100% 100%, rgba(14, 165, 233, 0.05) 0%, transparent 50%),
+                    var(--cream);
+        transition: background 1s ease;
+      }
+      html.dark .bg-mesh {
+        background: radial-gradient(circle at 0% 0%, rgba(201, 163, 78, 0.15) 0%, transparent 50%),
+                    radial-gradient(circle at 100% 0%, rgba(30, 41, 59, 0.4) 0%, transparent 50%),
+                    var(--deep-black);
+      }
+
+      /* Custom scrollbar */
+      ::-webkit-scrollbar { width: 4px; }
+      ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb {
-        background: #cbd5e1; 
-        border-radius: 4px;
+        background: #C9A34E80;
+        border-radius: 10px;
       }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8; 
+      ::-webkit-scrollbar-thumb:hover { background: #C9A34E; }
+      
+      .premium-card {
+        transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        border: 1px solid rgba(201, 163, 78, 0.1);
       }
-      /* Animations */
-      @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
+      .premium-card:hover {
+        transform: translateY(-12px) scale(1.02);
+        border-color: rgba(201, 163, 78, 0.4);
+        box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.2);
       }
-      .animate-fadeIn {
-        animation: fadeIn 0.3s ease-out forwards;
+      html.dark .premium-card:hover {
+        box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.6), 0 0 30px rgba(201, 163, 78, 0.1);
       }
-      @keyframes scaleIn {
-        from {
-          opacity: 0;
-          transform: scale(0.9);
-        }
-        to {
-          opacity: 1;
-          transform: scale(1);
-        }
+
+      @keyframes reveal {
+        from { transform: translateY(100%); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
       }
-      .animate-scaleIn {
-        animation: scaleIn 0.2s ease-out forwards;
-      }
-      @keyframes slideUp {
-        from {
-          opacity: 0;
-          transform: translateY(100%);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      .animate-slideUp {
-        animation: slideUp 0.4s ease-out forwards;
-      }
-      @keyframes slideInDown {
-        from {
-          opacity: 0;
-          transform: translateY(-20px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      .animate-slideInDown {
-        animation: slideInDown 0.3s ease-out forwards;
-      }
+      .animate-reveal { animation: reveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     </style>
 
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://www.google.com/recaptcha/api.js?render=6LfUwIUsAAAAAHhZ9shKyoYxjV0Yjgp2loqj4tFN" async defer></script>
 <script src="/emailjs.config.js" defer></script>
 <link rel="stylesheet" href="/index.css">
+<script>
+  // Add dark mode toggle check right away to avoid screen flashes
+  if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark')
+  } else {
+    document.documentElement.classList.remove('dark')
+  }
+</script>
   <script type="importmap">
 {
   "imports": {
@@ -117,9 +200,11 @@
   }
 }
 </script>
-  <script type="module" crossorigin src="/assets/index-DHMGXsX4.js"></script>
+  <script type="module" crossorigin src="/assets/index-CgJ_w0Ge.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-Bs40WhXA.css">
 </head>
-  <body>
-    <div id="root"></div>
+  <body class="bg-gray-50 text-slate-900 dark:bg-deepblack dark:text-offwhite antialiased selection:bg-gold-500 selection:text-black transition-colors duration-500">
+    <div class="bg-mesh"></div>
+    <div id="root"></div>
 </body>
 </html>
