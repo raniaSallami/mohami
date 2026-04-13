@@ -44,16 +44,27 @@ sys.path.insert(0, os.path.dirname(__file__))
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
+from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
 
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
-elif DATABASE_URL.startswith("postgresql://"):
-    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+def clean_database_url(url: str) -> str:
+    """Normalize the database URL for SQLAlchemy + asyncpg."""
+    if not url:
+        return url
+    parsed = urlparse(url)
+    scheme = parsed.scheme
+    if scheme in ("postgres", "postgresql", "postgresql+psycopg"):
+        scheme = "postgresql+asyncpg"
+    query = [
+        (key, value)
+        for key, value in parse_qsl(parsed.query, keep_blank_values=True)
+        if key not in {"sslmode", "channel_binding"}
+    ]
+    query_string = urlencode(query, doseq=True)
+    return urlunparse(parsed._replace(scheme=scheme, query=query_string))
 
-# Remove sslmode and channel_binding from URL (asyncpg doesn't recognize them in URL)
-DATABASE_URL = re.sub(r'[?&](sslmode|channel_binding)=[^&]*', '', DATABASE_URL).rstrip('?&')
+DATABASE_URL = clean_database_url(DATABASE_URL)
 
 if not DATABASE_URL:
     print("❌ DATABASE_URL not set in .env!")
@@ -61,16 +72,17 @@ if not DATABASE_URL:
 engine = create_async_engine(
     DATABASE_URL,
     echo=False,
+    pool_pre_ping=False,
+    pool_size=1,
+    max_overflow=1,
     connect_args={
-        "ssl": True,
-        "timeout": 60,
-        "command_timeout": 60
+        "ssl": "prefer",
+        "timeout": 20,
+        "command_timeout": 30,
     },
-    pool_timeout=60,
+    pool_timeout=30,
     pool_recycle=300,
-    execution_options={
-        "prepared_statement_cache_size": 0
-    }
+    pool_reset_on_return="none",
 )
 AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
@@ -120,10 +132,21 @@ def send_email(to_email: str, subject: str, html_content: str, text_content: str
 async def process_email_queue():
     try:
         async with AsyncSessionLocal() as db:
-            result = await db.execute(
-                text("SELECT * FROM email_queue WHERE status = 'pending' ORDER BY created_at ASC LIMIT 10")
-            )
-            emails = result.mappings().all()
+            try:
+                # Wrap SELECT with timeout to fail fast
+                result = await asyncio.wait_for(
+                    db.execute(
+                        text("SELECT * FROM email_queue WHERE status = 'pending' ORDER BY created_at ASC LIMIT 10")
+                    ),
+                    timeout=15
+                )
+                emails = result.mappings().all()
+            except asyncio.TimeoutError:
+                print("⏱️ Timeout fetching email queue from database")
+                raise
+            except Exception as e:
+                print(f"❌ Database query error: {e}")
+                raise
 
             if not emails:
                 return
@@ -157,6 +180,10 @@ async def process_email_queue():
 
             await db.commit()
 
+    except asyncio.TimeoutError:
+        print("⏱️ Email queue processing timed out")
+        raise
+
     except Exception as e:
         import traceback
         print(f"❌ Error processing email queue: {e}")
@@ -168,9 +195,33 @@ async def main():
     print("✅ Email worker started — processing queue every 30 seconds")
     verify_smtp()
 
+    consecutive_errors = 0
+    max_consecutive_errors = 3
+
     while True:
-        await process_email_queue()
-        await asyncio.sleep(30)
+        try:
+            # Wrap process_email_queue with timeout to prevent infinite waits
+            await asyncio.wait_for(process_email_queue(), timeout=25)
+            consecutive_errors = 0  # Reset on success
+            await asyncio.sleep(30)
+
+        except asyncio.TimeoutError:
+            consecutive_errors += 1
+            wait_time = min(30 + (consecutive_errors * 10), 120)  # Cap at 2 minutes
+            print(f"⏱️ Queue processing timeout ({consecutive_errors}/{max_consecutive_errors}). Retrying in {wait_time}s...")
+            await asyncio.sleep(wait_time)
+
+        except Exception as e:
+            consecutive_errors += 1
+            wait_time = min(30 + (consecutive_errors * 10), 120)
+            print(f"❌ Queue processing error ({consecutive_errors}/{max_consecutive_errors}): {e}")
+            
+            if consecutive_errors >= max_consecutive_errors:
+                print(f"⚠️ Max consecutive errors reached. Waiting {wait_time}s before retry...")
+                # Try to close and reopen connection
+                engine.dispose()
+            
+            await asyncio.sleep(wait_time)
 
 
 if __name__ == "__main__":

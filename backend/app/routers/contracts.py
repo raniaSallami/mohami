@@ -40,7 +40,7 @@ async def list_contracts(
         query = query.where(
             or_(
                 Contract.tenant_id == tenant_id,
-                Contract.user_id == current_user.id
+                Contract.user_id == str(current_user.id)
             )
         )
     

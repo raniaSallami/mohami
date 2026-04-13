@@ -4,15 +4,19 @@
 import emailjs from '@emailjs/browser';
 
 // EmailJS configuration
-const EMAILJS_SERVICE_ID = process.env.REACT_APP_EMAILJS_SERVICE_ID || '';
-const EMAILJS_TEMPLATE_ID = process.env.REACT_APP_EMAILJS_TEMPLATE_ID || '';
-const EMAILJS_PUBLIC_KEY = process.env.REACT_APP_EMAILJS_PUBLIC_KEY || '';
+const EMAILJS_SERVICE_ID = process.env.EMAILJS_SERVICE_ID || '';
+const EMAILJS_TEMPLATE_ID = process.env.EMAILJS_TEMPLATE_ID || '';
+const EMAILJS_PUBLIC_KEY = process.env.EMAILJS_PUBLIC_KEY || '';
 
 class EmailService {
   private initialized = false;
 
   initialize(): void {
     if (this.initialized) return;
+    if (!EMAILJS_PUBLIC_KEY) {
+      console.warn('⚠️ EmailJS public key missing. Emails will not be sent.');
+      return;
+    }
     
     try {
       emailjs.init(EMAILJS_PUBLIC_KEY);
@@ -30,6 +34,7 @@ class EmailService {
     message: string;
   }): Promise<void> {
     if (!this.initialized) this.initialize();
+    if (!this.initialized) return;
 
     try {
       await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
@@ -88,6 +93,15 @@ class EmailService {
       to_name: name,
       subject: 'تم إنشاء قضية جديدة',
       message: `تم إنشاء قضية جديدة بنجاح: ${caseTitle}`,
+    });
+  }
+
+  async sendAttendanceCreatedEmail(email: string, name: string, eventTitle: string, date: string): Promise<void> {
+    await this.sendNotificationEmail({
+      to_email: email,
+      to_name: name,
+      subject: 'موعد جديد في التقويم',
+      message: `تمت إضافة موعد جديد بنجاح: ${eventTitle} يوم ${date}`,
     });
   }
 }

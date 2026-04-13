@@ -47,7 +47,7 @@ async def list_conversations(
     
     # Filter by user_id or show all for admin
     if current_user.role != "ADMIN":
-        query = query.where(ChatConversation.user_id == current_user.id)
+        query = query.where(ChatConversation.user_id == str(current_user.id))
     
     count_query = select(func.count()).select_from(query.subquery())
     total_result = await db.execute(count_query)

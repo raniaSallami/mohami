@@ -1,8 +1,7 @@
-"""
-User management routes.
-"""
+import os
+import shutil
 from typing import Optional, List
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Form, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, and_
 
@@ -112,6 +111,16 @@ async def list_team_members(
     return [UserResponse.model_validate(u) for u in users]
 
 
+@router.get("/me", response_model=UserResponse)
+async def get_current_user(
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Get current authenticated user's profile.
+    """
+    return UserResponse.model_validate(current_user)
+
+
 @router.get("/{user_id}", response_model=UserResponse)
 async def get_user(
     user_id: str,
@@ -138,6 +147,47 @@ async def get_user(
         )
     
     return UserResponse.model_validate(user)
+
+
+@router.put("/profile", response_model=UserResponse)
+async def update_profile(
+    name: Optional[str] = Form(None),
+    phone: Optional[str] = Form(None),
+    avatar: Optional[UploadFile] = File(None),
+    delete_avatar: bool = Form(False),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Update the current user's profile, including avatar upload or deletion.
+    Uses Form data to support file uploads.
+    """
+    if name: current_user.name = name
+    if phone: current_user.phone = phone
+    
+    if delete_avatar:
+        current_user.avatar = None
+    elif avatar:
+        # Create uploads directory if it doesn't exist
+        os.makedirs("uploads", exist_ok=True)
+        
+        # Generate unique filename
+        ext = os.path.splitext(avatar.filename)[1]
+        filename = f"{current_user.id}_avatar{ext}"
+        file_path = os.path.join("uploads", filename)
+        
+        # Save file to local storage
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(avatar.file, buffer)
+        
+        # Update user record with relative static path and cache buster
+        import time
+        current_user.avatar = f"/api/uploads/{filename}?t={int(time.time())}"
+
+    await db.commit()
+    await db.refresh(current_user)
+    
+    return UserResponse.model_validate(current_user)
 
 
 @router.patch("/{user_id}", response_model=UserResponse)

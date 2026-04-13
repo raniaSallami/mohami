@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import text
 from typing import AsyncGenerator
-import ssl
+from urllib.parse import parse_qsl, urlparse, urlencode, urlunparse
 
 from app.config import settings
 
@@ -15,42 +15,45 @@ class Base(DeclarativeBase):
     pass
 
 
-import re
+def _normalize_database_url(url: str) -> str:
+    parsed = urlparse(url)
+    scheme = parsed.scheme
+    if scheme in ("postgres", "postgresql", "postgresql+psycopg"):
+        scheme = "postgresql+asyncpg"
 
-# Create SSL context for Neon
-ssl_context = ssl.create_default_context()
-ssl_context.check_hostname = True
-ssl_context.verify_mode = ssl.CERT_REQUIRED
+    query = [
+        (key, value)
+        for key, value in parse_qsl(parsed.query, keep_blank_values=True)
+        if key not in {"sslmode", "channel_binding"}
+    ]
+    cleaned_query = urlencode(query, doseq=True)
+
+    return urlunparse(parsed._replace(scheme=scheme, query=cleaned_query))
+
 
 # Async engine for PostgreSQL
-_db_url = settings.database_url
-if _db_url.startswith("postgresql://"):
-    _db_url = _db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
-elif _db_url.startswith("postgresql+psycopg://"):
-    _db_url = _db_url.replace("postgresql+psycopg://", "postgresql+asyncpg://", 1)
+_db_url = _normalize_database_url(settings.database_url)
 
-# Clean channel binding and sslmode params (asyncpg handles SSL via connect_args)
-_db_url = _db_url.replace("&channel_binding=require", "").replace("channel_binding=require", "")
-_db_url = _db_url.replace("&sslmode=require", "").replace("sslmode=require", "")
-# Clean up trailing ? if no query params left
-if _db_url.endswith("?"):
-    _db_url = _db_url[:-1]
 
 engine = create_async_engine(
     _db_url,
     echo=False,  # Disable SQL echo; use logging debug level instead
     echo_pool=False,
-    pool_pre_ping=True,
-    pool_size=5,  # Reduced pool size for Neon free tier
-    max_overflow=10,
+    pool_pre_ping=False,  # Disable pre-ping due to pooler latency
+    pool_size=1,  # Minimal pool size for Neon free tier + pooler
+    max_overflow=1,
     connect_args={
-        "timeout": 30,
-        "ssl": True,  # Required for Neon PostgreSQL
+        "timeout": 20,  # Give Neon 20s to wake up before failing
+        "ssl": "prefer",  # Use flexible SSL mode
         "server_settings": {
             "application_name": "mouhami_api",
             "jit": "off",
         },
+        "command_timeout": 30,
     },
+    pool_timeout=30,  # Wait up to 30s for a connection from the pool
+    pool_recycle=300,  # Recycle every 5 min
+    pool_reset_on_return="none",  # Avoid reset overhead
 )
 
 # Async session factory
@@ -82,17 +85,17 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 async def init_db():
     """
     Initialize database tables.
-    Simplified to avoid transaction rollback errors.
+    Uses very short timeout since retries are handled at lifespan level.
     """
     # Import all models to ensure they are registered
-    from app.models import user, case, contract, event, invoice, notification, chat, tenant
+    from app.models import user, user_profile, case, contract, event, invoice, notification, chat, tenant
     
-    try:
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        print("✅ Database tables created/verified")
-    except Exception as e:
-        print(f"⚠️  Note: {e}")
+    print("🔗 Acquiring database connection...")
+    # Engine connection will timeout quickly if pooler is down
+    async with engine.begin() as conn:
+        print("✓ Connection acquired")
+        await conn.run_sync(Base.metadata.create_all)
+    print("✅ Database tables created/verified")
 
 
 async def close_db():

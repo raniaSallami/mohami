@@ -8,6 +8,10 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 2999,
         host: '0.0.0.0',
+        hmr: {
+          clientPort: 2999,
+          host: 'localhost'
+        },
         proxy: {
           '/api': {
             target: 'http://localhost:3001',
@@ -20,9 +24,9 @@ export default defineConfig(({ mode }) => {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.DATABASE_URL': JSON.stringify(env.DATABASE_URL),
-        'process.env.EMAILJS_SERVICE_ID': JSON.stringify(env.EMAILJS_SERVICE_ID),
-        'process.env.EMAILJS_TEMPLATE_ID': JSON.stringify(env.EMAILJS_TEMPLATE_ID),
-        'process.env.EMAILJS_PUBLIC_KEY': JSON.stringify(env.EMAILJS_PUBLIC_KEY),
+        'process.env.EMAILJS_SERVICE_ID': JSON.stringify(env.VITE_EMAILJS_SERVICE_ID),
+        'process.env.EMAILJS_TEMPLATE_ID': JSON.stringify(env.VITE_EMAILJS_TEMPLATE_ID),
+        'process.env.EMAILJS_PUBLIC_KEY': JSON.stringify(env.VITE_EMAILJS_PUBLIC_KEY),
         'process.env.SMTP_HOST': JSON.stringify(env.SMTP_HOST),
         'process.env.SMTP_PORT': JSON.stringify(env.SMTP_PORT),
         'process.env.SMTP_USER': JSON.stringify(env.SMTP_USER),

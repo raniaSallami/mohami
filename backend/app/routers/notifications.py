@@ -95,7 +95,7 @@ async def list_notifications(
     effective_page_size = limit or page_size
 
     # Base query
-    query = select(Notification).where(Notification.user_id == current_user.id)
+    query = select(Notification).where(Notification.user_id == str(current_user.id))
 
     if unread_only:
         query = query.where(Notification.read == False)
@@ -107,7 +107,7 @@ async def list_notifications(
 
     # Unread count (always returned)
     unread_query = select(func.count()).where(
-        Notification.user_id == current_user.id,
+        Notification.user_id == str(current_user.id),
         Notification.read == False,
     )
     unread_result = await db.execute(unread_query)

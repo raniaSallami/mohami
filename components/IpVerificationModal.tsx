@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from './UI';
+import { OtpInput } from './OtpInput';
 
 interface IpVerificationModalProps {
   isOpen: boolean;
@@ -52,22 +53,16 @@ export const IpVerificationModal: React.FC<IpVerificationModalProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">رمز التحقق (6 أرقام)</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              maxLength={6}
+            <label className="block text-sm font-medium text-gray-700 mb-3 text-right">رمز التحقق (6 أرقام)</label>
+            <OtpInput
               value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-              placeholder="000000"
-              className="w-full px-4 py-3 text-center text-2xl tracking-[0.5em] border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              autoFocus
+              onChange={setOtp}
+              length={6}
               disabled={loading}
+              error={error ? 'الرمز غير صحيح أو منتهي الصلاحية' : undefined}
+              autoFocus
             />
           </div>
-
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
           <div className="flex gap-3">
             <button

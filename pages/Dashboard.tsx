@@ -73,8 +73,11 @@ export const Dashboard = ({ onNavigate, user }: { onNavigate: (page: string, cas
 
   const chartData = generateChartData();
 
-  const StatCard = ({ title, value, icon, gradient, trend }: any) => (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between hover:shadow-lg transition duration-300 relative overflow-hidden group">
+  const StatCard = ({ title, value, icon, gradient, trend, onClick }: any) => (
+    <div 
+      onClick={onClick}
+      className={`bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between hover:shadow-lg transition duration-300 relative overflow-hidden group ${onClick ? 'cursor-pointer active:scale-95 hover:border-slate-300' : ''}`}
+    >
       <div className={`absolute -right-6 -top-6 w-24 h-24 bg-gradient-to-br ${gradient} opacity-10 rounded-full group-hover:scale-150 transition-transform duration-500`}></div>
       <div className="flex justify-between items-start z-10">
         <div>
@@ -105,10 +108,16 @@ export const Dashboard = ({ onNavigate, user }: { onNavigate: (page: string, cas
           <p className="text-slate-300">مرحباً بك، إليك ملخص نشاط مكتبك اليوم.</p>
         </div>
         <div className="mt-4 md:mt-0 flex items-center space-x-3 space-x-reverse bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/20">
-          <span className="text-2xl">📅</span>
+          <span 
+            onClick={() => onNavigate('calendar')}
+            className="text-2xl cursor-pointer hover:scale-110 transition-transform p-1 rounded-lg hover:bg-white/10"
+            title="التقويم"
+          >
+            📅
+          </span>
           <div className="text-right">
              <p className="text-xs text-slate-300">اليوم</p>
-             <p className="font-bold text-sm">
+             <p className="font-bold text-sm tracking-tight text-white">
                {new Date().toLocaleDateString('ar-TN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
              </p>
           </div>
@@ -117,12 +126,12 @@ export const Dashboard = ({ onNavigate, user }: { onNavigate: (page: string, cas
 
       {/* KPI Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-        <StatCard title="إجمالي القضايا" value={totalCases} icon="📁" gradient="from-blue-500 to-blue-600" />
-        <StatCard title="قضايا جارية" value={activeCases} icon="⚡" gradient="from-emerald-500 to-emerald-600" />
-        <StatCard title="بانتظار الإجراء" value={pendingCases} icon="⏳" gradient="from-amber-400 to-amber-500" />
-        <StatCard title="قضايا منتهية" value={closedCases} icon="✅" gradient="from-purple-500 to-purple-600" />
-        <StatCard title="إجمالي العقود" value={contractsCount} icon="📝" gradient="from-indigo-500 to-indigo-600" />
-        <StatCard title="نسبة الإنجاز" value={totalCases > 0 ? `${Math.round((closedCases / totalCases) * 100)}%` : '0%'} icon="📊" gradient="from-rose-500 to-rose-600" />
+        <StatCard title="إجمالي القضايا" value={totalCases} icon="📁" gradient="from-blue-500 to-blue-600" onClick={() => onNavigate('cases')} />
+        <StatCard title="قضايا جارية" value={activeCases} icon="⚡" gradient="from-emerald-500 to-emerald-600" onClick={() => onNavigate('cases', 'active')} />
+        <StatCard title="بانتظار الإجراء" value={pendingCases} icon="⏳" gradient="from-amber-400 to-amber-500" onClick={() => onNavigate('cases', 'pending')} />
+        <StatCard title="قضايا منتهية" value={closedCases} icon="✅" gradient="from-purple-500 to-purple-600" onClick={() => onNavigate('cases', 'closed')} />
+        <StatCard title="إجمالي العقود" value={contractsCount} icon="📝" gradient="from-indigo-500 to-indigo-600" onClick={() => onNavigate('contracts')} />
+        <StatCard title="نسبة الإنجاز" value={totalCases > 0 ? `${Math.round((closedCases / totalCases) * 100)}%` : '0%'} icon="📊" gradient="from-rose-500 to-rose-600" onClick={() => onNavigate('cases', 'closed')} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

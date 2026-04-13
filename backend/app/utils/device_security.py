@@ -85,21 +85,27 @@ async def get_location_from_ip(ip: str) -> Dict[str, str]:
     """
     Retourne country + city depuis l'IP.
     Utilise ip-api.com (gratuit, 45 req/min sans clé).
+    AVEC TIMEOUT SHORT: 1.5 sec pour ne pas bloquer les emails.
     """
     # IPs locales → pas de géolocalisation
     if ip in ("127.0.0.1", "::1", "localhost") or ip.startswith("192.168.") or ip.startswith("10."):
         return {"country": "Local", "city": "Local"}
 
     try:
-        async with httpx.AsyncClient(timeout=3.0) as client:
-            resp = await client.get(f"http://ip-api.com/json/{ip}?fields=country,city,status")
+        async with httpx.AsyncClient(timeout=1.5) as client:
+            resp = await client.get(
+                f"http://ip-api.com/json/{ip}?fields=country,city,status",
+                follow_redirects=False
+            )
             data = resp.json()
             if data.get("status") == "success":
                 return {
                     "country": data.get("country", "Unknown"),
                     "city": data.get("city", "Unknown"),
                 }
-    except Exception:
+    except Exception as e:
+        # Silent fail - don't block email sending
+        print(f"⚠️  Geolocation lookup failed for {ip}: {type(e).__name__}")
         pass
 
     return {"country": "Unknown", "city": "Unknown"}

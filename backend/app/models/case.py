@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Optional, List
 from sqlalchemy import String, Text, DateTime, ForeignKey, Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 import uuid
 import enum
 
@@ -39,8 +39,8 @@ class Case(Base):
     """
     __tablename__ = "cases"
     
-    # Primary key - use String(36) to store UUID as string
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    # Primary key - use native UUID Support
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     
     # Case details
     title: Mapped[str] = mapped_column(String(500), nullable=False)
@@ -62,13 +62,13 @@ class Case(Base):
     # AI Chat history
     chat_history: Mapped[list] = mapped_column(JSONB, default=list)
     
-    # Foreign keys - use String(36) to store UUID as string
-    user_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    created_by_user_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
-    assigned_to_user_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    # Foreign keys - use native UUID Support
+    user_id: Mapped[Optional[str]] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_by_user_id: Mapped[Optional[str]] = mapped_column(UUID(as_uuid=False), nullable=True)
+    assigned_to_user_id: Mapped[Optional[str]] = mapped_column(UUID(as_uuid=False), nullable=True)
     
     # Tenant (organization)
-    tenant_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
+    tenant_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
     
     # Relationships
     user: Mapped[Optional["User"]] = relationship("User", back_populates="cases")

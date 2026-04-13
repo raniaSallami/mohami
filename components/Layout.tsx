@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { User, UserRole } from '../types';
 import { storageService } from '../services/storageService';
 import { NotificationBell } from './NotificationBell';
+import { ArrowRight } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -84,15 +85,26 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, curren
         </nav>
 
         <div className="p-4 border-t border-slate-800">
-          <div className="flex items-center space-x-3 space-x-reverse mb-4">
-            <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center text-white font-bold">
-              {user.name.charAt(0)}
+          <button
+            onClick={() => {
+              const dashboardPage = isAdmin ? 'admin-dashboard' : 'dashboard';
+              onNavigate(currentPage === 'profile' ? dashboardPage : 'profile');
+              setSidebarOpen(false);
+            }}
+            className="w-full flex items-center space-x-3 space-x-reverse mb-4 hover:opacity-80 transition-opacity text-left"
+          >
+            <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center text-white font-bold flex-shrink-0 overflow-hidden border border-slate-700">
+              {user.avatar ? (
+                <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+              ) : (
+                user.name.charAt(0)
+              )}
             </div>
             <div>
               <p className="text-sm font-medium text-white">{user.name}</p>
               <p className="text-xs text-gray-400">{user.role === UserRole.LAWYER ? 'محامي' : 'مدير'}</p>
             </div>
-          </div>
+          </button>
           <button 
             onClick={onLogout}
             className="w-full py-2 bg-red-600 hover:bg-red-700 rounded text-sm transition-colors text-white"
@@ -104,8 +116,18 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, curren
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="bg-white shadow-sm border-b px-6 py-4 flex items-center justify-between">
+        <header className="bg-white shadow-sm border-b px-6 py-4 flex items-center justify-between sticky top-0 z-10">
            <div className="flex items-center space-x-2 space-x-reverse">
+             {/* Back Arrow for sub-pages */}
+             {!['dashboard', 'admin-dashboard'].includes(currentPage) && (
+               <button 
+                 onClick={() => window.history.back()}
+                 className="p-2 -mr-2 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
+                 title="رجوع"
+               >
+                 <ArrowRight className="w-6 h-6" />
+               </button>
+             )}
              <h1 className="text-xl font-bold text-slate-800 lg:hidden">المحامي</h1>
            </div>
            <div className="flex items-center space-x-4 space-x-reverse">

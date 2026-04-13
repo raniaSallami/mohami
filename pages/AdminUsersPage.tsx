@@ -179,6 +179,30 @@ export const AdminUsersPage: React.FC = () => {
                 <label className="block text-xs text-gray-500 mb-1">ID</label>
                 <p className="text-xs font-mono text-gray-600">{selectedUser.id}</p>
               </div>
+              {selectedUser.account_type && (
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">نوع الحساب</label>
+                  <p className="font-medium">{selectedUser.account_type === 'lawyer' ? 'محامي' : selectedUser.account_type === 'student' ? 'طالب' : 'مكتب'}</p>
+                </div>
+              )}
+              {selectedUser.bar_number && (
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">رقم البطاقة</label>
+                  <p className="font-medium">{selectedUser.bar_number}</p>
+                </div>
+              )}
+              {selectedUser.cabinet_name && (
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">اسم المكتب</label>
+                  <p className="font-medium">{selectedUser.cabinet_name}</p>
+                </div>
+              )}
+              {selectedUser.university && (
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">الجامعة</label>
+                  <p className="font-medium">{selectedUser.university}</p>
+                </div>
+              )}
               {selectedUser.organizationOwnerId && (
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">عضو فريق (المكتب)</label>

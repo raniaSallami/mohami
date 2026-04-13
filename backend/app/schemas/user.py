@@ -3,6 +3,7 @@ Pydantic schemas for user operations.
 """
 from datetime import datetime
 from typing import Optional, List
+from uuid import UUID
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 
@@ -26,6 +27,10 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
     avatar: Optional[str] = None
+    account_type: Optional[str] = None
+    bar_number: Optional[str] = None
+    cabinet_name: Optional[str] = None
+    university: Optional[str] = None
 
 
 class UserUpdateByAdmin(BaseModel):
@@ -37,14 +42,19 @@ class UserUpdateByAdmin(BaseModel):
     subscription_status: Optional[str] = None
     avatar: Optional[str] = None
     allowed_ip: Optional[str] = None
+    account_type: Optional[str] = None
+    bar_number: Optional[str] = None
+    cabinet_name: Optional[str] = None
+    university: Optional[str] = None
 
 
 class UserResponse(BaseModel):
     """Schema for user response (excludes sensitive data)."""
     model_config = ConfigDict(from_attributes=True)
     
-    id: str
+    id: UUID
     email: str
+    email_verified: bool = False
     name: str
     role: str
     subscription_plan: str
@@ -52,8 +62,15 @@ class UserResponse(BaseModel):
     avatar: Optional[str] = None
     phone: Optional[str] = None
     allowed_ip: Optional[str] = None
-    organization_owner_id: Optional[str] = None
+    organization_owner_id: Optional[UUID] = None
     totp_enabled: bool = False
+    account_type: Optional[str] = None
+    bar_number: Optional[str] = None
+    cabinet_name: Optional[str] = None
+    bar_registration_number: Optional[str] = None
+    office_address: Optional[str] = None
+    number_of_lawyers: Optional[int] = None
+    university: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 

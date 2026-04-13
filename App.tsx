@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Toaster } from 'sonner';
 import { storageService } from './services/storageService';
 import { User, UserRole } from './types';
 import { Layout } from './components/Layout';
@@ -12,6 +13,7 @@ import { CaseDetail } from './pages/CaseDetail';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { AdminSettings } from './pages/AdminSettings';
 import { SettingsPage } from './pages/SettingsPage';
+import { ProfilePage } from './pages/ProfilePage';
 import { TermsPage, PrivacyPage } from './pages/Legal';
 import { Courses } from './pages/Courses';
 import { Contracts } from './pages/Contracts';
@@ -38,6 +40,7 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<string>('landing');
   const [loading, setLoading] = useState(true);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
+  const [caseFilter, setCaseFilter] = useState<string | null>(null);
   const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [notification, setNotification] = useState<{msg: string, type: 'success' | 'error' | 'info'} | null>(null);
   const [showTermsModal, setShowTermsModal] = useState(false);
@@ -101,7 +104,7 @@ export default function App() {
         } else if (!valid) {
           setUser(currentUser); // Can't get IP - allow to avoid blocking
           const defaultPage = currentUser.role === UserRole.ADMIN ? 'admin-dashboard' : 'dashboard';
-          const validPages = ['dashboard', 'cases', 'new-case', 'case-detail', 'settings', 'calendar', 'contracts', 'courses', 'team', 'pending-cases', 'notifications', 'admin-dashboard', 'admin-users', 'admin-settings', 'admin-chat', 'admin-marketing'];
+          const validPages = ['dashboard', 'cases', 'new-case', 'case-detail', 'settings', 'profile', 'calendar', 'contracts', 'courses', 'team', 'pending-cases', 'notifications', 'admin-dashboard', 'admin-users', 'admin-settings', 'admin-chat', 'admin-marketing'];
           const page = (hashPage && validPages.includes(hashPage)) ? hashPage : defaultPage;
           setCurrentPage(page);
           if (hashCaseId) setSelectedCaseId(hashCaseId);
@@ -109,7 +112,7 @@ export default function App() {
         } else {
           setUser(currentUser);
           const defaultPage = currentUser.role === UserRole.ADMIN ? 'admin-dashboard' : 'dashboard';
-          const validPages = ['dashboard', 'cases', 'new-case', 'case-detail', 'settings', 'calendar', 'contracts', 'courses', 'team', 'pending-cases', 'notifications', 'admin-dashboard', 'admin-users', 'admin-settings', 'admin-chat', 'admin-marketing'];
+          const validPages = ['dashboard', 'cases', 'new-case', 'case-detail', 'settings', 'profile', 'calendar', 'contracts', 'courses', 'team', 'pending-cases', 'notifications', 'admin-dashboard', 'admin-users', 'admin-settings', 'admin-chat', 'admin-marketing'];
           const page = (hashPage && validPages.includes(hashPage)) ? hashPage : defaultPage;
           setCurrentPage(page);
           if (hashCaseId) setSelectedCaseId(hashCaseId);
@@ -167,12 +170,17 @@ export default function App() {
     setNotification({ msg: 'تم تسجيل الخروج بنجاح', type: 'info' });
   };
 
-  const handleNavigate = (page: string, caseId?: string) => {
-    if (caseId) setSelectedCaseId(caseId);
+  const handleNavigate = (page: string, params?: string) => {
+    if (page === 'case-detail') {
+      if (params) setSelectedCaseId(params);
+    } else if (page === 'cases') {
+      setCaseFilter(params || null);
+    }
+    
     setCurrentPage(page);
     // Use History API so browser Back stays within the app
-    const path = caseId ? `${page}/${caseId}` : page;
-    window.history.pushState({ page, caseId }, '', `/#${path}`);
+    const path = params ? `${page}/${params}` : page;
+    window.history.pushState({ page, params }, '', `/#${path}`);
     window.scrollTo(0, 0);
   };
 
@@ -353,10 +361,11 @@ export default function App() {
     } else {
       switch (currentPage) {
         case 'dashboard': return <Dashboard onNavigate={handleNavigate} user={user} />;
-        case 'cases': return <CaseList onNavigate={handleNavigate} />;
+        case 'cases': return <CaseList onNavigate={handleNavigate} initialFilter={caseFilter || undefined} />;
         case 'new-case': return <NewCase onNavigate={handleNavigate} />;
         case 'case-detail': return <CaseDetail caseId={selectedCaseId!} onBack={() => handleNavigate('cases')} />;
         case 'settings': return <SettingsPage user={user} onUpdateUser={(u) => { setUser(u); showNotification('تم تحديث البيانات', 'success'); }} />;
+        case 'profile': return <ProfilePage user={user} onNavigate={handleNavigate} onUpdateUser={(u) => setUser(u)} />;
         case 'courses': return <Courses />;
         case 'contracts': return <Contracts />;
         case 'calendar': return <Calendar />;
@@ -375,6 +384,7 @@ export default function App() {
         {renderPage()}
       </Layout>
       {currentPage !== 'admin-chat' && <Chatbot />}
+      <Toaster position="top-center" />
       
       {/* Terms Acceptance Modal - for logged-in users + guests (login/register) */}
       {(user || showTermsModal) && (

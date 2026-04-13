@@ -34,7 +34,7 @@ async def list_invoices(
     
     # Apply role-based filtering
     if current_user.role != "ADMIN":
-        query = query.where(Invoice.user_id == current_user.id)
+        query = query.where(Invoice.user_id == str(current_user.id))
     
     if status:
         query = query.where(Invoice.status == status)

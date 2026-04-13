@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
 class PasswordResetOTP(Base):
     __tablename__ = "password_reset_otp"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
@@ -28,6 +29,7 @@ class PasswordResetOTP(Base):
 
 class SignupEmailOTP(Base):
     __tablename__ = "signup_email_otp"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
@@ -41,6 +43,7 @@ class SignupEmailOTP(Base):
 
 class IPVerificationOTP(Base):
     __tablename__ = "ip_verification_otp"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
@@ -55,6 +58,7 @@ class IPVerificationOTP(Base):
 
 class TeamInvite(Base):
     __tablename__ = "team_invites"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     owner_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
@@ -71,6 +75,7 @@ class TeamInvite(Base):
 
 class InternalMessage(Base):
     __tablename__ = "internal_messages"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     from_user_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
@@ -85,6 +90,7 @@ class InternalMessage(Base):
 
 class PlatformVisitor(Base):
     __tablename__ = "platform_visitors"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     session_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
@@ -102,6 +108,7 @@ class PlatformVisitor(Base):
 
 class LoginEmailOTP(Base):
     __tablename__ = "login_email_otp"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False, index=True)
@@ -118,6 +125,7 @@ class LoginEmailOTP(Base):
 
 class SystemSettings(Base):
     __tablename__ = "system_settings"
+    __table_args__ = {"extend_existing": True}
 
     key: Mapped[str] = mapped_column(String(100), primary_key=True)
     value: Mapped[str] = mapped_column(Text, nullable=False)

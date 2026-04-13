@@ -188,33 +188,61 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNotificati
               notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  onClick={() => handleNotificationClick(notification)}
-                  className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${
-                    !notification.read ? 'bg-blue-50' : ''
+                  className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors group relative ${
+                    !notification.read ? 'bg-amber-50/50' : ''
                   }`}
                 >
                   <div className="flex items-start space-x-3 space-x-reverse">
-                    <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-lg ${getNotificationColor(notification.type)}`}>
+                    <div 
+                      onClick={() => handleNotificationClick(notification)}
+                      className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm border border-white cursor-pointer ${getNotificationColor(notification.type)}`}
+                    >
                       {getNotificationIcon(notification.type)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-gray-900">
+                      <div className="flex items-center justify-between mb-1">
+                        <p 
+                          onClick={() => handleNotificationClick(notification)}
+                          className={`text-sm font-bold truncate cursor-pointer ${!notification.read ? 'text-slate-900' : 'text-slate-500'}`}
+                        >
                           {notification.title}
                         </p>
                         {!notification.read && (
-                          <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleNotificationClick(notification);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-amber-100 rounded text-amber-600 transition-opacity"
+                              title="مقروء"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                            </button>
+                          </div>
                         )}
                       </div>
-                      <p className="mt-1 text-sm text-gray-600 line-clamp-2">
+                      <p 
+                        onClick={() => handleNotificationClick(notification)}
+                        className="text-xs text-slate-600 line-clamp-2 cursor-pointer leading-relaxed"
+                      >
                         {notification.message}
                       </p>
-                      <p className="mt-1 text-xs text-gray-400">
-                        {new Date(notification.createdAt).toLocaleDateString('ar-TN', {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </p>
+                      <div className="mt-2 flex items-center justify-between">
+                        <p className="text-[10px] font-medium text-slate-400">
+                          {new Date(notification.createdAt).toLocaleDateString('ar-TN', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                        {notification.link && (
+                          <span className="text-[10px] text-amber-600 font-bold">عرض التفاصيل ←</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

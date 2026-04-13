@@ -3,9 +3,10 @@ import { storageService } from '../services/storageService';
 import { CaseFile } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
 
-export const CaseList = ({ onNavigate }: { onNavigate: (page: string, caseId?: string) => void }) => {
+export const CaseList = ({ onNavigate, initialFilter }: { onNavigate: (page: string, caseId?: string) => void; initialFilter?: string }) => {
   const [cases, setCases] = useState<CaseFile[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>(initialFilter || 'all');
   const [loading, setLoading] = useState(true);
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; caseId: string | null }>({
     isOpen: false,
@@ -15,6 +16,10 @@ export const CaseList = ({ onNavigate }: { onNavigate: (page: string, caseId?: s
   useEffect(() => {
     loadCases();
   }, []);
+
+  useEffect(() => {
+    if (initialFilter) setStatusFilter(initialFilter);
+  }, [initialFilter]);
 
   const loadCases = async () => {
     const data = await storageService.getCases();
@@ -44,29 +49,69 @@ export const CaseList = ({ onNavigate }: { onNavigate: (page: string, caseId?: s
     }
   };
 
-  const filteredCases = cases.filter(c => 
-    c.title.includes(searchTerm) || c.clientName.includes(searchTerm)
-  );
+  const filteredCases = cases.filter(c => {
+    const matchesSearch = c.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          c.clientName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const getStats = () => ({
+    all: cases.length,
+    active: cases.filter(c => c.status === 'active').length,
+    pending: cases.filter(c => c.status === 'pending').length,
+    closed: cases.filter(c => c.status === 'closed').length
+  });
+
+  const stats = getStats();
 
   return (
-    <div className="min-h-0">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+    <div className="min-h-0 space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h2 className="text-2xl font-bold text-slate-800">ملفات القضايا</h2>
         <div className="flex space-x-4 space-x-reverse w-full md:w-auto">
           <input 
             type="text" 
             placeholder="بحث عن قضية أو موكل..." 
-            className="flex-1 md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+            className="flex-1 md:w-64 px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition shadow-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
           <button 
             onClick={() => onNavigate('new-case')}
-            className="bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition whitespace-nowrap"
+            className="bg-slate-900 text-white px-6 py-2 rounded-xl hover:bg-slate-800 transition whitespace-nowrap shadow-md font-bold"
           >
             + قضية جديدة
           </button>
         </div>
+      </div>
+
+      {/* Filter Bar */}
+      <div className="flex flex-wrap gap-2 p-1 bg-slate-100 rounded-2xl w-fit">
+        <button
+          onClick={() => setStatusFilter('all')}
+          className={`px-6 py-2.5 rounded-xl text-sm font-bold transition ${statusFilter === 'all' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+          الكل ({stats.all})
+        </button>
+        <button
+          onClick={() => setStatusFilter('active')}
+          className={`px-6 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2 ${statusFilter === 'active' ? 'bg-green-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+          نشطة ({stats.active})
+        </button>
+        <button
+          onClick={() => setStatusFilter('pending')}
+          className={`px-6 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2 ${statusFilter === 'pending' ? 'bg-amber-400 text-white shadow-lg' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+          بانتظار الإجراء ({stats.pending})
+        </button>
+        <button
+          onClick={() => setStatusFilter('closed')}
+          className={`px-6 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2 ${statusFilter === 'closed' ? 'bg-slate-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+          منتهية ({stats.closed})
+        </button>
       </div>
 
       {loading ? (

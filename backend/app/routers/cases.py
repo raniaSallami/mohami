@@ -43,17 +43,17 @@ async def list_cases(
         query = query.where(
             or_(
                 Case.tenant_id == tenant_id,
-                Case.user_id == current_user.id
+                Case.user_id == str(current_user.id)
             )
         )
     
     if current_user.role == "CLIENT":
-        query = query.where(Case.user_id == current_user.id)
+        query = query.where(Case.user_id == str(current_user.id))
     elif current_user.role == "LAWYER":
         query = query.where(
             or_(
-                Case.created_by_user_id == current_user.id,
-                Case.assigned_to_user_id == current_user.id
+                Case.created_by_user_id == str(current_user.id),
+                Case.assigned_to_user_id == str(current_user.id)
             )
         )
     
@@ -112,7 +112,9 @@ async def create_case(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Create a new case."""
+    """Create a new case and notify the user."""
+    from app.models.notification import Notification
+    
     tenant_id = current_user.organization_owner_id or current_user.id
     
     case = Case(
@@ -127,6 +129,17 @@ async def create_case(
     )
     
     db.add(case)
+    
+    # Create notification
+    notification = Notification(
+        user_id=current_user.id,
+        type="case",
+        title="قضية جديدة",
+        message=f"تم إنشاء ملف قضية جديد بنجاح: {case.title}",
+        link=f"/cases"
+    )
+    db.add(notification)
+    
     await db.commit()
     await db.refresh(case)
     
@@ -140,7 +153,9 @@ async def update_case(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Update a case."""
+    """Update a case and notify if status changed."""
+    from app.models.notification import Notification
+    
     result = await db.execute(select(Case).where(Case.id == case_id))
     case = result.scalar_one_or_none()
     
@@ -150,9 +165,28 @@ async def update_case(
     if current_user.role == "CLIENT" and case.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized")
     
+    old_status = case.status
     update_data = case_update.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(case, field, value)
+    
+    # If status changed, create notification
+    if "status" in update_data and update_data["status"] != old_status:
+        status_map = {
+            "active": "نشطة",
+            "pending": "بانتظار الإجراء",
+            "closed": "منتهية"
+        }
+        new_status_ar = status_map.get(update_data["status"], update_data["status"])
+        
+        notification = Notification(
+            user_id=case.user_id,
+            type="info",
+            title="تحديث حالة القضة",
+            message=f"تمت تحديث حالة القضية '{case.title}' إلى {new_status_ar}",
+            link=f"/cases"
+        )
+        db.add(notification)
     
     await db.commit()
     await db.refresh(case)

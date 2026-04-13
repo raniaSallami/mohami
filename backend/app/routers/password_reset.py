@@ -80,14 +80,18 @@ async def _send_reset_otp_email(
     request: Request,
     db: AsyncSession
 ) -> None:
-    try:
-        ip = get_client_ip(request)
-        ua = request.headers.get("User-Agent", "") if request else ""
-        device_name = parse_device_name(ua)
-        location = await get_location_from_ip(ip)
-        now = datetime.utcnow().strftime("%d/%m/%Y - %H:%M UTC")
+    """Send reset OTP email – non-blocking with timeout."""
+    import asyncio
+    
+    async def _do_send():
+        try:
+            ip = get_client_ip(request)
+            ua = request.headers.get("User-Agent", "") if request else ""
+            device_name = parse_device_name(ua)
+            location = await get_location_from_ip(ip)
+            now = datetime.utcnow().strftime("%d/%m/%Y - %H:%M UTC")
 
-        html_content = f"""<!DOCTYPE html>
+            html_content = f"""<!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:40px 20px;background:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;">
@@ -129,25 +133,35 @@ async def _send_reset_otp_email(
 </table></td></tr></table>
 </body></html>"""
 
-        await db.execute(
-            text("""
-                INSERT INTO email_queue (id, to_email, subject, html_content, text_content, status, created_at)
-                VALUES (:id, :to_email, :subject, :html_content, :text_content, :status, :created_at)
-            """),
-            {
-                "id": f"resetpwd_{uuid.uuid4()}",
-                "to_email": user_email,
-                "subject": "إعادة تعيين كلمة المرور — رمز التحقق",
-                "html_content": html_content,
-                "text_content": f"رمز إعادة تعيين كلمة المرور: {otp_code} — صالح 15 دقيقة.",
-                "status": "pending",
-                "created_at": datetime.utcnow(),
-            },
-        )
-        await db.commit()
+            await db.execute(
+                text("""
+                    INSERT INTO email_queue (id, to_email, subject, html_content, text_content, status, created_at)
+                    VALUES (:id, :to_email, :subject, :html_content, :text_content, :status, :created_at)
+                """),
+                {
+                    "id": f"resetpwd_{uuid.uuid4()}",
+                    "to_email": user_email,
+                    "subject": "إعادة تعيين كلمة المرور — رمز التحقق",
+                    "html_content": html_content,
+                    "text_content": f"رمز إعادة تعيين كلمة المرور: {otp_code} — صالح 15 دقيقة.",
+                    "status": "pending",
+                    "created_at": datetime.utcnow(),
+                },
+            )
+            await db.commit()
+            print(f"✅ Reset OTP email queued for {user_email}")
+        except Exception as e:
+            print(f"❌ Failed to queue reset email: {e}")
+            # Don't re-raise – we don't want email errors to block the response
+    
+    # Run email sending with strict 2-second timeout
+    # This prevents the request from hanging
+    try:
+        await asyncio.wait_for(_do_send(), timeout=2.0)
+    except asyncio.TimeoutError:
+        print(f"⚠️  Email sending timed out for {user_email}")
     except Exception as e:
-        print(f"❌ Failed to queue reset email: {e}")
-        raise
+        print(f"❌ Email error: {e}")
 
 
 # ═══════════════════════════════════════════════════════════
@@ -295,7 +309,7 @@ async def forgot_password_step2(
     # Revoke all refresh tokens
     await db.execute(
         text("UPDATE refresh_tokens SET is_revoked = TRUE WHERE user_id = :user_id"),
-        {"user_id": user.id}
+        {"user_id": str(user.id)}
     )
 
     # Delete OTP
@@ -447,7 +461,7 @@ async def reset_password(
     # Révocation de tous les refresh tokens
     await db.execute(
         text("UPDATE refresh_tokens SET is_revoked = TRUE WHERE user_id = :user_id"),
-        {"user_id": user.id}
+        {"user_id": str(user.id)}
     )
 
     # Suppression de l'OTP

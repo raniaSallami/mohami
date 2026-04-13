@@ -232,7 +232,7 @@ async def verify_new_device_otp(
     await db.commit()
     
     # Generate tokens for successful login
-    tokens = create_token_pair(user.id, user.email, user.role)
+    tokens = create_token_pair(str(user.id), user.email, user.role)
     
     # Send confirmation email
     try:
@@ -427,7 +427,7 @@ async def get_trusted_devices(
     
     result = await db.execute(
         select(KnownDevice)
-        .where(KnownDevice.user_id == current_user.id)
+        .where(KnownDevice.user_id == str(current_user.id))
         .order_by(KnownDevice.last_seen.desc())
     )
     devices = result.scalars().all()
@@ -464,7 +464,7 @@ async def remove_trusted_device(
         select(KnownDevice)
         .where(
             KnownDevice.id == device_id,
-            KnownDevice.user_id == current_user.id
+            KnownDevice.user_id == str(current_user.id)
         )
     )
     device = result.scalar_one_or_none()

@@ -3,7 +3,8 @@ Security utilities: JWT token handling and password hashing.
 """
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
-from jose import JWTError, jwt
+from jose import jwt
+from jose.exceptions import JWTError, ExpiredSignatureError
 import bcrypt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -94,7 +95,17 @@ def decode_token(token: str) -> Optional[Dict[str, Any]]:
     try:
         payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
         return payload
-    except JWTError:
+    except ExpiredSignatureError:
+        if settings.debug:
+            print(f"DEBUG: Token expired: {token[:10]}...")
+        return None
+    except JWTError as e:
+        if settings.debug:
+            print(f"DEBUG: Token invalid ({str(e)}): {token[:10]}...")
+        return None
+    except Exception as e:
+        if settings.debug:
+            print(f"DEBUG: Token decoding exception ({str(e)}): {token[:10]}...")
         return None
 
 
@@ -134,11 +145,21 @@ async def get_current_user(
     from sqlalchemy import select
     
     token = credentials.credentials
+    
+    # Handle common frontend issues where state might be stringified "null" or "undefined"
+    if not token or token in ["null", "undefined", "[object Object]", ""]:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Valid authentication token required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     payload = decode_token(token)
     
     if payload is None:
         if settings.debug:
-            print(f"DEBUG: Token decoding failed for: {token[:10]}...")
+            # We already printed specific reason in decode_token
+            pass
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
@@ -162,8 +183,13 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Fetch user from database
-    result = await db.execute(select(User).where(User.id == user_id))
+    # Fetch user from database with eagerly loaded profile to avoid lazy-loading issues
+    from sqlalchemy.orm import selectinload
+    result = await db.execute(
+        select(User)
+        .options(selectinload(User.profile))
+        .where(User.id == user_id)
+    )
     user = result.scalar_one_or_none()
     
     if user is None:

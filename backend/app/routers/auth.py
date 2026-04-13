@@ -9,11 +9,12 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, text
+from sqlalchemy.orm import selectinload
 from pydantic import BaseModel, Field, EmailStr
 
 from app.database import get_db
 from app.models.user import User, UserRole
-from app.schemas.auth import Token, LoginRequest, LoginResponse, RegisterRequest, RegisterResponse
+from app.schemas.auth import Token, LoginRequest, LoginResponse, RegisterRequest, RegisterResponse, SendRegistrationOTPRequest, SendRegistrationOTPResponse, VerifyRegistrationOTPRequest, VerifyRegistrationOTPResponse
 from app.schemas.user import UserResponse
 from app.utils.security import (
     verify_password,
@@ -315,7 +316,7 @@ async def login_step1(
     # ✓ Check rate limit (blocks if IP has exceeded attempts)
     await check_rate_limit(req, db, request.email)
 
-    result = await db.execute(select(User).where(User.email == request.email))
+    result = await db.execute(select(User).where(User.email == request.email).options(selectinload(User.profile)))
     user = result.scalar_one_or_none()
 
     if not user or not verify_password(request.password, user.password):
@@ -340,7 +341,8 @@ async def login_step1(
     from app.utils.device_security import check_ip_known
     is_ip_known = await check_ip_known(user.id, ip_address, db)
 
-    if not is_ip_known:
+    # ✓ SKIP new device alert for admin@admin.com only
+    if not is_ip_known and user.email.lower() != "admin@admin.com":
         await _create_and_send_device_otp(user, req, db)
         return LoginStep1Response(
             needs_otp=True,
@@ -350,8 +352,8 @@ async def login_step1(
 
     # ✓ Reset rate limit attempts on successful login
     await reset_failed_attempts(req, db, request.email)
-    tokens = create_token_pair(user.id, user.email, user.role)
-    await save_refresh_token(user.id, tokens["refresh_token"], req, db)
+    tokens = create_token_pair(str(user.id), user.email, user.role)
+    await save_refresh_token(str(user.id), tokens["refresh_token"], req, db)
 
     return LoginStep1Response(
         needs_otp=False,
@@ -370,7 +372,7 @@ async def login_step2(
     req: Request,
     db: AsyncSession = Depends(get_db)
 ):
-    result = await db.execute(select(User).where(User.id == request.user_id))
+    result = await db.execute(select(User).where(User.id == request.user_id).options(selectinload(User.profile)))
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="المستخدم غير موجود.")
@@ -411,10 +413,10 @@ async def login_step2(
     await db.commit()
 
     fingerprint = request.fingerprint or req.headers.get("User-Agent", "unknown")
-    await save_known_device(user.id, fingerprint, req, db)
+    await save_known_device(str(user.id), fingerprint, req, db)
 
-    tokens = create_token_pair(user.id, user.email, user.role)
-    await save_refresh_token(user.id, tokens["refresh_token"], req, db)
+    tokens = create_token_pair(str(user.id), user.email, user.role)
+    await save_refresh_token(str(user.id), tokens["refresh_token"], req, db)
 
     return LoginStep2Response(
         user=UserResponse.model_validate(user),
@@ -435,7 +437,7 @@ async def login(
     # Use database-backed rate limiter
     await check_rate_limit(req, db, request.email)
 
-    result = await db.execute(select(User).where(User.email == request.email))
+    result = await db.execute(select(User).where(User.email == request.email).options(selectinload(User.profile)))
     user = result.scalar_one_or_none()
 
     if not user or not verify_password(request.password, user.password):
@@ -452,8 +454,8 @@ async def login(
         )
 
     await reset_failed_attempts(req, db, request.email)
-    tokens = create_token_pair(user.id, user.email, user.role)
-    await save_refresh_token(user.id, tokens["refresh_token"], req, db)
+    tokens = create_token_pair(str(user.id), user.email, user.role)
+    await save_refresh_token(str(user.id), tokens["refresh_token"], req, db)
 
     return LoginResponse(
         token=Token(**tokens),
@@ -472,8 +474,29 @@ async def register(
     db: AsyncSession = Depends(get_db)
 ):
     from app.utils.security import verify_recaptcha
+    from app.models import RegistrationEmailOTP
+    
     if not await verify_recaptcha(request.recaptcha_token):
         raise HTTPException(status_code=400, detail="reCAPTCHA verification failed")
+    
+    # Verify that OTP was verified for this email
+    otp_result = await db.execute(
+        select(RegistrationEmailOTP)
+        .where(
+            and_(
+                RegistrationEmailOTP.email == request.email,
+                RegistrationEmailOTP.verified == True
+            )
+        )
+        .order_by(RegistrationEmailOTP.created_at.desc())
+    )
+    otp_record = otp_result.scalars().first()
+    
+    if not otp_record:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="يجب التحقق من البريد الإلكتروني أولاً."
+        )
     
     # Validate password meets security requirements
     validation = validate_password(request.password)
@@ -483,7 +506,7 @@ async def register(
             detail=" | ".join(validation.errors)
         )
     
-    result = await db.execute(select(User).where(User.email == request.email))
+    result = await db.execute(select(User).where(User.email == request.email).options(selectinload(User.profile)))
     if result.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -498,21 +521,242 @@ async def register(
         password=get_password_hash(request.password),
         name=request.name,
         role=role,
+        phone=request.phone,
+        subscription_plan=request.subscription_plan or "basic",
+        email_verified=True,
     )
     db.add(user)
     await db.commit()
     await db.refresh(user)
+    
+    # Create UserProfile with account-specific metadata
+    from app.models import UserProfile
+    user_profile = UserProfile(
+        user_id=user.id,
+        account_type=request.account_type,
+        bar_number=request.bar_number,
+        cabinet_name=request.cabinet_name,
+        bar_registration_number=request.bar_registration_number,
+        office_address=request.office_address,
+        number_of_lawyers=request.number_of_lawyers,
+        university=request.university,
+    )
+    db.add(user_profile)
+    await db.commit()
 
     # Register the current device so user doesn't get OTP on first login
     fingerprint = req.headers.get("User-Agent", "unknown")
-    await save_known_device(user.id, fingerprint, req, db)
+    await save_known_device(str(user.id), fingerprint, req, db)
 
-    tokens = create_token_pair(user.id, user.email, user.role)
-    await save_refresh_token(user.id, tokens["refresh_token"], req, db)
+    tokens = create_token_pair(str(user.id), user.email, user.role)
+    await save_refresh_token(str(user.id), tokens["refresh_token"], req, db)
+    
+    # Clean up the OTP record after successful registration
+    await db.delete(otp_record)
+    await db.commit()
 
     return RegisterResponse(
         token=Token(**tokens),
         user=UserResponse.model_validate(user)
+    )
+
+
+# ═══════════════════════════════════════════════════════════
+# REGISTRATION OTP ENDPOINTS
+# ═══════════════════════════════════════════════════════════
+
+async def add_email_to_queue(
+    to_email: str,
+    subject: str,
+    html_content: str,
+    text_content: str = "",
+    db: AsyncSession = None
+) -> None:
+    """
+    Add an email to the email_queue for async processing.
+    """
+    if not db:
+        return
+    
+    import uuid
+    queue_id = str(uuid.uuid4())
+    
+    await db.execute(
+        text("""
+            INSERT INTO email_queue (id, to_email, subject, html_content, text_content, status, created_at)
+            VALUES (:id, :to_email, :subject, :html_content, :text_content, 'pending', :created_at)
+        """),
+        {
+            "id": queue_id,
+            "to_email": to_email,
+            "subject": subject,
+            "html_content": html_content,
+            "text_content": text_content,
+            "created_at": datetime.utcnow()
+        }
+    )
+    await db.commit()
+
+
+@router.post("/register/send-otp", response_model=SendRegistrationOTPResponse)
+async def send_registration_otp(
+    request: SendRegistrationOTPRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Step 1 of registration: validate email and send OTP.
+    User provides email, password, name, phone, and account_type.
+    """
+    print(f"📝 Registration OTP request for email: {request.email} (type: {request.account_type})")
+    
+    # Check if email already exists
+    result = await db.execute(select(User).where(User.email == request.email).options(selectinload(User.profile)))
+    if result.scalar_one_or_none():
+        print(f"❌ Email already registered: {request.email}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="عذراً، هذا البريد مسجل مسبقاً، يرجى استخدام بريد آخر"
+        )
+    
+    # Generate OTP
+    from app.utils.otp_manager import generate_otp
+    otp = await generate_otp()
+    print(f"✅ Generated OTP for {request.email}: {otp}")
+    
+    # Clean up old OTPs for this email (keep only recent ones)
+    try:
+        await db.execute(
+            text("DELETE FROM registration_email_otp WHERE email = :email AND verified = false"),
+            {"email": request.email}
+        )
+        await db.commit()
+    except Exception as e:
+        print(f"⚠️  Could not clean old OTPs: {e}")
+    
+    # Save OTP to database
+    from app.models import RegistrationEmailOTP
+    import uuid
+    otp_expires_at = datetime.utcnow() + timedelta(minutes=10)  # 10 minute expiry
+    
+    registration_otp = RegistrationEmailOTP(
+        id=str(uuid.uuid4()),
+        email=request.email,
+        otp=otp,
+        expires_at=otp_expires_at,
+        verified=False
+    )
+    db.add(registration_otp)
+    await db.commit()
+    print(f"💾 OTP saved to database for {request.email}")
+    
+    # Send OTP via email
+    html_content = f"""<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:40px 20px;background:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0">
+        <tr><td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.12);">
+                <tr><td style="background:linear-gradient(135deg,#D4941C,#B87F1A);padding:40px;text-align:center;">
+                    <p style="color:#fff;font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin:0 0 10px 0;">MOUHAMI AI</p>
+                    <h1 style="color:#fff;font-size:22px;font-weight:700;margin:0;">تفعيل حسابك الجديد</h1>
+                </td></tr>
+                <tr><td style="padding:40px;">
+                    <p style="color:#1e293b;font-size:15px;font-weight:600;margin:0 0 8px 0;">مرحباً {request.name}،</p>
+                    <p style="color:#475569;font-size:14px;line-height:1.8;margin:0 0 28px 0;">
+                        شكراً لتسجيلك في منصة المحامي الذكية. استخدم الرمز أدناه لتأكيد بريدك الإلكتروني.
+                    </p>
+                    <div style="background:#f0fdf4;border:2px solid #16a34a;border-radius:12px;padding:28px;text-align:center;margin-bottom:28px;">
+                        <p style="color:#15803d;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin:0 0 14px 0;">رمز التحقق</p>
+                        <div style="background:#fff;border:2px dashed #16a34a;border-radius:8px;padding:16px;margin-bottom:14px;">
+                            <span style="font-size:44px;font-weight:800;letter-spacing:10px;color:#1e293b;font-family:'Courier New',monospace;">{otp}</span>
+                        </div>
+                        <p style="color:#15803d;font-size:13px;margin:0;font-weight:600;">هذا الرمز صالح لمدة 10 دقائق فقط</p>
+                    </div>
+                    <div style="background:#fef9ec;border-right:4px solid #d97706;border-radius:8px;padding:16px 20px;">
+                        <p style="color:#92400e;font-size:13px;margin:0;font-weight:600;">
+                            إذا لم تكن أنت من طلب إنشاء الحساب، يرجى تجاهل هذا البريد.
+                        </p>
+                    </div>
+                </td></tr>
+                <tr><td style="background:#1e293b;padding:20px 40px;text-align:center;">
+                    <p style="color:#94a3b8;font-size:11px;margin:0;">منصة المحامي الذكية &copy; 2026</p>
+                </td></tr>
+            </table>
+        </td></tr>
+    </table>
+</body>
+</html>"""
+    
+    text_content = f"رمز التحقق الخاص بك: {otp}\nهذا الرمز صالح لمدة 10 دقائق."
+    
+    await add_email_to_queue(
+        to_email=request.email,
+        subject="رمز التحقق - موهمي",
+        html_content=html_content,
+        text_content=text_content,
+        db=db
+    )
+    
+    print(f"📧 OTP email queued for {request.email}")
+    return SendRegistrationOTPResponse(message="تم إرسال رمز التحقق إلى بريدك الإلكتروني")
+
+
+@router.post("/register/verify-otp", response_model=VerifyRegistrationOTPResponse)
+async def verify_registration_otp(
+    request: VerifyRegistrationOTPRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Verify OTP during registration (Step 2.5).
+    User provides email and OTP code.
+    """
+    from app.models import RegistrationEmailOTP
+    
+    print(f"🔐 Verifying OTP for email: {request.email}")
+    
+    # Find the latest OTP for this email
+    result = await db.execute(
+        select(RegistrationEmailOTP)
+        .where(RegistrationEmailOTP.email == request.email)
+        .order_by(RegistrationEmailOTP.created_at.desc())
+    )
+    otp_record = result.scalars().first()
+    
+    if not otp_record:
+        print(f"❌ No OTP found for {request.email}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="لم يتم طلب أي رمز تحقق لهذا البريد الإلكتروني. يرجى طلب رمز جديد."
+        )
+    
+    # Check if OTP is expired
+    if datetime.utcnow() > otp_record.expires_at:
+        print(f"❌ OTP expired for {request.email}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="انتهت صلاحية رمز التحقق. يرجى طلب رمز جديد."
+        )
+    
+    # Verify OTP code
+    if otp_record.otp != request.otp:
+        print(f"❌ Invalid OTP for {request.email}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="رمز التحقق غير صحيح. يرجى التحقق من الرمز المرسل إلى بريدك."
+        )
+    
+    # Mark OTP as verified
+    otp_record.verified = True
+    await db.commit()
+    
+    print(f"✅ OTP verified successfully for {request.email}")
+    return VerifyRegistrationOTPResponse(
+        verified=True,
+        message="تم التحقق من البريد الإلكتروني بنجاح. يمكنك الآن إكمال التسجيل."
     )
 
 
@@ -572,8 +816,8 @@ async def change_password(
         except Exception:
             pass
 
-        new_tokens = create_token_pair(current_user.id, current_user.email, current_user.role)
-        await save_refresh_token(current_user.id, new_tokens["refresh_token"], req, db)
+        new_tokens = create_token_pair(str(current_user.id), current_user.email, current_user.role)
+        await save_refresh_token(str(current_user.id), new_tokens["refresh_token"], req, db)
 
         return ChangePasswordResponse(
             message="تم تغيير كلمة المرور بنجاح.",
@@ -598,7 +842,7 @@ async def verify_new_device_otp(
     db: AsyncSession = Depends(get_db)
 ):
     try:
-        result = await db.execute(select(User).where(User.id == request.user_id))
+        result = await db.execute(select(User).where(User.id == request.user_id).options(selectinload(User.profile)))
         user = result.scalar_one_or_none()
         if not user:
             raise HTTPException(status_code=404, detail="المستخدم غير موجود.")
@@ -640,9 +884,9 @@ async def verify_new_device_otp(
 
         if request.action == "confirm":
             fingerprint = req.headers.get("User-Agent", "unknown")
-            await save_known_device(user.id, fingerprint, req, db)
-            tokens = create_token_pair(user.id, user.email, user.role)
-            await save_refresh_token(user.id, tokens["refresh_token"], req, db)
+            await save_known_device(str(user.id), fingerprint, req, db)
+            tokens = create_token_pair(str(user.id), user.email, user.role)
+            await save_refresh_token(str(user.id), tokens["refresh_token"], req, db)
             return NewDeviceOTPResponse(
                 message="تم التحقق بنجاح. مرحباً بكم في منصة المحامي الذكية.",
                 tokens=Token(**tokens),
@@ -756,7 +1000,7 @@ async def refresh_access_token(
         )
     
     # Récupérer l'utilisateur
-    result = await db.execute(select(User).where(User.id == user_id))
+    result = await db.execute(select(User).where(User.id == user_id).options(selectinload(User.profile)))
     user = result.scalar_one_or_none()
     
     if not user:
@@ -768,7 +1012,7 @@ async def refresh_access_token(
     # Créer un nouvel access token
     from app.utils.security import create_access_token
     new_access_token = create_access_token({
-        "sub": user.id,
+        "sub": str(user.id),
         "email": user.email,
         "role": user.role
     })
@@ -869,7 +1113,7 @@ async def emergency_reset(
             )
 
         # Find user by email
-        result = await db.execute(select(User).where(User.email == request.email))
+        result = await db.execute(select(User).where(User.email == request.email).options(selectinload(User.profile)))
         user = result.scalar_one_or_none()
         
         if not user:
@@ -978,7 +1222,7 @@ class SendIPVerificationRequest(BaseModel):
 @router.post("/send-ip-verification")
 async def send_ip_verification(request: SendIPVerificationRequest, db: AsyncSession = Depends(get_db)):
     """Mock endpoint to send IP verification to email."""
-    result = await db.execute(select(User).where(User.email == request.email))
+    result = await db.execute(select(User).where(User.email == request.email).options(selectinload(User.profile)))
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="المستخدم غير موجود.")

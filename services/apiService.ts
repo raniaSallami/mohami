@@ -1,17 +1,15 @@
-/**
- * API Service - Handles all REST API calls to FastAPI backend
- * Main authentication and data service
- */
 import { storageService } from './storageService';
 import { fetchWithTokenRefresh } from './apiInterceptor';
+import { User } from '../types';
 
 const API_BASE = 'http://localhost:3001/api';
 
 export interface LoginStep1Response {
-  user_id: string;
-  requires_otp: boolean;
-  requires_device_verification: boolean;
-  message: string;
+  needs_otp: boolean;
+  user_id?: string;
+  message?: string;
+  user?: any;
+  token?: any;
 }
 
 export interface LoginStep2Response {
@@ -19,15 +17,6 @@ export interface LoginStep2Response {
   token_type: string;
   user: any;
   message?: string;
-}
-
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-  profile_image?: string;
-  organization_owner_id?: string;
 }
 
 export interface AuthError {
@@ -47,13 +36,18 @@ class APIService {
   }
 
   /**
-   * Step 1: Initial login with email
+   * Step 1: Initial login with email and password
    */
-  async loginEmailStep1(email: string): Promise<LoginStep1Response> {
+  async loginEmailStep1(email: string, password: string, recaptchaToken: string, fingerprint?: string): Promise<LoginStep1Response> {
     const response = await fetch(`${this.baseUrl}/auth/login/step1`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ 
+        email,
+        password,
+        recaptcha_token: recaptchaToken,
+        fingerprint: fingerprint || undefined
+      }),
     });
 
     if (!response.ok) {
@@ -90,18 +84,147 @@ class APIService {
   }
 
   /**
-   * Register new user
+   * Register new user - Step 1: Send OTP
    */
-  async register(email: string, password: string, name: string): Promise<LoginStep2Response> {
-    const response = await fetch(`${this.baseUrl}/auth/register`, {
+  async sendRegistrationOTP(
+    email: string,
+    password: string,
+    name: string,
+    phone: string,
+    accountType: string
+  ): Promise<{ message: string }> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+    
+    try {
+      const payload = {
+        email,
+        password,
+        name,
+        phone,
+        account_type: accountType,
+      };
+      
+      console.log('📤 Sending OTP request:', payload);
+      
+      const response = await fetch(`${this.baseUrl}/auth/register/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ OTP Error Response:', errorData);
+        let errorMsg = 'Failed to send OTP';
+        
+        if (typeof errorData.detail === 'string') {
+          errorMsg = errorData.detail;
+        } else if (Array.isArray(errorData.detail)) {
+          errorMsg = errorData.detail.map((e: any) => e.msg || e).join(', ');
+        }
+        
+        throw new Error(errorMsg);
+      }
+
+      const result = await response.json();
+      console.log('✅ OTP Sent Successfully:', result);
+      return result;
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        throw new Error('الطلب استغرق وقتاً طويلاً، يرجى التحقق من اتصالك بالإنترنت');
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Register new user - Step 2: Verify OTP
+   */
+  async verifyRegistrationOTP(email: string, otp: string): Promise<{ verified: boolean; message: string }> {
+    const payload = { email, otp };
+    console.log('🔐 Verifying OTP:', payload);
+    
+    const response = await fetch(`${this.baseUrl}/auth/register/verify-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, name }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
-      const error: AuthError = await response.json();
-      throw new Error(error.detail || 'Registration failed');
+      const errorData = await response.json();
+      console.error('❌ OTP Verification Error:', errorData);
+      let errorMsg = 'OTP verification failed';
+      
+      if (typeof errorData.detail === 'string') {
+        errorMsg = errorData.detail;
+      } else if (Array.isArray(errorData.detail)) {
+        errorMsg = errorData.detail.map((e: any) => e.msg || e).join(', ');
+      }
+      
+      throw new Error(errorMsg);
+    }
+
+    const result = await response.json();
+    console.log('✅ OTP Verified Successfully:', result);
+    return result;
+  }
+
+  /**
+   * Register new user - Step 3: Complete registration
+   */
+  async register(
+    email: string,
+    password: string,
+    name: string,
+    recaptchaToken: string,
+    phone: string,
+    accountType: string,
+    subscriptionPlan?: string,
+    barNumber?: string,
+    cabinetName?: string,
+    university?: string,
+    role?: string,
+    barRegistrationNumber?: string,
+    officeAddress?: string,
+    numberOfLawyers?: string
+  ): Promise<LoginStep2Response> {
+    const response = await fetch(`${this.baseUrl}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        password,
+        name,
+        phone,
+        account_type: accountType,
+        subscription_plan: subscriptionPlan || 'basic',
+        bar_number: barNumber,
+        cabinet_name: cabinetName,
+        university: university,
+        bar_registration_number: barRegistrationNumber,
+        office_address: officeAddress,
+        number_of_lawyers: numberOfLawyers ? parseInt(numberOfLawyers) : null,
+        recaptcha_token: recaptchaToken,
+        role: role || 'LAWYER',
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      let errorMsg = 'Failed to register';
+      
+      if (typeof errorData.detail === 'string') {
+        errorMsg = errorData.detail;
+      } else if (Array.isArray(errorData.detail)) {
+        errorMsg = errorData.detail.map((e: any) => e.msg).join(', ');
+      }
+      
+      throw new Error(errorMsg);
     }
 
     const data = await response.json();
@@ -225,13 +348,33 @@ class APIService {
   }
 
   /**
-   * Update user profile
+   * Update user profile - Supports file uploads (avatar) and deletion
    */
-  async updateProfile(data: Partial<User>): Promise<User> {
+  async updateProfile(data: Partial<User> & { avatar?: File | null, deleteAvatar?: boolean }): Promise<User> {
+    const isFormData = (data.avatar && typeof data.avatar !== 'string') || data.deleteAvatar;
+    let body: any;
+    let headers = { ...this.getAuthHeaders() } as any;
+
+    if (isFormData) {
+      // Use FormData for file uploads or deletion
+      const formData = new FormData();
+      if (data.name) formData.append('name', data.name);
+      if (data.avatar && typeof data.avatar !== 'string') formData.append('avatar', data.avatar);
+      if (data.deleteAvatar) formData.append('delete_avatar', 'true');
+      
+      // For phone, etc.
+      if ((data as any).phone) formData.append('phone', (data as any).phone);
+      
+      body = formData;
+      delete headers['Content-Type'];
+    } else {
+      body = JSON.stringify(data);
+    }
+
     const response = await fetchWithTokenRefresh(`${this.baseUrl}/users/profile`, {
       method: 'PUT',
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(data),
+      headers,
+      body,
     });
 
     if (!response.ok) {

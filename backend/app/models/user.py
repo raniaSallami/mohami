@@ -34,9 +34,11 @@ class SubscriptionStatus(str, enum.Enum):
 
 class User(Base):
     __tablename__ = "users"
+    __table_args__ = {"extend_existing": True}
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    email_verified: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     password: Mapped[str] = mapped_column(String(255), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(String(50), default=UserRole.CLIENT.value, nullable=False)
@@ -47,7 +49,7 @@ class User(Base):
     allowed_ip: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     totp_secret: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     totp_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
-    organization_owner_id: Mapped[Optional[str]] = mapped_column(UUID(as_uuid=False), nullable=True)
+    organization_owner_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     password_changed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, default=None)
@@ -62,6 +64,7 @@ class User(Base):
     known_devices: Mapped[List["KnownDevice"]] = relationship("KnownDevice", back_populates="user", cascade="all, delete-orphan")
     login_history: Mapped[List["LoginHistory"]] = relationship("LoginHistory", back_populates="user", cascade="all, delete-orphan")
     login_otps: Mapped[List["LoginEmailOTP"]] = relationship("LoginEmailOTP", back_populates="user", cascade="all, delete-orphan")
+    profile: Mapped[Optional["UserProfile"]] = relationship("UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email}, role={self.role})>"
@@ -82,9 +85,95 @@ class User(Base):
     def is_active(self) -> bool:
         return self.subscription_status == SubscriptionStatus.ACTIVE.value
 
+    # Profile properties for easy access by serializers
+    @property
+    def account_type(self) -> Optional[str]:
+        return self.profile.account_type if self.profile else None
+
+    @account_type.setter
+    def account_type(self, value):
+        if not self.profile:
+            from app.models.user_profile import UserProfile
+            self.profile = UserProfile(user_id=self.id, account_type=value or "lawyer")
+        else:
+            self.profile.account_type = value
+
+    @property
+    def bar_number(self) -> Optional[str]:
+        return self.profile.bar_number if self.profile else None
+
+    @bar_number.setter
+    def bar_number(self, value):
+        if not self.profile:
+            from app.models.user_profile import UserProfile
+            self.profile = UserProfile(user_id=self.id, account_type="lawyer", bar_number=value)
+        else:
+            self.profile.bar_number = value
+
+    @property
+    def cabinet_name(self) -> Optional[str]:
+        return self.profile.cabinet_name if self.profile else None
+
+    @cabinet_name.setter
+    def cabinet_name(self, value):
+        if not self.profile:
+            from app.models.user_profile import UserProfile
+            self.profile = UserProfile(user_id=self.id, account_type="cabinet", cabinet_name=value)
+        else:
+            self.profile.cabinet_name = value
+
+    @property
+    def university(self) -> Optional[str]:
+        return self.profile.university if self.profile else None
+
+    @university.setter
+    def university(self, value):
+        if not self.profile:
+            from app.models.user_profile import UserProfile
+            self.profile = UserProfile(user_id=self.id, account_type="student", university=value)
+        else:
+            self.profile.university = value
+
+    @property
+    def bar_registration_number(self) -> Optional[str]:
+        return self.profile.bar_registration_number if self.profile else None
+
+    @bar_registration_number.setter
+    def bar_registration_number(self, value):
+        if not self.profile:
+            from app.models.user_profile import UserProfile
+            self.profile = UserProfile(user_id=self.id, account_type="cabinet", bar_registration_number=value)
+        else:
+            self.profile.bar_registration_number = value
+
+    @property
+    def office_address(self) -> Optional[str]:
+        return self.profile.office_address if self.profile else None
+
+    @office_address.setter
+    def office_address(self, value):
+        if not self.profile:
+            from app.models.user_profile import UserProfile
+            self.profile = UserProfile(user_id=self.id, account_type="lawyer", office_address=value)
+        else:
+            self.profile.office_address = value
+
+    @property
+    def number_of_lawyers(self) -> Optional[int]:
+        return self.profile.number_of_lawyers if self.profile else None
+
+    @number_of_lawyers.setter
+    def number_of_lawyers(self, value):
+        if not self.profile:
+            from app.models.user_profile import UserProfile
+            self.profile = UserProfile(user_id=self.id, account_type="cabinet", number_of_lawyers=value)
+        else:
+            self.profile.number_of_lawyers = value
+
 
 class KnownDevice(Base):
     __tablename__ = "known_devices"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
@@ -101,6 +190,7 @@ class KnownDevice(Base):
 
 class LoginHistory(Base):
     __tablename__ = "login_history"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)

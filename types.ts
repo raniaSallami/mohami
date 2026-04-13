@@ -7,12 +7,23 @@ export enum UserRole {
 export interface User {
   id: string;
   email: string;
+  email_verified?: boolean;
   name: string;
   role: UserRole;
   avatar?: string;
-  subscriptionPlan?: 'basic' | 'pro' | 'enterprise';
+  subscriptionPlan?: 'basic' | 'pro' | 'enterprise' | 'premium' | 'professional';
   subscriptionStatus?: 'active' | 'pending_approval' | 'expired';
   organizationOwnerId?: string; // For enterprise team members
+  phone?: string;
+  account_type?: string;
+  bar_number?: string;
+  cabinet_name?: string;
+  bar_registration_number?: string;
+  office_address?: string;
+  number_of_lawyers?: number;
+  university?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface ChatMessage {

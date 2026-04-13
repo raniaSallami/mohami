@@ -11,16 +11,19 @@ export interface Notification {
   user_id: string;
   title: string;
   message: string;
-  type: 'info' | 'warning' | 'error' | 'success';
+  type: 'admin' | 'appointment' | 'invoice' | 'system' | 'info' | 'success' | 'error' | 'warning' | 'case';
   read: boolean;
   created_at: string;
-  action_url?: string;
+  link?: string;
+  metadata?: any;
 }
 
 class NotificationService {
   private baseUrl = API_BASE;
   private notificationListeners: Set<(notifications: Notification[]) => void> = new Set();
   private pollInterval: NodeJS.Timeout | null = null;
+  private lastNotificationIds: Set<string> = new Set();
+  private isFirstLoad: boolean = true;
 
   getAuthHeaders(): HeadersInit {
     const token = storageService.getAccessToken();
@@ -91,12 +94,33 @@ class NotificationService {
       try {
         if (!storageService.getAccessToken()) return;
         
-        const data = await this.getNotifications(1, 100);
-        this.notificationListeners.forEach(listener => listener(data.notifications || []));
+        const data = await this.getNotifications(1, 20);
+        const notifications: Notification[] = data.notifications || [];
+        
+        // Notify listeners
+        this.notificationListeners.forEach(listener => listener(notifications));
+        
+        // Check for new notifications to trigger browser alerts
+        if (!this.isFirstLoad) {
+          notifications.forEach(notif => {
+            if (!notif.read && !this.lastNotificationIds.has(notif.id)) {
+              if ('Notification' in window && window.Notification.permission === 'granted') {
+                new window.Notification(notif.title, {
+                  body: notif.message,
+                  icon: '/favicon.ico'
+                });
+              }
+            }
+          });
+        }
+        
+        // Update tracked IDs
+        this.lastNotificationIds = new Set(notifications.map(n => n.id));
+        this.isFirstLoad = false;
       } catch (error) {
         console.error('Notification polling error:', error);
       }
-    }, 5000); // Poll every 5 seconds
+    }, 4000); // Poll every 4 seconds
   }
 
   private stopPolling(): void {

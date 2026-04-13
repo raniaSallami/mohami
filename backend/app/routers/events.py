@@ -42,7 +42,7 @@ async def list_events(
         query = query.where(
             or_(
                 Event.tenant_id == tenant_id,
-                Event.user_id == current_user.id
+                Event.user_id == str(current_user.id)
             )
         )
     
@@ -93,7 +93,9 @@ async def create_event(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Create a new event."""
+    """Create a new event and notify the user."""
+    from app.models.notification import Notification
+    
     tenant_id = current_user.organization_owner_id or current_user.id
     
     event = Event(
@@ -108,6 +110,17 @@ async def create_event(
     )
     
     db.add(event)
+    
+    # Create notification
+    notification = Notification(
+        user_id=current_user.id,
+        type="appointment",
+        title="موعد جديد",
+        message=f"تمت إضافة موعد جديد في التقويم: {event.title}",
+        link="/calendar"
+    )
+    db.add(notification)
+    
     await db.commit()
     await db.refresh(event)
     

@@ -24,9 +24,23 @@ class StorageService {
     return {
       ...user,
       id: user.id || user._id,
+      email: user.email,
+      email_verified: user.email_verified || false,
+      name: user.name,
+      role: user.role,
       subscriptionPlan: user.subscription_plan || user.subscriptionPlan || 'basic',
       subscriptionStatus: user.subscription_status || user.subscriptionStatus || 'active',
       organizationOwnerId: user.organization_owner_id || user.organizationOwnerId,
+      phone: user.phone,
+      account_type: user.account_type,
+      bar_number: user.bar_number,
+      cabinet_name: user.cabinet_name,
+      bar_registration_number: user.bar_registration_number,
+      office_address: user.office_address,
+      number_of_lawyers: user.number_of_lawyers,
+      university: user.university,
+      created_at: user.created_at,
+      updated_at: user.updated_at,
     };
   }
 
@@ -60,7 +74,15 @@ class StorageService {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ name: userUpdate.name, email: userUpdate.email }),
+        body: JSON.stringify({ 
+          name: userUpdate.name, 
+          email: userUpdate.email,
+          phone: userUpdate.phone,
+          account_type: userUpdate.account_type,
+          bar_number: userUpdate.bar_number,
+          cabinet_name: userUpdate.cabinet_name,
+          university: userUpdate.university
+        }),
       });
       if (response.ok) {
         const freshUser = await response.json();
@@ -130,7 +152,7 @@ class StorageService {
 
   getAccessToken(): string | null {
     const token = this.getToken();
-    return token?.access_token || localStorage.getItem('almohami_access_token') || null;
+    return token?.access_token || null;
   }
 
   isTokenExpired(): boolean {
@@ -182,8 +204,8 @@ class StorageService {
     return null; // caller uses defaults
   }
 
-  // Cases Cache
-  getCases(): any[] {
+  // Cases Cache - Local storage methods
+  getCasesFromCache(): any[] {
     const cases = localStorage.getItem(this.CASES_KEY);
     return cases ? JSON.parse(cases) : [];
   }
@@ -598,15 +620,17 @@ class StorageService {
 
   async addEvent(event: any): Promise<void> {
     try {
-      const payload = {
+      const payload: any = {
         title: event.title,
         date: event.date,
-        time: event.time,
-        type: event.type,
-        description: event.description,
-        case_id: event.caseId
+        type: event.type
       };
-      await fetch(`${API_BASE}/events`, {
+      
+      if (event.time) payload.time = event.time;
+      if (event.description) payload.description = event.description;
+      if (event.caseId) payload.case_id = event.caseId;
+      
+      const response = await fetch(`${API_BASE}/events`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -614,8 +638,15 @@ class StorageService {
         },
         body: JSON.stringify(payload)
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Backend validation error details:", JSON.stringify(errorData, null, 2));
+        throw new Error(`Failed to add event: ${response.status}`);
+      }
     } catch (e) {
       console.error("Failed to add event", e);
+      throw e;
     }
   }
 
@@ -646,6 +677,25 @@ class StorageService {
       return true; // fail open for mock purposes
     } catch {
       return true;
+    }
+  }
+
+  // Invoice Methods
+  async getInvoices(): Promise<any[]> {
+    try {
+      const response = await fetch(`${API_BASE}/invoices`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(this.getAccessToken() && { Authorization: `Bearer ${this.getAccessToken()}` }),
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        return data.invoices || [];
+      }
+      return [];
+    } catch {
+      return [];
     }
   }
 }
