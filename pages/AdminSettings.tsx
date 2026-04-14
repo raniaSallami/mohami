@@ -23,7 +23,7 @@ export const AdminSettings = () => {
   
   // General Settings
   const [settings, setSettings] = useState<SystemSettings>({
-    appName: 'المحامي',
+    appName: window.__t("المحامي"),
     maintenanceMode: false,
     allowRegistrations: true,
     geminiApiKey: '',
@@ -101,9 +101,9 @@ export const AdminSettings = () => {
     setLoading(true);
     try {
       await storageService.setSystemSetting('general_settings', settings);
-      setNotification({ msg: 'تم حفظ الإعدادات العامة بنجاح', type: 'success' });
+      setNotification({ msg: window.__t("تم حفظ الإعدادات العامة بنجاح"), type: 'success' });
     } catch (error) {
-      setNotification({ msg: 'حدث خطأ أثناء الحفظ', type: 'error' });
+      setNotification({ msg: window.__t("حدث خطأ أثناء الحفظ"), type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -113,9 +113,9 @@ export const AdminSettings = () => {
     setLoading(true);
     try {
       await storageService.setSystemSetting('pricing', pricing);
-      setNotification({ msg: 'تم حفظ الأسعار بنجاح', type: 'success' });
+      setNotification({ msg: window.__t("تم حفظ الأسعار بنجاح"), type: 'success' });
     } catch (error) {
-      setNotification({ msg: 'حدث خطأ أثناء الحفظ', type: 'error' });
+      setNotification({ msg: window.__t("حدث خطأ أثناء الحفظ"), type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -125,9 +125,9 @@ export const AdminSettings = () => {
     setLoading(true);
     try {
       await storageService.setSystemSetting('plan_limits', planLimits);
-      setNotification({ msg: 'تم حفظ حدود الخطط بنجاح', type: 'success' });
+      setNotification({ msg: window.__t("تم حفظ حدود الخطط بنجاح"), type: 'success' });
     } catch (error) {
-      setNotification({ msg: 'حدث خطأ أثناء الحفظ', type: 'error' });
+      setNotification({ msg: window.__t("حدث خطأ أثناء الحفظ"), type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -167,9 +167,9 @@ export const AdminSettings = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      setNotification({ msg: 'تم تصدير البيانات بنجاح', type: 'success' });
+      setNotification({ msg: window.__t("تم تصدير البيانات بنجاح"), type: 'success' });
     } catch (error) {
-      setNotification({ msg: 'حدث خطأ أثناء التصدير', type: 'error' });
+      setNotification({ msg: window.__t("حدث خطأ أثناء التصدير"), type: 'error' });
     }
   };
 
@@ -191,28 +191,28 @@ export const AdminSettings = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
         <div>
-          <h2 className="text-3xl font-bold text-slate-800">إعدادات النظام</h2>
-          <p className="text-gray-500 mt-1">إدارة إعدادات المنصة والخطط والمستخدمين</p>
+          <h2 className="text-3xl font-bold text-slate-800">{window.__t("إعدادات النظام")}</h2>
+          <p className="text-gray-500 mt-1">{window.__t("إدارة إعدادات المنصة والخطط والمستخدمين")}</p>
         </div>
       </div>
 
       {/* Tabs */}
       <div className="flex flex-wrap gap-3 bg-gray-50 p-2 rounded-xl">
-        <TabButton id="general" label="الإعدادات العامة" icon="⚙️" />
-        <TabButton id="plans" label="الخطط والأسعار" icon="💰" />
-        <TabButton id="notifications" label="الإشعارات" icon="🔔" />
-        <TabButton id="security" label="الأمان" icon="🔒" />
-        <TabButton id="stats" label="الإحصائيات" icon="📊" />
+        <TabButton id="general" label={window.__t("الإعدادات العامة")} icon="⚙️" />
+        <TabButton id="plans" label={window.__t("الخطط والأسعار")} icon="💰" />
+        <TabButton id="notifications" label={window.__t("الإشعارات")} icon="🔔" />
+        <TabButton id="security" label={window.__t("الأمان")} icon="🔒" />
+        <TabButton id="stats" label={window.__t("الإحصائيات")} icon="📊" />
       </div>
 
       {/* General Settings */}
       {activeTab === 'general' && (
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 space-y-6">
-          <h3 className="text-xl font-bold text-slate-800 border-b pb-3">الإعدادات العامة</h3>
+          <h3 className="text-xl font-bold text-slate-800 border-b pb-3">{window.__t("الإعدادات العامة")}</h3>
           
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">اسم التطبيق</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{window.__t("اسم التطبيق")}</label>
               <input
                 type="text"
                 value={settings.appName}
@@ -223,8 +223,8 @@ export const AdminSettings = () => {
 
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <div>
-                <label className="block text-sm font-medium text-gray-700">وضع الصيانة</label>
-                <p className="text-xs text-gray-500 mt-1">إيقاف المنصة مؤقتاً للصيانة</p>
+                <label className="block text-sm font-medium text-gray-700">{window.__t("وضع الصيانة")}</label>
+                <p className="text-xs text-gray-500 mt-1">{window.__t("إيقاف المنصة مؤقتاً للصيانة")}</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
@@ -239,8 +239,8 @@ export const AdminSettings = () => {
 
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <div>
-                <label className="block text-sm font-medium text-gray-700">السماح بالتسجيل</label>
-                <p className="text-xs text-gray-500 mt-1">السماح للمستخدمين الجدد بالتسجيل</p>
+                <label className="block text-sm font-medium text-gray-700">{window.__t("السماح بالتسجيل")}</label>
+                <p className="text-xs text-gray-500 mt-1">{window.__t("السماح للمستخدمين الجدد بالتسجيل")}</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
@@ -254,15 +254,15 @@ export const AdminSettings = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">مفتاح API للذكاء الاصطناعي</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{window.__t("مفتاح API للذكاء الاصطناعي")}</label>
               <input
                 type="password"
                 value={settings.geminiApiKey}
                 onChange={(e) => setSettings({ ...settings, geminiApiKey: e.target.value })}
-                placeholder="أدخل مفتاح API"
+                placeholder={window.__t("أدخل مفتاح API")}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
               />
-              <p className="text-xs text-gray-500 mt-1">يستخدم للذكاء الاصطناعي وتحليل الوثائق</p>
+              <p className="text-xs text-gray-500 mt-1">{window.__t("يستخدم للذكاء الاصطناعي وتحليل الوثائق")}</p>
             </div>
           </div>
 
@@ -272,7 +272,7 @@ export const AdminSettings = () => {
             className="w-full md:w-auto px-6 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition disabled:opacity-50 flex items-center justify-center space-x-2 space-x-reverse"
           >
             {loading ? <Spinner /> : null}
-            <span>حفظ الإعدادات</span>
+            <span>{window.__t("حفظ الإعدادات")}</span>
           </button>
         </div>
       )}
@@ -282,17 +282,17 @@ export const AdminSettings = () => {
         <div className="space-y-6">
           {/* Pricing */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
-            <h3 className="text-xl font-bold text-slate-800 border-b pb-3 mb-6">أسعار الخطط</h3>
+            <h3 className="text-xl font-bold text-slate-800 border-b pb-3 mb-6">{window.__t("أسعار الخطط")}</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="border border-gray-200 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-bold text-slate-800">باقة المحترف</h4>
+                  <h4 className="font-bold text-slate-800">{window.__t("باقة المحترف")}</h4>
                   <span className="text-2xl font-bold text-gold-600">Pro</span>
                 </div>
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">السعر (د.ت)</label>
+                    <label className="block text-sm text-gray-600 mb-1">{window.__t("السعر (د.ت)")}</label>
                     <input
                       type="number"
                       value={pricing.pro}
@@ -305,12 +305,12 @@ export const AdminSettings = () => {
 
               <div className="border border-gray-200 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-bold text-slate-800">باقة المكتب</h4>
+                  <h4 className="font-bold text-slate-800">{window.__t("باقة المكتب")}</h4>
                   <span className="text-2xl font-bold text-purple-600">Enterprise</span>
                 </div>
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">السعر (د.ت)</label>
+                    <label className="block text-sm text-gray-600 mb-1">{window.__t("السعر (د.ت)")}</label>
                     <input
                       type="number"
                       value={pricing.enterprise}
@@ -327,13 +327,13 @@ export const AdminSettings = () => {
               disabled={loading}
               className="mt-6 w-full md:w-auto px-6 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition disabled:opacity-50"
             >
-              حفظ الأسعار
+              {window.__t("حفظ الأسعار")}
             </button>
           </div>
 
           {/* Plan Limits */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
-            <h3 className="text-xl font-bold text-slate-800 border-b pb-3 mb-6">حدود الخطط</h3>
+            <h3 className="text-xl font-bold text-slate-800 border-b pb-3 mb-6">{window.__t("حدود الخطط")}</h3>
             
             <div className="space-y-6">
               {Object.entries(planLimits).map(([plan, limits]) => (
@@ -341,7 +341,7 @@ export const AdminSettings = () => {
                   <h4 className="font-bold text-slate-800 mb-4 capitalize">{plan}</h4>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-sm text-gray-600 mb-1">عدد القضايا</label>
+                      <label className="block text-sm text-gray-600 mb-1">{window.__t("عدد القضايا")}</label>
                       <input
                         type="number"
                         value={limits.cases}
@@ -353,7 +353,7 @@ export const AdminSettings = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm text-gray-600 mb-1">عدد العقود</label>
+                      <label className="block text-sm text-gray-600 mb-1">{window.__t("عدد العقود")}</label>
                       <input
                         type="number"
                         value={limits.contracts}
@@ -365,7 +365,7 @@ export const AdminSettings = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm text-gray-600 mb-1">حد رفع الملف (MB)</label>
+                      <label className="block text-sm text-gray-600 mb-1">{window.__t("حد رفع الملف (MB)")}</label>
                       <input
                         type="number"
                         value={(limits as any).maxFileSizeMB ?? 100}
@@ -387,7 +387,7 @@ export const AdminSettings = () => {
               disabled={loading}
               className="mt-6 w-full md:w-auto px-6 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition disabled:opacity-50"
             >
-              حفظ الحدود
+              {window.__t("حفظ الحدود")}
             </button>
           </div>
         </div>
@@ -396,11 +396,11 @@ export const AdminSettings = () => {
       {/* Notifications Settings */}
       {activeTab === 'notifications' && (
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 space-y-6">
-          <h3 className="text-xl font-bold text-slate-800 border-b pb-3">إعدادات الإشعارات</h3>
+          <h3 className="text-xl font-bold text-slate-800 border-b pb-3">{window.__t("إعدادات الإشعارات")}</h3>
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              فترة فحص الإشعارات (بالميلي ثانية)
+              {window.__t("فترة فحص الإشعارات (بالميلي ثانية)")}
             </label>
             <input
               type="number"
@@ -408,7 +408,7 @@ export const AdminSettings = () => {
               onChange={(e) => setSettings({ ...settings, notificationPollingInterval: parseInt(e.target.value) || 3000 })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-900"
             />
-            <p className="text-xs text-gray-500 mt-1">القيمة الافتراضية: 3000 (3 ثواني)</p>
+            <p className="text-xs text-gray-500 mt-1">{window.__t("القيمة الافتراضية: 3000 (3 ثواني)")}</p>
           </div>
 
           <button
@@ -416,7 +416,7 @@ export const AdminSettings = () => {
             disabled={loading}
             className="w-full md:w-auto px-6 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition disabled:opacity-50"
           >
-            حفظ الإعدادات
+            {window.__t("حفظ الإعدادات")}
           </button>
         </div>
       )}
@@ -424,23 +424,23 @@ export const AdminSettings = () => {
       {/* Security */}
       {activeTab === 'security' && (
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 space-y-6">
-          <h3 className="text-xl font-bold text-slate-800 border-b pb-3">الأمان والنسخ الاحتياطي</h3>
+          <h3 className="text-xl font-bold text-slate-800 border-b pb-3">{window.__t("الأمان والنسخ الاحتياطي")}</h3>
           
           <div className="space-y-4">
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <h4 className="font-bold text-blue-800 mb-2">تصدير البيانات</h4>
-              <p className="text-sm text-blue-700 mb-4">قم بتحميل نسخة احتياطية من جميع البيانات (المستخدمين، القضايا، العقود)</p>
+              <h4 className="font-bold text-blue-800 mb-2">{window.__t("تصدير البيانات")}</h4>
+              <p className="text-sm text-blue-700 mb-4">{window.__t("قم بتحميل نسخة احتياطية من جميع البيانات (المستخدمين، القضايا، العقود)")}</p>
               <button
                 onClick={handleExportData}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
               >
-                تصدير البيانات
+                {window.__t("تصدير البيانات")}
               </button>
             </div>
 
             <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <h4 className="font-bold text-yellow-800 mb-2">تحذير</h4>
-              <p className="text-sm text-yellow-700">تأكد من حفظ نسخة احتياطية بانتظام لحماية بياناتك</p>
+              <h4 className="font-bold text-yellow-800 mb-2">{window.__t("تحذير")}</h4>
+              <p className="text-sm text-yellow-700">{window.__t("تأكد من حفظ نسخة احتياطية بانتظام لحماية بياناتك")}</p>
             </div>
           </div>
         </div>
@@ -451,37 +451,37 @@ export const AdminSettings = () => {
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-xl shadow-lg">
-              <p className="text-blue-100 text-sm mb-2">إجمالي المستخدمين</p>
+              <p className="text-blue-100 text-sm mb-2">{window.__t("إجمالي المستخدمين")}</p>
               <h3 className="text-4xl font-bold">{stats.totalUsers}</h3>
             </div>
             <div className="bg-gradient-to-br from-green-500 to-green-600 text-white p-6 rounded-xl shadow-lg">
-              <p className="text-green-100 text-sm mb-2">إجمالي القضايا</p>
+              <p className="text-green-100 text-sm mb-2">{window.__t("إجمالي القضايا")}</p>
               <h3 className="text-4xl font-bold">{stats.totalCases}</h3>
             </div>
             <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-6 rounded-xl shadow-lg">
-              <p className="text-purple-100 text-sm mb-2">إجمالي العقود</p>
+              <p className="text-purple-100 text-sm mb-2">{window.__t("إجمالي العقود")}</p>
               <h3 className="text-4xl font-bold">{stats.totalContracts}</h3>
             </div>
             <div className="bg-gradient-to-br from-amber-500 to-amber-600 text-white p-6 rounded-xl shadow-lg">
-              <p className="text-amber-100 text-sm mb-2">إجمالي الإيرادات</p>
-              <h3 className="text-4xl font-bold">{stats.totalRevenue.toFixed(2)} د.ت</h3>
+              <p className="text-amber-100 text-sm mb-2">{window.__t("إجمالي الإيرادات")}</p>
+              <h3 className="text-4xl font-bold">{stats.totalRevenue.toFixed(2)} {window.__t("د.ت")}</h3>
             </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
-            <h3 className="text-xl font-bold text-slate-800 mb-4">معلومات النظام</h3>
+            <h3 className="text-xl font-bold text-slate-800 mb-4">{window.__t("معلومات النظام")}</h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between py-2 border-b">
-                <span className="text-gray-600">إصدار النظام</span>
+                <span className="text-gray-600">{window.__t("إصدار النظام")}</span>
                 <span className="font-medium">1.0.0</span>
               </div>
               <div className="flex justify-between py-2 border-b">
-                <span className="text-gray-600">تاريخ آخر نسخة احتياطية</span>
+                <span className="text-gray-600">{window.__t("تاريخ آخر نسخة احتياطية")}</span>
                 <span className="font-medium">-</span>
               </div>
               <div className="flex justify-between py-2">
-                <span className="text-gray-600">حالة قاعدة البيانات</span>
-                <span className="font-medium text-green-600">متصل</span>
+                <span className="text-gray-600">{window.__t("حالة قاعدة البيانات")}</span>
+                <span className="font-medium text-green-600">{window.__t("متصل")}</span>
               </div>
             </div>
           </div>

@@ -178,12 +178,12 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
     try {
       const baseUrl = typeof window !== 'undefined' ? window.location.origin + window.location.pathname : 'https://mouhami-ai.tn';
       await storageService.inviteTeamMember(ownerId, inviteEmail, baseUrl);
-      setNotification({ msg: 'تم إرسال الدعوة بنجاح. سيتلقى المدعو بريداً برابط لإنشاء حسابه.', type: 'success' });
+      setNotification({ msg: window.__t("تم إرسال الدعوة بنجاح. سيتلقى المدعو بريداً برابط لإنشاء حسابه."), type: 'success' });
       setShowInviteModal(false);
       setInviteEmail('');
       loadMembers();
     } catch (err) {
-      setInviteError(err instanceof Error ? err.message : 'حدث خطأ');
+      setInviteError(err instanceof Error ? err.message : window.__t("حدث خطأ"));
     } finally {
       setInviteLoading(false);
     }
@@ -198,11 +198,11 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
     setAssignLoading(true);
     try {
       await storageService.assignCaseToUser(caseId, assignToUserId, user.id);
-      setNotification({ msg: 'تم إسناد القضية بنجاح. تم إرسال إشعار وبريد للمحامي.', type: 'success' });
+      setNotification({ msg: window.__t("تم إسناد القضية بنجاح. تم إرسال إشعار وبريد للمحامي."), type: 'success' });
       setAssigningCaseId(null);
       loadOrgCases();
     } catch (err) {
-      setNotification({ msg: err instanceof Error ? err.message : 'فشل الإسناد', type: 'error' });
+      setNotification({ msg: err instanceof Error ? err.message : window.__t("فشل الإسناد"), type: 'error' });
     } finally {
       setAssignLoading(false);
     }
@@ -213,11 +213,11 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
     setAssignLoading(true);
     try {
       await storageService.revokeCaseAssignment(revokeModal.caseId, ownerId);
-      setNotification({ msg: 'تم إلغاء إسناد القضية.', type: 'success' });
+      setNotification({ msg: window.__t("تم إلغاء إسناد القضية."), type: 'success' });
       setRevokeModal(null);
       loadOrgCases();
     } catch (err) {
-      setNotification({ msg: err instanceof Error ? err.message : 'فشل إلغاء الإسناد', type: 'error' });
+      setNotification({ msg: err instanceof Error ? err.message : window.__t("فشل إلغاء الإسناد"), type: 'error' });
     } finally {
       setAssignLoading(false);
     }
@@ -231,7 +231,7 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
       setRemoveMemberModal(null);
       loadMembers();
     } catch (err) {
-      setNotification({ msg: err instanceof Error ? err.message : 'فشل الإزالة', type: 'error' });
+      setNotification({ msg: err instanceof Error ? err.message : window.__t("فشل الإزالة"), type: 'error' });
     }
   };
 
@@ -251,7 +251,7 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
       }
       setNewMessage('');
     } catch (e) {
-      setNotification({ msg: 'فشل إرسال الرسالة', type: 'error' });
+      setNotification({ msg: window.__t("فشل إرسال الرسالة"), type: 'error' });
     } finally {
       setMsgLoading(false);
     }
@@ -308,30 +308,30 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
   if (plan !== 'enterprise') {
     return (
       <div className="p-8 text-center text-gray-500">
-        هذه الميزة متوفرة فقط لمستخدمي باقة المكتب.
+        {window.__t("هذه الميزة متوفرة فقط لمستخدمي باقة المكتب.")}
       </div>
     );
   }
 
   const tabs: { id: TabId; label: string }[] = [
-    { id: 'accounts', label: 'حسابات الفريق' },
-    { id: 'assign', label: 'توزيع القضايا' },
-    { id: 'chat', label: 'دردشة الفريق' }
+    { id: 'accounts', label: window.__t("حسابات الفريق") },
+    { id: 'assign', label: window.__t("توزيع القضايا") },
+    { id: 'chat', label: window.__t("دردشة الفريق") }
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">فريق العمل</h2>
-          <p className="text-sm text-gray-500 mt-1">إدارة الحسابات، توزيع القضايا، والدردشة الداخلية</p>
+          <h2 className="text-2xl font-bold text-slate-800">{window.__t("فريق العمل")}</h2>
+          <p className="text-sm text-gray-500 mt-1">{window.__t("إدارة الحسابات، توزيع القضايا، والدردشة الداخلية")}</p>
         </div>
         {isOwner && (
           <button
             onClick={() => setShowInviteModal(true)}
             className="px-4 py-2 bg-gold-500 text-slate-900 rounded-lg font-bold hover:bg-gold-400 transition self-start"
           >
-            + دعوة محامي
+            {window.__t("+ دعوة محامي")}
           </button>
         )}
       </div>
@@ -352,7 +352,7 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
 
       {activeTab === 'accounts' && (
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
-          <h3 className="font-bold text-slate-800 mb-4">حسابات الفريق ({members.length})</h3>
+          <h3 className="font-bold text-slate-800 mb-4">{window.__t("حسابات الفريق (")}{members.length})</h3>
           {loading ? (
             <div className="flex justify-center py-8"><Spinner /></div>
           ) : (
@@ -363,16 +363,16 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
                     <p className="font-medium text-slate-800">{m.name}</p>
                     <p className="text-sm text-gray-500">{m.email}</p>
                     <span className={`inline-block mt-1 px-2 py-0.5 rounded text-xs ${m.id === ownerId ? 'bg-gold-100 text-gold-800' : 'bg-slate-200 text-slate-700'}`}>
-                      {m.id === ownerId ? 'مدير المكتب' : 'عضو الفريق'}
+                      {m.id === ownerId ? window.__t("مدير المكتب") : window.__t("عضو الفريق")}
                     </span>
                   </div>
                   {isOwner && m.id !== ownerId && (
                     <button
                       onClick={() => setRemoveMemberModal(m)}
                       className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition"
-                      title="إزالة من الفريق"
+                      title={window.__t("إزالة من الفريق")}
                     >
-                      إزالة
+                      {window.__t("إزالة")}
                     </button>
                   )}
                 </div>
@@ -381,11 +381,11 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
           )}
           {isOwner && pendingInvites.length > 0 && (
             <div className="mt-6 pt-6 border-t">
-              <h4 className="text-sm font-bold text-slate-600 mb-2">دعوات معلقة</h4>
+              <h4 className="text-sm font-bold text-slate-600 mb-2">{window.__t("دعوات معلقة")}</h4>
               {pendingInvites.map((inv) => (
                 <div key={inv.id} className="flex justify-between items-center py-2">
                   <span className="text-sm">{inv.email}</span>
-                  <button onClick={() => handleCancelInvite(inv.id)} className="text-xs text-red-600 hover:underline">إلغاء</button>
+                  <button onClick={() => handleCancelInvite(inv.id)} className="text-xs text-red-600 hover:underline">{window.__t("إلغاء")}</button>
                 </div>
               ))}
             </div>
@@ -395,14 +395,14 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
 
       {activeTab === 'assign' && (
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
-          <h3 className="font-bold text-slate-800 mb-4">توزيع القضايا</h3>
-          <p className="text-sm text-gray-600 mb-4">أسند قضية لأحد أعضاء الفريق. سيتلقى إشعاراً وبريداً إلكترونياً.</p>
+          <h3 className="font-bold text-slate-800 mb-4">{window.__t("توزيع القضايا")}</h3>
+          <p className="text-sm text-gray-600 mb-4">{window.__t("أسند قضية لأحد أعضاء الفريق. سيتلقى إشعاراً وبريداً إلكترونياً.")}</p>
           {!isOwner ? (
-            <p className="text-gray-500">هذه الصفحة متاحة لمدير المكتب فقط.</p>
+            <p className="text-gray-500">{window.__t("هذه الصفحة متاحة لمدير المكتب فقط.")}</p>
           ) : casesLoading ? (
             <div className="flex justify-center py-12"><Spinner /></div>
           ) : orgCases.length === 0 ? (
-            <p className="text-gray-500">لا توجد قضايا. أضف قضايا من صفحة القضايا أولاً.</p>
+            <p className="text-gray-500">{window.__t("لا توجد قضايا. أضف قضايا من صفحة القضايا أولاً.")}</p>
           ) : (
             <div className="space-y-3">
               {orgCases.map((c) => (
@@ -411,11 +411,11 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
                     <button
                       type="button"
                       onClick={() => onNavigate?.('case-detail', c.id)}
-                      className="font-medium text-slate-800 truncate block text-right hover:text-gold-600 transition"
+                      className="font-medium text-slate-800 truncate block text-end hover:text-gold-600 transition"
                     >
                       {c.title}
                     </button>
-                    <p className="text-sm text-gray-500">الموكل: {c.clientName}</p>
+                    <p className="text-sm text-gray-500">{window.__t("الموكل:")} {c.clientName}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0 flex-wrap">
                     {assigningCaseId === c.id ? (
@@ -428,7 +428,7 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
                           }}
                           disabled={assignLoading}
                         >
-                          <option value="">اختر محامياً...</option>
+                          <option value="">{window.__t("اختر محامياً...")}</option>
                           {members.filter((m) => m.id !== ownerId).map((m) => (
                             <option key={m.id} value={m.id}>{m.name}</option>
                           ))}
@@ -438,7 +438,7 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
                           onClick={() => setAssigningCaseId(null)}
                           className="text-sm text-gray-500 hover:underline"
                         >
-                          إلغاء
+                          {window.__t("إلغاء")}
                         </button>
                       </>
                     ) : (
@@ -446,21 +446,21 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
                         onClick={() => setAssigningCaseId(c.id)}
                         className="px-3 py-2 bg-gold-500 text-slate-900 rounded-lg text-sm font-medium hover:bg-gold-400"
                       >
-                        إسناد
+                        {window.__t("إسناد")}
                       </button>
                     )}
                     {c.assignedToUserId && (
                       <>
                         <span className="text-xs text-green-600">
-                          → {members.find((m) => m.id === c.assignedToUserId)?.name || 'مُعيَّن'}
+                          → {members.find((m) => m.id === c.assignedToUserId)?.name || window.__t("مُعيَّن")}
                         </span>
                         <button
                           onClick={() => setRevokeModal({ caseId: c.id, caseTitle: c.title })}
                           className="text-xs text-red-600 hover:underline px-1"
                           disabled={assignLoading}
-                          title="إلغاء الإسناد"
+                          title={window.__t("إلغاء الإسناد")}
                         >
-                          إلغاء الإسناد
+                          {window.__t("إلغاء الإسناد")}
                         </button>
                       </>
                     )}
@@ -477,7 +477,7 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
       ) : (
         <div className="grid md:grid-cols-3 gap-6">
           <div className="md:col-span-1 bg-white rounded-xl shadow-sm border border-slate-100 p-4">
-            <h3 className="font-bold text-slate-800 mb-4">الفريق ({members.length})</h3>
+            <h3 className="font-bold text-slate-800 mb-4">{window.__t("الفريق (")}{members.length})</h3>
             <div className="space-y-2 mb-4">
               {members.map((m) => (
                 <button
@@ -487,7 +487,7 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
                     setChatMode('direct');
                     setUnreadByMemberId(prev => ({ ...prev, [m.id]: false }));
                   }}
-                  className={`w-full text-right p-3 rounded-lg transition relative ${
+                  className={`w-full text-end p-3 rounded-lg transition relative ${
                     chatMode === 'direct' && selectedMember?.id === m.id
                       ? 'bg-gold-100 border border-gold-300'
                       : 'bg-slate-50 hover:bg-slate-100'
@@ -496,7 +496,7 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
                   <p className="font-medium text-slate-800">{m.name}</p>
                   <p className="text-xs text-gray-500">{m.email}</p>
                   {unreadByMemberId[m.id] && (
-                    <span className="absolute top-3 right-3 w-2.5 h-2.5 bg-red-500 rounded-full" />
+                    <span className="absolute top-3 end-3 w-2.5 h-2.5 bg-red-500 rounded-full" />
                   )}
                 </button>
               ))}
@@ -507,19 +507,19 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
                 setSelectedMember(null);
                 setUnreadTeamChat(false);
               }}
-              className={`w-full text-right p-3 rounded-lg transition relative ${
+              className={`w-full text-end p-3 rounded-lg transition relative ${
                 chatMode === 'team' ? 'bg-gold-100 border border-gold-300' : 'bg-slate-50 hover:bg-slate-100'
               }`}
             >
-              <span className="font-medium">📢 دردشة الفريق (الكل)</span>
+              <span className="font-medium">{window.__t("📢 دردشة الفريق (الكل)")}</span>
               {unreadTeamChat && (
-                <span className="absolute top-3 right-3 w-2.5 h-2.5 bg-red-500 rounded-full" />
+                <span className="absolute top-3 end-3 w-2.5 h-2.5 bg-red-500 rounded-full" />
               )}
             </button>
 
             {isOwner && pendingInvites.length > 0 && (
               <div className="mt-4 pt-4 border-t">
-                <h4 className="text-sm font-bold text-slate-600 mb-2">دعوات معلقة</h4>
+                <h4 className="text-sm font-bold text-slate-600 mb-2">{window.__t("دعوات معلقة")}</h4>
                 {pendingInvites.map((inv) => (
                   <div key={inv.id} className="flex justify-between items-center py-2">
                     <span className="text-sm">{inv.email}</span>
@@ -527,7 +527,7 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
                       onClick={() => handleCancelInvite(inv.id)}
                       className="text-xs text-red-600 hover:underline"
                     >
-                      إلغاء
+                      {window.__t("إلغاء")}
                     </button>
                   </div>
                 ))}
@@ -540,10 +540,10 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
               <span className="text-2xl">{chatMode === 'team' ? '📢' : '💬'}</span>
               <div>
                 <p className="font-bold text-slate-800">
-                  {chatMode === 'team' ? 'دردشة الفريق — الكل' : selectedMember?.name || ''}
+                  {chatMode === 'team' ? window.__t("دردشة الفريق — الكل") : selectedMember?.name || ''}
                 </p>
                 <p className="text-xs text-gray-500">
-                  {chatMode === 'team' ? 'مراسلة جماعية — استخدم @للمناداة' : selectedMember?.email || ''}
+                  {chatMode === 'team' ? window.__t("مراسلة جماعية — استخدم @للمناداة") : selectedMember?.email || ''}
                 </p>
               </div>
             </div>
@@ -551,10 +551,10 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
               {chatMode === 'team'
                 ? groupMessages.map((msg) => (
                     <div key={msg.id} className="flex flex-col">
-                      <div className={`max-w-[85%] p-3 rounded-lg ${msg.fromUserId === user.id ? 'bg-gold-100 mr-0 mr-auto' : 'bg-slate-100 ml-auto'}`}>
+                      <div className={`max-w-[85%] p-3 rounded-lg ${msg.fromUserId === user.id ? 'bg-gold-100 me-0 me-auto' : 'bg-slate-100 ms-auto'}`}>
                         <p className="text-xs text-gray-500 mb-1">{msg.fromUserName}</p>
                         <p className="text-sm">{renderMessageText(msg.text)}</p>
-                        <p className="text-xs text-gray-400 mt-1">{new Date(msg.createdAt).toLocaleString('ar-TN')}</p>
+                        <p className="text-xs text-gray-400 mt-1">{new Date(msg.createdAt).toLocaleString((document.documentElement.lang === 'ar' ? 'ar-TN' : 'fr-FR'))}</p>
                       </div>
                     </div>
                   ))
@@ -562,7 +562,7 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
                     <div key={msg.createdAt} className={`flex ${msg.from === user.id ? 'justify-start' : 'justify-end'}`}>
                       <div className={`max-w-[80%] p-3 rounded-lg ${msg.from === user.id ? 'bg-gold-100 text-slate-900' : 'bg-slate-100 text-slate-800'}`}>
                         <p className="text-sm">{renderMessageText(msg.text)}</p>
-                        <p className="text-xs text-gray-500 mt-1">{new Date(msg.createdAt).toLocaleString('ar-TN')}</p>
+                        <p className="text-xs text-gray-500 mt-1">{new Date(msg.createdAt).toLocaleString((document.documentElement.lang === 'ar' ? 'ar-TN' : 'fr-FR'))}</p>
                       </div>
                     </div>
                   ))}
@@ -578,7 +578,7 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
                       key={m.id}
                       type="button"
                       onClick={() => insertMention(m)}
-                      className="w-full text-right px-4 py-2 hover:bg-slate-50"
+                      className="w-full text-end px-4 py-2 hover:bg-slate-50"
                     >
                       @{m.name}
                     </button>
@@ -593,7 +593,7 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
                   value={newMessage}
                   onChange={handleInputChange}
                   onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
-                  placeholder={chatMode === 'team' ? 'اكتب رسالتك... استخدم @للمناداة' : 'اكتب رسالتك...'}
+                  placeholder={chatMode === 'team' ? window.__t("اكتب رسالتك... استخدم @للمناداة") : window.__t("اكتب رسالتك...")}
                   className="flex-1 px-4 py-2 border rounded-lg"
                   disabled={msgLoading}
                 />
@@ -602,7 +602,7 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
                   disabled={msgLoading || !newMessage.trim()}
                   className="px-4 py-2 bg-gold-500 text-slate-900 rounded-lg font-bold hover:bg-gold-400 disabled:opacity-50"
                 >
-                  إرسال
+                  {window.__t("إرسال")}
                 </button>
               </div>
             </div>
@@ -610,13 +610,13 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
         </div>
       ))}
 
-      <Modal isOpen={showInviteModal} onClose={() => setShowInviteModal(false)} title="دعوة محامي للفريق">
+      <Modal isOpen={showInviteModal} onClose={() => setShowInviteModal(false)} title={window.__t("دعوة محامي للفريق")}>
         <form onSubmit={handleInvite} className="space-y-4">
           <p className="text-sm text-gray-600">
-            سيستلم المدعو بريداً إلكترونياً يحتوي على رابط. عليه النقر على الرابط لإنشاء كلمة المرور وتفعيل حسابه.
+            {window.__t("سيستلم المدعو بريداً إلكترونياً يحتوي على رابط. عليه النقر على الرابط لإنشاء كلمة المرور وتفعيل حسابه.")}
           </p>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">البريد الإلكتروني</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{window.__t("البريد الإلكتروني")}</label>
             <input
               type="email"
               required
@@ -629,10 +629,10 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
           {inviteError && <p className="text-red-500 text-sm">{inviteError}</p>}
           <div className="flex gap-2">
             <button type="submit" disabled={inviteLoading} className="flex-1 py-2 bg-gold-500 text-slate-900 rounded-lg font-bold disabled:opacity-50">
-              {inviteLoading ? <Spinner /> : 'إرسال الدعوة'}
+              {inviteLoading ? <Spinner /> : window.__t("إرسال الدعوة")}
             </button>
             <button type="button" onClick={() => setShowInviteModal(false)} className="flex-1 py-2 border rounded-lg">
-              إلغاء
+              {window.__t("إلغاء")}
             </button>
           </div>
         </form>
@@ -642,10 +642,10 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
         isOpen={!!revokeModal}
         onClose={() => setRevokeModal(null)}
         onConfirm={handleRevokeAssignment}
-        title="إلغاء إسناد القضية"
+        title={window.__t("إلغاء إسناد القضية")}
         message={revokeModal ? `هل تريد إلغاء إسناد القضية "${revokeModal.caseTitle}"؟ لن يتمكن المحامي المعين من رؤيتها بعد ذلك.` : ''}
-        confirmText="إلغاء الإسناد"
-        cancelText="تراجع"
+        confirmText={window.__t("إلغاء الإسناد")}
+        cancelText={window.__t("تراجع")}
         type="warning"
       />
 
@@ -653,10 +653,10 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
         isOpen={!!removeMemberModal}
         onClose={() => setRemoveMemberModal(null)}
         onConfirm={handleRemoveMember}
-        title="إزالة عضو من الفريق"
+        title={window.__t("إزالة عضو من الفريق")}
         message={removeMemberModal ? `هل تريد إزالة ${removeMemberModal.name} (${removeMemberModal.email}) من الفريق؟ سيفقد الوصول إلى القضايا المسندة إليه.` : ''}
-        confirmText="إزالة"
-        cancelText="تراجع"
+        confirmText={window.__t("إزالة")}
+        cancelText={window.__t("تراجع")}
         type="danger"
       />
 

@@ -129,7 +129,7 @@ export const AdminChat: React.FC = () => {
     e.preventDefault();
     if ((!input.trim() && attachments.length === 0) || !selectedConversation) return;
 
-    const messageText = input.trim() || '📎 ملف مرفق';
+    const messageText = input.trim() || window.__t("📎 ملف مرفق");
     setInput('');
     setAttachments([]);
 
@@ -161,27 +161,27 @@ export const AdminChat: React.FC = () => {
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-900">
       {/* Conversations List */}
-      <div className="w-80 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col">
+      <div className="w-80 bg-white dark:bg-slate-800 border-e border-slate-200 dark:border-slate-700 flex flex-col">
         <div className="p-4 border-b border-slate-200 dark:border-slate-700">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">المحادثات</h2>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">{window.__t("المحادثات")}</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            {conversations.length} محادثة نشطة
+            {conversations.length} {window.__t("محادثة نشطة")}
           </p>
         </div>
 
         <div className="flex-1 overflow-y-auto">
           {conversations.length === 0 ? (
             <div className="p-4 text-center text-slate-500 dark:text-slate-400">
-              <p>لا توجد محادثات نشطة</p>
+              <p>{window.__t("لا توجد محادثات نشطة")}</p>
             </div>
           ) : (
             conversations.map((conv) => (
               <button
                 key={conv.id}
                 onClick={() => setSelectedConversation(conv)}
-                className={`w-full p-4 text-right border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition ${
+                className={`w-full p-4 text-end border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition ${
                   selectedConversation?.id === conv.id
-                    ? 'bg-yellow-50 dark:bg-yellow-900/20 border-r-4 border-r-yellow-500'
+                    ? 'bg-yellow-50 dark:bg-yellow-900/20 border-e-4 border-e-yellow-500'
                     : ''
                 }`}
               >
@@ -196,10 +196,10 @@ export const AdminChat: React.FC = () => {
                   </span>
                 </div>
                 <h3 className="font-semibold text-slate-900 dark:text-white mb-1">
-                  {conv.userId ? conv.userName || 'مستخدم متصل' : conv.userName || 'ضيف'}
+                  {conv.userId ? conv.userName || window.__t("مستخدم متصل") : conv.userName || window.__t("ضيف")}
                 </h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
-                  {conv.userEmail || (conv.userId ? '—' : 'بريد غير متوفر')}
+                  {conv.userEmail || (conv.userId ? '—' : window.__t("بريد غير متوفر"))}
                 </p>
               </button>
             ))
@@ -217,11 +217,11 @@ export const AdminChat: React.FC = () => {
                 <div>
                   <h3 className="font-bold text-lg text-slate-900 dark:text-white">
                     {selectedConversation.userId
-                      ? selectedConversation.userName || 'مستخدم متصل'
-                      : selectedConversation.userName || 'ضيف'}
+                      ? selectedConversation.userName || window.__t("مستخدم متصل")
+                      : selectedConversation.userName || window.__t("ضيف")}
                   </h3>
                   <p className="text-sm text-slate-500 dark:text-slate-400">
-                    {selectedConversation.userEmail || (selectedConversation.userId ? '—' : 'بريد غير متوفر')}
+                    {selectedConversation.userEmail || (selectedConversation.userId ? '—' : window.__t("بريد غير متوفر"))}
                   </p>
                 </div>
                 <button
@@ -232,7 +232,7 @@ export const AdminChat: React.FC = () => {
                   }}
                   className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm transition"
                 >
-                  إغلاق المحادثة
+                  {window.__t("إغلاق المحادثة")}
                 </button>
               </div>
             </div>
@@ -280,7 +280,7 @@ export const AdminChat: React.FC = () => {
                                   download={att.name}
                                   className="text-xs bg-yellow-400 hover:bg-yellow-300 px-2 py-1 rounded transition"
                                 >
-                                  تحميل
+                                  {window.__t("تحميل")}
                                 </a>
                               </div>
                             )}
@@ -353,7 +353,7 @@ export const AdminChat: React.FC = () => {
                 <label
                   htmlFor="admin-chat-file-input"
                   className="bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-900 dark:text-white px-3 py-2 rounded-lg transition cursor-pointer flex items-center"
-                  title="إرفاق ملف"
+                  title={window.__t("إرفاق ملف")}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
@@ -363,7 +363,7 @@ export const AdminChat: React.FC = () => {
                   type="text"
                   value={input}
                   onChange={handleInputChange}
-                  placeholder="اكتب ردك..."
+                  placeholder={window.__t("اكتب ردك...")}
                   className="flex-1 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                   disabled={isConnecting}
                 />
@@ -372,7 +372,7 @@ export const AdminChat: React.FC = () => {
                   disabled={(!input.trim() && attachments.length === 0) || isConnecting}
                   className="bg-yellow-400 hover:bg-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed text-slate-900 px-6 py-2 rounded-lg transition"
                 >
-                  إرسال
+                  {window.__t("إرسال")}
                 </button>
               </div>
             </form>
@@ -380,8 +380,8 @@ export const AdminChat: React.FC = () => {
         ) : (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center text-slate-500 dark:text-slate-400">
-              <p className="text-lg mb-2">اختر محادثة للبدء</p>
-              <p className="text-sm">اختر محادثة من القائمة الجانبية للرد على المستخدمين</p>
+              <p className="text-lg mb-2">{window.__t("اختر محادثة للبدء")}</p>
+              <p className="text-sm">{window.__t("اختر محادثة من القائمة الجانبية للرد على المستخدمين")}</p>
             </div>
           </div>
         )}

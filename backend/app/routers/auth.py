@@ -32,6 +32,7 @@ from app.utils.token_manager import save_refresh_token, verify_refresh_token
 from app.utils.password_validator import validate_password
 from app.utils.rate_limiter import check_rate_limit, record_failed_attempt, reset_failed_attempts
 from app.utils.otp_manager import create_login_otp
+from app.utils.email_localization import get_user_lang, get_email_template
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -157,10 +158,13 @@ async def _create_and_send_device_otp(user: User, req: Request, db: AsyncSession
         # Create OTP (using manager to ensure consistency)
         otp_code = await create_login_otp(user.id, db, expiry_minutes=5)
         
-        # Send email with template
-        await send_new_device_otp_email(user.email, user.name, otp_code, req, db)
+        # Detect language
+        lang = get_user_lang(req)
         
-        print(f"✅ New device OTP sent to {user.email} (OTP: {otp_code[:3]}***)")
+        # Send email with template
+        await send_new_device_otp_email(user.email, user.name, otp_code, req, db, lang=lang)
+        
+        print(f"✅ New device OTP sent to {user.email} (Lang: {lang})")
     except Exception as e:
         print(f"❌ Error in _create_and_send_device_otp: {e}")
 
@@ -177,53 +181,47 @@ async def send_password_change_email(
     logged_out_all: bool = False
 ) -> None:
     try:
+        lang = get_user_lang(request)
         ip = _get_client_ip(request)
         ua = request.headers.get("User-Agent", "") if request else ""
         device_name = parse_device_name(ua)
         location = await get_location_from_ip(ip)
-        now = datetime.utcnow().strftime("%d/%m/%Y - %H:%M UTC")
-
-        logout_notice = (
-            "تم تسجيل خروجك من <strong>جميع الأجهزة الأخرى</strong> بناءً على طلبك."
-            if logged_out_all else
-            "جلسة تسجيل الدخول الحالية نشطة. يمكنك إدارة الأجهزة الأخرى من إعدادات الأمان."
-        )
-
-        html_content = f"""<!DOCTYPE html>
+        
+        if lang == "fr":
+            now = datetime.utcnow().strftime("%d/%m/%Y - %H:%M UTC")
+            subject = "Avis de sécurité : Mot de passe modifié"
+            body_text = f"Bonjour {user_name}, votre mot de passe a été modifié avec succès le {now}."
+            logout_txt = "Vous avez été déconnecté de tous les autres appareils." if logged_out_all else ""
+            
+            html_content = f"""<!DOCTYPE html>
+<html dir="ltr" lang="fr">
+<head><meta charset="UTF-8"></head>
+<body style="font-family: Arial, sans-serif; padding: 20px;">
+    <h2>Mot de passe modifié avec succès</h2>
+    <p>Bonjour <strong>{user_name}</strong>,</p>
+    <p>Votre mot de passe a été mis à jour le {now}.</p>
+    <p>Appareil : {device_name}<br>IP : {ip}</p>
+    <p>{logout_txt}</p>
+    <p>Si ce n'est pas vous, contactez-nous immédiatement.</p>
+</body></html>"""
+        else:
+            now = datetime.utcnow().strftime("%d/%m/%Y - %H:%M UTC")
+            subject = "إشعار: تم تغيير كلمة المرور"
+            body_text = "تم تغيير كلمة المرور بنجاح."
+            logout_notice = (
+                "تم تسجيل خروجك من <strong>جميع الأجهزة الأخرى</strong> بناءً على طلبك."
+                if logged_out_all else
+                "جلسة تسجيل الدخول الحالية نشطة."
+            )
+            html_content = f"""<!DOCTYPE html>
 <html dir="rtl" lang="ar">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;padding:40px 20px;background:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
-<table width="580" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-<tr><td style="background:linear-gradient(135deg,#1e40af,#1e3a8a);padding:36px 40px;text-align:center;">
-<p style="color:#93c5fd;font-size:12px;font-weight:600;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">MOUHAMI AI</p>
-<h1 style="color:#fff;font-size:20px;font-weight:700;margin:0;">تم تغيير كلمة المرور بنجاح</h1>
-</td></tr>
-<tr><td style="padding:40px;">
-<p style="color:#475569;font-size:15px;line-height:1.8;margin-bottom:28px;">
-مرحباً <strong style="color:#1e293b;">{user_name}</strong>،<br>
-نُعلمكم بأنه تم تغيير كلمة المرور الخاصة بحسابكم بنجاح.
-</p>
-<div style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:12px;padding:24px;margin-bottom:24px;">
-<table width="100%" cellpadding="8">
-<tr><td style="color:#64748b;font-size:13px;width:130px;">التاريخ والوقت</td><td style="color:#1e293b;font-size:13px;font-weight:600;">{now}</td></tr>
-<tr style="background:#f8fafc;"><td style="color:#64748b;font-size:13px;">الجهاز</td><td style="color:#1e293b;font-size:13px;font-weight:600;">{device_name}</td></tr>
-<tr><td style="color:#64748b;font-size:13px;">الموقع الجغرافي</td><td style="color:#1e293b;font-size:13px;font-weight:600;">{location.get('country', 'غير معروف')} — {location.get('city', 'غير معروف')}</td></tr>
-<tr style="background:#f8fafc;"><td style="color:#64748b;font-size:13px;">عنوان IP</td><td style="color:#1e293b;font-size:13px;font-weight:600;font-family:monospace;">{ip}</td></tr>
-</table>
-</div>
-<div style="background:#fef9ec;border-right:4px solid #d97706;border-radius:8px;padding:16px 20px;margin-bottom:24px;">
-<p style="color:#92400e;font-size:13px;margin:0;">{logout_notice}</p>
-</div>
-<p style="color:#94a3b8;font-size:13px;line-height:1.7;">إذا لم تكن أنت من أجرى هذا التغيير، يرجى التواصل مع فريق الدعم فوراً.</p>
-</td></tr>
-<tr><td style="padding:0 40px 32px 40px;">
-<a href="https://mouhami-ai.tn/settings/security" style="display:inline-block;background:#1e40af;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:14px;">إدارة الأمان</a>
-</td></tr>
-<tr><td style="background:#f8fafc;padding:20px 40px;border-top:1px solid #e2e8f0;text-align:center;">
-<p style="color:#94a3b8;font-size:12px;margin:0;">منصة المحامي الذكية &middot; <a href="https://mouhami-ai.tn" style="color:#d97706;text-decoration:none;">mouhami-ai.tn</a></p>
-</td></tr>
-</table></td></tr></table>
+<head><meta charset="UTF-8"></head>
+<body style="font-family: Arial, sans-serif; padding: 20px; text-align: right;">
+    <h2>تم تغيير كلمة المرور بنجاح</h2>
+    <p>مرحباً <strong>{user_name}</strong>،</p>
+    <p>تم تغيير كلمة المرور الخاصة بكم في {now}.</p>
+    <p>الجهاز: {device_name}<br>IP: {ip}</p>
+    <p>{logout_notice}</p>
 </body></html>"""
 
         await db.execute(
@@ -234,9 +232,9 @@ async def send_password_change_email(
             {
                 "id": f"changepass_{datetime.utcnow().timestamp()}",
                 "to_email": user_email,
-                "subject": "إشعار: تم تغيير كلمة المرور",
+                "subject": subject,
                 "html_content": html_content,
-                "text_content": "تم تغيير كلمة المرور بنجاح.",
+                "text_content": body_text,
                 "status": "pending",
                 "created_at": datetime.utcnow(),
             },
@@ -251,23 +249,29 @@ async def send_new_device_otp_email(
     user_name: str,
     otp_code: str,
     request: Request,
-    db: AsyncSession
+    db: AsyncSession,
+    lang: str = "ar"
 ) -> None:
     try:
-        from app.templates.email_templates_ar import new_device_login_alert
+        # Get template based on lang
+        template_fn = get_email_template("new_device_login_alert", lang)
         
         ip = _get_client_ip(request)
         ua = request.headers.get("User-Agent", "") if request else ""
         device_name = parse_device_name(ua)
         location = await get_location_from_ip(ip)
         now_dt = datetime.utcnow()
-        login_time = f"{now_dt.strftime('%d/%m/%Y')} الساعة {now_dt.strftime('%H:%M')}"
         
+        if lang == "fr":
+            login_time = f"{now_dt.strftime('%d/%m/%Y')} à {now_dt.strftime('%H:%M')}"
+        else:
+            login_time = f"{now_dt.strftime('%d/%m/%Y')} الساعة {now_dt.strftime('%H:%M')}"
+            
         # Generate device confirmation link
-        os_name = ua.split(";")[1].strip() if ";" in ua else "Unknown OS"
+        os_name = ua.split(";")[1].strip() if ";" in ua else "En Inconnu" if lang == "fr" else "غير معروف"
         
-        # Use professional template
-        subject, html_content = new_device_login_alert(
+        # Call template function
+        subject, html_content = template_fn(
             user_name=user_name,
             user_email=user_email,
             device_name=device_name,
@@ -289,7 +293,7 @@ async def send_new_device_otp_email(
                 "to_email": user_email,
                 "subject": subject,
                 "html_content": html_content,
-                "text_content": f"جهاز جديد: {device_name} — الرمز: {otp_code} — صالح 5 دقائق",
+                "text_content": f"OTP: {otp_code}",
                 "status": "pending",
                 "created_at": datetime.utcnow(),
             },

@@ -72,20 +72,20 @@ export const NotificationsPage = ({ onNavigate }: { onNavigate: (page: string) =
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-slate-800">جميع الإشعارات</h2>
+        <h2 className="text-2xl font-bold text-slate-800">{window.__t("جميع الإشعارات")}</h2>
         <div className="flex gap-2">
           <button
             onClick={() => onNavigate('dashboard')}
             className="text-gray-500 hover:text-gray-700"
           >
-            رجوع
+            {window.__t("رجوع")}
           </button>
           {notifications.some(n => !n.read) && (
             <button
               onClick={handleMarkAllRead}
               className="text-sm text-blue-600 hover:text-blue-800"
             >
-              تحديد الكل كمقروء
+              {window.__t("تحديد الكل كمقروء")}
             </button>
           )}
         </div>
@@ -95,7 +95,7 @@ export const NotificationsPage = ({ onNavigate }: { onNavigate: (page: string) =
         <div className="flex justify-center py-20"><Spinner /></div>
       ) : notifications.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-xl border border-dashed border-gray-300">
-          <p className="text-gray-500 text-lg">لا توجد إشعارات</p>
+          <p className="text-gray-500 text-lg">{window.__t("لا توجد إشعارات")}</p>
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 divide-y divide-slate-100">
@@ -116,7 +116,7 @@ export const NotificationsPage = ({ onNavigate }: { onNavigate: (page: string) =
                   </div>
                   <p className="text-sm text-gray-600 mt-1">{n.message}</p>
                   <p className="text-xs text-gray-400 mt-2">
-                    {new Date(n.createdAt).toLocaleString('ar-TN', {
+                    {new Date(n.createdAt).toLocaleString((document.documentElement.lang === 'ar' ? 'ar-TN' : 'fr-FR'), {
                       dateStyle: 'medium',
                       timeStyle: 'short'
                     })}

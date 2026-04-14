@@ -1,6 +1,7 @@
 import { storageService } from './storageService';
 import { fetchWithTokenRefresh } from './apiInterceptor';
 import { User } from '../types';
+import i18n from 'i18next';
 
 const API_BASE = 'http://localhost:3001/api';
 
@@ -29,8 +30,10 @@ class APIService {
 
   getAuthHeaders(): HeadersInit {
     const token = storageService.getAccessToken();
+    const lang = i18n.language || 'ar';
     return {
       'Content-Type': 'application/json',
+      'Accept-Language': lang,
       ...(token && { Authorization: `Bearer ${token}` }),
     };
   }
@@ -41,7 +44,10 @@ class APIService {
   async loginEmailStep1(email: string, password: string, recaptchaToken: string, fingerprint?: string): Promise<LoginStep1Response> {
     const response = await fetch(`${this.baseUrl}/auth/login/step1`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept-Language': i18n.language || 'ar'
+      },
       body: JSON.stringify({ 
         email,
         password,
@@ -64,7 +70,10 @@ class APIService {
   async loginEmailStep2(userId: string, otp: string, fingerprint: string): Promise<LoginStep2Response> {
     const response = await fetch(`${this.baseUrl}/auth/login/step2`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept-Language': i18n.language || 'ar'
+      },
       body: JSON.stringify({
         user_id: userId,
         otp,
@@ -109,7 +118,10 @@ class APIService {
       
       const response = await fetch(`${this.baseUrl}/auth/register/send-otp`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept-Language': i18n.language || 'ar'
+        },
         body: JSON.stringify(payload),
         signal: controller.signal,
       });
@@ -151,7 +163,10 @@ class APIService {
     
     const response = await fetch(`${this.baseUrl}/auth/register/verify-otp`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept-Language': i18n.language || 'ar'
+      },
       body: JSON.stringify(payload),
     });
 
@@ -195,7 +210,10 @@ class APIService {
   ): Promise<LoginStep2Response> {
     const response = await fetch(`${this.baseUrl}/auth/register`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept-Language': i18n.language || 'ar'
+      },
       body: JSON.stringify({
         email,
         password,
@@ -254,7 +272,10 @@ class APIService {
   async verifyEmail(token: string): Promise<any> {
     const response = await fetchWithTokenRefresh(`${this.baseUrl}/auth/verify-email`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept-Language': i18n.language || 'ar'
+      },
       body: JSON.stringify({ token }),
     });
 
@@ -272,7 +293,10 @@ class APIService {
   async forgotPasswordStep1(email: string): Promise<any> {
     const response = await fetch(`${this.baseUrl}/auth/forgot-password/step1`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept-Language': i18n.language || 'ar'
+      },
       body: JSON.stringify({ email }),
     });
 
@@ -290,7 +314,10 @@ class APIService {
   async forgotPasswordStep2(email: string, otp: string, newPassword: string): Promise<any> {
     const response = await fetch(`${this.baseUrl}/auth/forgot-password/step2`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept-Language': i18n.language || 'ar'
+      },
       body: JSON.stringify({
         email,
         otp,
@@ -316,7 +343,10 @@ class APIService {
   ): Promise<any> {
     const response = await fetch(`${this.baseUrl}/auth/emergency-reset`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept-Language': i18n.language || 'ar'
+      },
       body: JSON.stringify({
         email,
         new_password: newPassword,

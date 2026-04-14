@@ -27,10 +27,10 @@ export const InviteAcceptPage = ({
         if (info) {
           setInviteInfo({ email: info.email, inviterName: info.inviterName });
         } else {
-          setError('الدعوة غير صالحة أو منتهية الصلاحية');
+          setError(window.__t("الدعوة غير صالحة أو منتهية الصلاحية"));
         }
       } catch (e) {
-        setError('حدث خطأ');
+        setError(window.__t("حدث خطأ"));
       } finally {
         setLoading(false);
       }
@@ -42,11 +42,11 @@ export const InviteAcceptPage = ({
     e.preventDefault();
     setError('');
     if (password !== confirmPassword) {
-      setError('كلمة المرور غير متطابقة');
+      setError(window.__t("كلمة المرور غير متطابقة"));
       return;
     }
     if (password.length < 6) {
-      setError('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+      setError(window.__t("كلمة المرور يجب أن تكون 6 أحرف على الأقل"));
       return;
     }
     setSubmitting(true);
@@ -55,7 +55,7 @@ export const InviteAcceptPage = ({
       onAccept(user);
       onNavigate('team');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'حدث خطأ');
+      setError(err instanceof Error ? err.message : window.__t("حدث خطأ"));
     } finally {
       setSubmitting(false);
     }
@@ -74,13 +74,13 @@ export const InviteAcceptPage = ({
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
         <div className="bg-white rounded-xl shadow-lg p-8 max-w-md text-center">
           <div className="text-red-500 text-5xl mb-4">⚠️</div>
-          <h2 className="text-xl font-bold text-slate-800 mb-2">دعوة غير صالحة</h2>
+          <h2 className="text-xl font-bold text-slate-800 mb-2">{window.__t("دعوة غير صالحة")}</h2>
           <p className="text-gray-600 mb-6">{error}</p>
           <button
             onClick={() => onNavigate('landing')}
             className="px-6 py-3 bg-gold-500 text-slate-900 rounded-lg font-bold hover:bg-gold-400"
           >
-            العودة للرئيسية
+            {window.__t("العودة للرئيسية")}
           </button>
         </div>
       </div>
@@ -91,27 +91,27 @@ export const InviteAcceptPage = ({
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
       <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-slate-800">قبول الدعوة</h1>
+          <h1 className="text-2xl font-bold text-slate-800">{window.__t("قبول الدعوة")}</h1>
           <p className="text-gray-600 mt-2">
-            تمت دعوتك من قبل <strong>{inviteInfo?.inviterName}</strong> للانضمام لفريق المكتب
+            {window.__t("تمت دعوتك من قبل")} <strong>{inviteInfo?.inviterName}</strong> {window.__t("للانضمام لفريق المكتب")}
           </p>
           <p className="text-sm text-gray-500 mt-1">{inviteInfo?.email}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4" dir="rtl">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">الاسم الكامل أو اسم المكتب</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{window.__t("الاسم الكامل أو اسم المكتب")}</label>
             <input
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full px-4 py-2 border rounded-lg"
-              placeholder="الاسم الكامل أو اسم المكتب"
+              placeholder={window.__t("الاسم الكامل أو اسم المكتب")}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">كلمة المرور</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{window.__t("كلمة المرور")}</label>
             <input
               type="password"
               required
@@ -119,11 +119,11 @@ export const InviteAcceptPage = ({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-2 border rounded-lg"
-              placeholder="6 أحرف على الأقل"
+              placeholder={window.__t("6 أحرف على الأقل")}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">تأكيد كلمة المرور</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{window.__t("تأكيد كلمة المرور")}</label>
             <input
               type="password"
               required
@@ -138,7 +138,7 @@ export const InviteAcceptPage = ({
             disabled={submitting}
             className="w-full py-3 bg-gold-500 text-slate-900 rounded-lg font-bold hover:bg-gold-400 disabled:opacity-50"
           >
-            {submitting ? <Spinner /> : 'إنشاء الحساب والدخول'}
+            {submitting ? <Spinner /> : window.__t("إنشاء الحساب والدخول")}
           </button>
         </form>
       </div>

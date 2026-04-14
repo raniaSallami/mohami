@@ -6,10 +6,11 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
       server: {
-        port: 2999,
+        port: 5173,
+        strictPort: true,
         host: '0.0.0.0',
         hmr: {
-          clientPort: 2999,
+          clientPort: 5173,
           host: 'localhost'
         },
         proxy: {

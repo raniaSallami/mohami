@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, UserRole } from '../types';
 import { storageService } from '../services/storageService';
 import { NotificationBell } from './NotificationBell';
@@ -14,6 +14,16 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, currentPage, onNavigate }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+  const [isRTL, setIsRTL] = useState(document.documentElement.dir !== 'ltr');
+
+  // Watch for dir attribute changes (triggered by i18n language switch)
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsRTL(document.documentElement.dir !== 'ltr');
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['dir'] });
+    return () => observer.disconnect();
+  }, []);
 
   const isAdmin = user.role === UserRole.ADMIN;
 
@@ -23,7 +33,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, curren
         onNavigate(page);
         setSidebarOpen(false);
       }}
-      className={`w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-lg transition-colors ${
+      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
         currentPage === page
           ? 'bg-primary-900 text-white shadow-lg'
           : 'text-gray-300 hover:bg-primary-800 hover:text-white'
@@ -44,16 +54,18 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, curren
 
       {/* Sidebar */}
       <aside 
-        className={`fixed lg:relative z-30 w-64 h-full bg-slate-900 text-white flex flex-col shadow-2xl transition-transform transform ${
-          isSidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
-        } right-0`}
+        className={`sidebar-mobile fixed lg:relative z-30 w-64 h-full bg-slate-900 text-white flex flex-col shadow-2xl transition-transform transform ${
+          isRTL
+            ? (isSidebarOpen ? 'translate-x-0 end-0' : 'translate-x-full end-0')
+            : (isSidebarOpen ? 'translate-x-0 start-0' : '-translate-x-full start-0')
+        } ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'} lg:translate-x-0 lg:start-auto lg:end-auto lg:relative`}
       >
         <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-          <div className="flex items-center space-x-2 space-x-reverse">
+          <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gold-500 rounded-full flex items-center justify-center">
-              <span className="text-slate-900 font-bold text-lg">م</span>
+              <span className="text-slate-900 font-bold text-lg">{window.__t("م")}</span>
             </div>
-            <h1 className="text-2xl font-bold text-gold-500 tracking-tight">المحامي</h1>
+            <h1 className="text-2xl font-bold text-gold-500 tracking-tight">{window.__t("المحامي")}</h1>
           </div>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-gray-400">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -63,23 +75,23 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, curren
         <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-2">
           {isAdmin ? (
             <>
-              <NavItem page="admin-dashboard" icon="📊" label="لوحة التحكم" />
-              <NavItem page="admin-users" icon="👥" label="المستخدمين" />
-              <NavItem page="admin-marketing" icon="📧" label="البريد التسويقي" />
-              <NavItem page="admin-chat" icon="💬" label="المحادثات" />
-              <NavItem page="admin-settings" icon="⚙️" label="الإعدادات العامة" />
+              <NavItem page="admin-dashboard" icon="📊" label={window.__t("لوحة التحكم")} />
+              <NavItem page="admin-users" icon="👥" label={window.__t("المستخدمين")} />
+              <NavItem page="admin-marketing" icon="📧" label={window.__t("البريد التسويقي")} />
+              <NavItem page="admin-chat" icon="💬" label={window.__t("المحادثات")} />
+              <NavItem page="admin-settings" icon="⚙️" label={window.__t("الإعدادات العامة")} />
             </>
           ) : (
             <>
-              <NavItem page="dashboard" icon="📊" label="نظرة عامة" />
-              <NavItem page="cases" icon="📁" label="القضايا" />
-              <NavItem page="calendar" icon="📅" label="الروزنامة" />
-              <NavItem page="courses" icon="📚" label="المكتبة القانونية" />
-              <NavItem page="contracts" icon="📝" label="العقود" />
-              {user.subscriptionPlan === 'enterprise' && <NavItem page="team" icon="👥" label="فريق العمل" />}
-              {user.subscriptionPlan === 'enterprise' && !user.organizationOwnerId && <NavItem page="pending-cases" icon="⏳" label="طلبات معلقة" />}
-              <NavItem page="notifications" icon="🔔" label="الإشعارات" />
-              <NavItem page="settings" icon="⚙️" label="الإعدادات" />
+              <NavItem page="dashboard" icon="📊" label={window.__t("نظرة عامة")} />
+              <NavItem page="cases" icon="📁" label={window.__t("القضايا")} />
+              <NavItem page="calendar" icon="📅" label={window.__t("الروزنامة")} />
+              <NavItem page="courses" icon="📚" label={window.__t("المكتبة القانونية")} />
+              <NavItem page="contracts" icon="📝" label={window.__t("العقود")} />
+              {user.subscriptionPlan === 'enterprise' && <NavItem page="team" icon="👥" label={window.__t("فريق العمل")} />}
+              {user.subscriptionPlan === 'enterprise' && !user.organizationOwnerId && <NavItem page="pending-cases" icon="⏳" label={window.__t("طلبات معلقة")} />}
+              <NavItem page="notifications" icon="🔔" label={window.__t("الإشعارات")} />
+              <NavItem page="settings" icon="⚙️" label={window.__t("الإعدادات")} />
             </>
           )}
         </nav>
@@ -91,7 +103,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, curren
               onNavigate(currentPage === 'profile' ? dashboardPage : 'profile');
               setSidebarOpen(false);
             }}
-            className="w-full flex items-center space-x-3 space-x-reverse mb-4 hover:opacity-80 transition-opacity text-left"
+            className="w-full flex items-center gap-3 mb-4 hover:opacity-80 transition-opacity text-start"
           >
             <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center text-white font-bold flex-shrink-0 overflow-hidden border border-slate-700">
               {user.avatar ? (
@@ -102,14 +114,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, curren
             </div>
             <div>
               <p className="text-sm font-medium text-white">{user.name}</p>
-              <p className="text-xs text-gray-400">{user.role === UserRole.LAWYER ? 'محامي' : 'مدير'}</p>
+              <p className="text-xs text-gray-400">{user.role === UserRole.LAWYER ? window.__t("محامي") : window.__t("مدير")}</p>
             </div>
           </button>
           <button 
             onClick={onLogout}
             className="w-full py-2 bg-red-600 hover:bg-red-700 rounded text-sm transition-colors text-white"
           >
-            تسجيل الخروج
+            {window.__t("تسجيل الخروج")}
           </button>
         </div>
       </aside>
@@ -117,20 +129,23 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, curren
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="bg-white shadow-sm border-b px-6 py-4 flex items-center justify-between sticky top-0 z-10">
-           <div className="flex items-center space-x-2 space-x-reverse">
+           <div className="flex items-center gap-2">
              {/* Back Arrow for sub-pages */}
              {!['dashboard', 'admin-dashboard'].includes(currentPage) && (
                <button 
                  onClick={() => window.history.back()}
-                 className="p-2 -mr-2 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
-                 title="رجوع"
+                 className="p-2 -me-2 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
+                 title={window.__t("رجوع")}
                >
                  <ArrowRight className="w-6 h-6" />
                </button>
              )}
-             <h1 className="text-xl font-bold text-slate-800 lg:hidden">المحامي</h1>
+             <h1 className="text-xl font-bold text-slate-800 lg:hidden">{window.__t("المحامي")}</h1>
            </div>
-           <div className="flex items-center space-x-4 space-x-reverse">
+           <div className="flex items-center gap-4">
+             <button onClick={() => { window.__i18n?.changeLanguage(window.__i18n.language === 'ar' ? 'fr' : 'ar'); setSidebarOpen(false); /* Force re-render simple fallback */ window.location.reload(); }} className="px-3 py-1 bg-slate-100 rounded hover:bg-slate-200 font-medium text-slate-700">
+               {window.__i18n?.language === 'ar' ? 'Français' : 'العربية'}
+             </button>
              <NotificationBell
                onNotificationClick={(notification) => {
                  if (notification.link) {

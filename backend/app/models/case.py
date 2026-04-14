@@ -62,13 +62,13 @@ class Case(Base):
     # AI Chat history
     chat_history: Mapped[list] = mapped_column(JSONB, default=list)
     
-    # Foreign keys - use native UUID Support
-    user_id: Mapped[Optional[str]] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    created_by_user_id: Mapped[Optional[str]] = mapped_column(UUID(as_uuid=False), nullable=True)
-    assigned_to_user_id: Mapped[Optional[str]] = mapped_column(UUID(as_uuid=False), nullable=True)
+    # Foreign keys
+    user_id: Mapped[Optional[str]] = mapped_column(String(100), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_by_user_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    assigned_to_user_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     
     # Tenant (organization)
-    tenant_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+    tenant_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
     
     # Relationships
     user: Mapped[Optional["User"]] = relationship("User", back_populates="cases")

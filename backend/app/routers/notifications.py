@@ -62,7 +62,7 @@ async def get_unread_count(
     """Return the number of unread notifications for the current user."""
     result = await db.execute(
         select(func.count()).where(
-            Notification.user_id == current_user.id,
+            Notification.user_id == str(current_user.id),
             Notification.read == False,
         )
     )
@@ -151,7 +151,7 @@ async def mark_notification_read(
 
     if not notification:
         raise HTTPException(status_code=404, detail="Notification not found")
-    if notification.user_id != current_user.id:
+    if notification.user_id != str(current_user.id):
         raise HTTPException(status_code=403, detail="Not authorized")
 
     notification.read = True
@@ -173,7 +173,7 @@ async def mark_all_notifications_read(
     result = await db.execute(
         update(Notification)
         .where(
-            Notification.user_id == current_user.id,
+            Notification.user_id == str(current_user.id),
             Notification.read == False,
         )
         .values(read=True)
@@ -199,7 +199,7 @@ async def get_notification(
 
     if not notification:
         raise HTTPException(status_code=404, detail="Notification not found")
-    if notification.user_id != current_user.id:
+    if notification.user_id != str(current_user.id):
         raise HTTPException(status_code=403, detail="Not authorized")
 
     return NotificationResponse.model_validate(notification)
@@ -221,7 +221,7 @@ async def delete_notification(
 
     if not notification:
         raise HTTPException(status_code=404, detail="Notification not found")
-    if notification.user_id != current_user.id:
+    if notification.user_id != str(current_user.id):
         raise HTTPException(status_code=403, detail="Not authorized")
 
     await db.delete(notification)

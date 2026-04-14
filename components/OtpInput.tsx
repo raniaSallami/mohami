@@ -147,10 +147,10 @@ export const OtpInput: React.FC<OtpInputProps> = ({
       <div className="mt-4 text-center text-sm text-gray-500">
         {isFilled ? (
           <span className="text-green-600 font-medium flex items-center justify-center gap-1">
-            <span>✓</span> تم إدخال الرمز بنجاح
+            <span>✓</span> {window.__t("تم إدخال الرمز بنجاح")}
           </span>
         ) : (
-          <span>أدخل {length} أرقام - يمكنك أيضاً لصق الرمز كاملاً</span>
+          <span>{window.__t("أدخل")} {length} {window.__t("أرقام - يمكنك أيضاً لصق الرمز كاملاً")}</span>
         )}
       </div>
     </div>

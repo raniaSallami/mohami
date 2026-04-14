@@ -68,11 +68,11 @@ export const CaseList = ({ onNavigate, initialFilter }: { onNavigate: (page: str
   return (
     <div className="min-h-0 space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h2 className="text-2xl font-bold text-slate-800">ملفات القضايا</h2>
+        <h2 className="text-2xl font-bold text-slate-800">{window.__t("ملفات القضايا")}</h2>
         <div className="flex space-x-4 space-x-reverse w-full md:w-auto">
           <input 
             type="text" 
-            placeholder="بحث عن قضية أو موكل..." 
+            placeholder={window.__t("بحث عن قضية أو موكل...")} 
             className="flex-1 md:w-64 px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition shadow-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -81,7 +81,7 @@ export const CaseList = ({ onNavigate, initialFilter }: { onNavigate: (page: str
             onClick={() => onNavigate('new-case')}
             className="bg-slate-900 text-white px-6 py-2 rounded-xl hover:bg-slate-800 transition whitespace-nowrap shadow-md font-bold"
           >
-            + قضية جديدة
+            {window.__t("+ قضية جديدة")}
           </button>
         </div>
       </div>
@@ -92,34 +92,34 @@ export const CaseList = ({ onNavigate, initialFilter }: { onNavigate: (page: str
           onClick={() => setStatusFilter('all')}
           className={`px-6 py-2.5 rounded-xl text-sm font-bold transition ${statusFilter === 'all' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
         >
-          الكل ({stats.all})
+          {window.__t("الكل (")}{stats.all})
         </button>
         <button
           onClick={() => setStatusFilter('active')}
           className={`px-6 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2 ${statusFilter === 'active' ? 'bg-green-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-700'}`}
         >
-          نشطة ({stats.active})
+          {window.__t("نشطة (")}{stats.active})
         </button>
         <button
           onClick={() => setStatusFilter('pending')}
           className={`px-6 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2 ${statusFilter === 'pending' ? 'bg-amber-400 text-white shadow-lg' : 'text-slate-500 hover:text-slate-700'}`}
         >
-          بانتظار الإجراء ({stats.pending})
+          {window.__t("بانتظار الإجراء (")}{stats.pending})
         </button>
         <button
           onClick={() => setStatusFilter('closed')}
           className={`px-6 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2 ${statusFilter === 'closed' ? 'bg-slate-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-700'}`}
         >
-          منتهية ({stats.closed})
+          {window.__t("منتهية (")}{stats.closed})
         </button>
       </div>
 
       {loading ? (
-        <div className="text-center py-20 text-gray-500">جاري تحميل القضايا...</div>
+        <div className="text-center py-20 text-gray-500">{window.__t("جاري تحميل القضايا...")}</div>
       ) : filteredCases.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-xl border border-dashed border-gray-300">
-          <p className="text-gray-500 text-lg mb-4">لا توجد قضايا مضافة</p>
-          <button onClick={() => onNavigate('new-case')} className="text-primary-600 font-medium hover:underline">أضف قضيتك الأولى</button>
+          <p className="text-gray-500 text-lg mb-4">{window.__t("لا توجد قضايا مضافة")}</p>
+          <button onClick={() => onNavigate('new-case')} className="text-primary-600 font-medium hover:underline">{window.__t("أضف قضيتك الأولى")}</button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -145,25 +145,25 @@ export const CaseList = ({ onNavigate, initialFilter }: { onNavigate: (page: str
                       c.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'
                     }`}
                   >
-                    <option value="active">نشطة</option>
-                    <option value="pending">بانتظار الإجراء</option>
-                    <option value="closed">منتهية</option>
+                    <option value="active">{window.__t("نشطة")}</option>
+                    <option value="pending">{window.__t("بانتظار الإجراء")}</option>
+                    <option value="closed">{window.__t("منتهية")}</option>
                   </select>
                   <button
                     onClick={(e) => handleDelete(c.id, e)}
                     className="text-gray-300 hover:text-red-500 p-1 transition"
-                    title="حذف القضية"
+                    title={window.__t("حذف القضية")}
                   >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                   </button>
                 </div>
               </div>
               <h3 className="text-lg font-bold text-slate-800 mb-1 group-hover:text-primary-600 transition">{c.title}</h3>
-              <p className="text-sm text-gray-500 mb-4">الموكل: {c.clientName}</p>
+              <p className="text-sm text-gray-500 mb-4">{window.__t("الموكل:")} {c.clientName}</p>
               
               <div className="border-t pt-4 flex justify-between text-sm text-gray-400">
-                <span>{new Date(c.dateCreated).toLocaleDateString('ar-TN')}</span>
-                <span>{c.documents.length} ملفات</span>
+                <span>{new Date(c.dateCreated).toLocaleDateString((document.documentElement.lang === 'ar' ? 'ar-TN' : 'fr-FR'))}</span>
+                <span>{c.documents.length} {window.__t("ملفات")}</span>
               </div>
             </div>
           ))}
@@ -175,10 +175,10 @@ export const CaseList = ({ onNavigate, initialFilter }: { onNavigate: (page: str
         isOpen={deleteModal.isOpen}
         onClose={() => setDeleteModal({ isOpen: false, caseId: null })}
         onConfirm={confirmDelete}
-        title="حذف القضية"
-        message="هل أنت متأكد من حذف هذا الملف نهائياً؟ لا يمكن التراجع عن هذه العملية."
-        confirmText="حذف"
-        cancelText="إلغاء"
+        title={window.__t("حذف القضية")}
+        message={window.__t("هل أنت متأكد من حذف هذا الملف نهائياً؟ لا يمكن التراجع عن هذه العملية.")}
+        confirmText={window.__t("حذف")}
+        cancelText={window.__t("إلغاء")}
         type="danger"
       />
     </div>

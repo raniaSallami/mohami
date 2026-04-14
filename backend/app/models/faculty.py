@@ -16,7 +16,8 @@ class Faculty(Base):
     __tablename__ = "faculties"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    name_ar: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    name_fr: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     slug: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
     type: Mapped[str] = mapped_column(String(50), nullable=False)  # faculte, institut, ecole
     domain: Mapped[str] = mapped_column(String(100), nullable=False, index=True)  # droit

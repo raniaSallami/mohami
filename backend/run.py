@@ -9,6 +9,17 @@ import sys
 import os
 import time
 import logging
+import socket
+
+# Force IPv4 for local resolution to avoid gaierror [Errno 11001] on Windows
+original_getaddrinfo = socket.getaddrinfo
+
+def patched_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+    # Force use of AF_INET (IPv4) instead of AF_UNSPEC (which might try IPv6 first)
+    return original_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
+
+socket.getaddrinfo = patched_getaddrinfo
+
 from app.config import settings
 
 # Configure logging to suppress noisy libraries

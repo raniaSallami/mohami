@@ -93,14 +93,14 @@ export const DeviceVerificationPage: React.FC<DeviceVerificationPageProps> = ({ 
     e.preventDefault();
     
     if (!finalUserId) {
-      setError('خطأ: معرف المستخدم مفقود. يرجى العودة وتسجيل الدخول مجددا');
+      setError(window.__t("خطأ: معرف المستخدم مفقود. يرجى العودة وتسجيل الدخول مجددا"));
       return;
     }
     
     const otpCode = otp.join('');
     
     if (otpCode.length !== 6) {
-      setError('يرجى إدخال رمز التحقق من 6 أرقام');
+      setError(window.__t("يرجى إدخال رمز التحقق من 6 أرقام"));
       return;
     }
 
@@ -123,7 +123,7 @@ export const DeviceVerificationPage: React.FC<DeviceVerificationPageProps> = ({ 
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.detail || 'فشل التحقق من الرمز');
+        setError(data.detail || window.__t("فشل التحقق من الرمز"));
         setOtp(Array(6).fill('')); // Clear OTP on error
         inputRefs.current[0]?.focus();
         return;
@@ -168,7 +168,7 @@ export const DeviceVerificationPage: React.FC<DeviceVerificationPageProps> = ({ 
         }
       }
     } catch (err) {
-      setError('خطأ في الاتصال. يرجى المحاولة مجددا');
+      setError(window.__t("خطأ في الاتصال. يرجى المحاولة مجددا"));
       console.error('OTP verification error:', err);
     } finally {
       setLoading(false);
@@ -191,9 +191,9 @@ export const DeviceVerificationPage: React.FC<DeviceVerificationPageProps> = ({ 
       });
       
       // Show success message
-      setError('تم إرسال رمز التحقق الجديد إلى بريدك الإلكتروني'); // Show as info
+      setError(window.__t("تم إرسال رمز التحقق الجديد إلى بريدك الإلكتروني")); // Show as info
     } catch (err) {
-      setError('فشل إرسال الرمز. يرجى المحاولة مجددا');
+      setError(window.__t("فشل إرسال الرمز. يرجى المحاولة مجددا"));
     }
   };
 
@@ -203,8 +203,8 @@ export const DeviceVerificationPage: React.FC<DeviceVerificationPageProps> = ({ 
         {/* Header */}
         <div className="verification-header">
           <div className="header-icon">🔒</div>
-          <h1>التحقق من الجهاز</h1>
-          <p>تم إرسال رمز تحقق إلى بريدك الإلكتروني</p>
+          <h1>{window.__t("التحقق من الجهاز")}</h1>
+          <p>{window.__t("تم إرسال رمز تحقق إلى بريدك الإلكتروني")}</p>
         </div>
 
         {/* Form */}
@@ -231,14 +231,14 @@ export const DeviceVerificationPage: React.FC<DeviceVerificationPageProps> = ({ 
 
           {/* Error Message */}
           {error && (
-            <div className={`message ${error.includes('فشل') || error.includes('خطأ') ? 'error' : 'info'}`}>
+            <div className={`message ${error.includes(window.__t("فشل")) || error.includes(window.__t("خطأ")) ? 'error' : 'info'}`}>
               {error}
             </div>
           )}
 
           {/* Timer */}
           <div className={`timer ${timer < 60 ? 'warning' : ''}`}>
-            الرمز صالح لمدة: {formatTime(timer)}
+            {window.__t("الرمز صالح لمدة:")} {formatTime(timer)}
           </div>
 
           {/* Submit Button */}
@@ -250,17 +250,17 @@ export const DeviceVerificationPage: React.FC<DeviceVerificationPageProps> = ({ 
             {loading ? (
               <>
                 <span className="spinner"></span>
-                جاري التحقق...
+                {window.__t("جاري التحقق...")}
               </>
             ) : (
-              'تأكيد الجهاز'
+              window.__t("تأكيد الجهاز")
             )}
           </button>
         </form>
 
         {/* Resend Link */}
         <div className="resend-section">
-          <p>لم تستقبل الرمز؟</p>
+          <p>{window.__t("لم تستقبل الرمز؟")}</p>
           <button
             type="button"
             onClick={handleResend}
@@ -269,15 +269,15 @@ export const DeviceVerificationPage: React.FC<DeviceVerificationPageProps> = ({ 
           >
             {resendDisabled
               ? `إعادة الإرسال بعد ${formatTime(timer)}`
-              : 'إعادة إرسال الرمز'}
+              : window.__t("إعادة إرسال الرمز")}
           </button>
         </div>
 
         {/* Help Text */}
         <div className="help-text">
           <p>
-            إذا واجهت مشاكل في استقبال الرمز، تحقق من مجلد الرسائل غير المرغوبة
-            أو اتصل بفريق الدعم
+            {window.__t(`إذا واجهت مشاكل في استقبال الرمز، تحقق من مجلد الرسائل غير المرغوبة
+\n            أو اتصل بفريق الدعم`)}
           </p>
         </div>
       </div>

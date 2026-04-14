@@ -65,7 +65,7 @@ export const Calendar = () => {
 
   const handleAddEvent = async () => {
     if (!newEventTitle.trim()) {
-      setNotification({ msg: 'يجب إدخال عنوان الموعد', type: 'error' });
+      setNotification({ msg: window.__t("يجب إدخال عنوان الموعد"), type: 'error' });
       return;
     }
     
@@ -87,7 +87,7 @@ export const Calendar = () => {
     try {
       await storageService.addEvent(newEvent);
       setEvents([...events, newEvent]);
-      setNotification({ msg: 'تم إضافة الموعد بنجاح', type: 'success' });
+      setNotification({ msg: window.__t("تم إضافة الموعد بنجاح"), type: 'success' });
       
       try { await notificationService.getUnreadCount(); } catch {}
 
@@ -102,7 +102,7 @@ export const Calendar = () => {
         );
       }
     } catch (e) {
-      setNotification({ msg: 'فشل إضافة الموعد. حاول ثانية.', type: 'error' });
+      setNotification({ msg: window.__t("فشل إضافة الموعد. حاول ثانية."), type: 'error' });
     }
     
     setShowModal(false);
@@ -133,9 +133,9 @@ export const Calendar = () => {
           setShowEventDetailsModal(false);
           setSelectedEvent(null);
         }
-        setNotification({ msg: 'تم حذف الموعد', type: 'info' });
+        setNotification({ msg: window.__t("تم حذف الموعد"), type: 'info' });
       } catch (e) {
-        setNotification({ msg: 'فشل الحذف', type: 'error' });
+        setNotification({ msg: window.__t("فشل الحذف"), type: 'error' });
       }
       setEventToDelete(null);
     }
@@ -180,7 +180,7 @@ export const Calendar = () => {
                  </div>
                  <button 
                    onClick={(e) => handleDeleteEvent(ev.id, e)} 
-                   className="hidden group-hover/event:block text-red-600 font-bold hover:scale-110 ml-1 flex-shrink-0"
+                   className="hidden group-hover/event:block text-red-600 font-bold hover:scale-110 ms-1 flex-shrink-0"
                  >
                    ×
                  </button>
@@ -192,13 +192,13 @@ export const Calendar = () => {
     });
   };
 
-  const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+  const monthNames = [window.__t("يناير"), window.__t("فبراير"), window.__t("مارس"), window.__t("أبريل"), window.__t("مايو"), window.__t("يونيو"), window.__t("يوليو"), window.__t("أغسطس"), window.__t("سبتمبر"), window.__t("أكتوبر"), window.__t("نوفمبر"), window.__t("ديسمبر")];
 
   return (
     <div className="space-y-6 h-full flex flex-col">
       <div className="flex justify-between items-center">
          <div>
-           <h2 className="text-2xl font-bold text-slate-800">الروزنامة القانونية</h2>
+           <h2 className="text-2xl font-bold text-slate-800">{window.__t("الروزنامة القانونية")}</h2>
          </div>
          <div className="flex items-center space-x-4 space-x-reverse bg-white shadow-sm px-4 py-2 rounded-lg border border-slate-100">
            <button onClick={handlePrevMonth} className="text-gray-500 hover:text-slate-800 px-2">❮</button>
@@ -210,7 +210,7 @@ export const Calendar = () => {
       {loading ? <Spinner /> : (
         <div className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
            <div className="grid grid-cols-7 bg-slate-50 border-b border-slate-200">
-             {['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'].map(d => (
+             {[window.__t("الأحد"), window.__t("الاثنين"), window.__t("الثلاثاء"), window.__t("الأربعاء"), window.__t("الخميس"), window.__t("الجمعة"), window.__t("السبت")].map(d => (
                <div key={d} className="py-3 text-center text-sm font-bold text-slate-500">{d}</div>
              ))}
            </div>
@@ -220,16 +220,16 @@ export const Calendar = () => {
         </div>
       )}
 
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="إضافة موعد جديد">
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={window.__t("إضافة موعد جديد")}>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">عنوان الموعد</label>
-            <input type="text" value={newEventTitle} onChange={e => setNewEventTitle(e.target.value)} className="w-full border rounded px-3 py-2" placeholder="جلسة محاكمة، اجتماع..." />
+            <label className="block text-sm font-medium text-gray-700 mb-1">{window.__t("عنوان الموعد")}</label>
+            <input type="text" value={newEventTitle} onChange={e => setNewEventTitle(e.target.value)} className="w-full border rounded px-3 py-2" placeholder={window.__t("جلسة محاكمة، اجتماع...")} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">القضية المرتبطة (اختياري)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{window.__t("القضية المرتبطة (اختياري)")}</label>
             <select value={selectedCaseId} onChange={e => setSelectedCaseId(e.target.value)} className="w-full border rounded px-3 py-2 bg-white">
-              <option value="">-- اختر قضية --</option>
+              <option value="">{window.__t("-- اختر قضية --")}</option>
               {cases.filter(c => c.status === 'active').map(c => (
                 <option key={c.id} value={c.id}>{c.title} - {c.clientName}</option>
               ))}
@@ -237,33 +237,33 @@ export const Calendar = () => {
           </div>
           <div className="grid grid-cols-2 gap-4">
              <div>
-               <label className="block text-sm font-medium text-gray-700 mb-1">التاريخ</label>
+               <label className="block text-sm font-medium text-gray-700 mb-1">{window.__t("التاريخ")}</label>
                <input type="date" value={newEventDate} onChange={e => setNewEventDate(e.target.value)} className="w-full border rounded px-3 py-2" />
              </div>
              <div>
-               <label className="block text-sm font-medium text-gray-700 mb-1">الوقت (اختياري)</label>
+               <label className="block text-sm font-medium text-gray-700 mb-1">{window.__t("الوقت (اختياري)")}</label>
                <input type="time" value={newEventTime} onChange={e => setNewEventTime(e.target.value)} className="w-full border rounded px-3 py-2" />
              </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
              <div>
-               <label className="block text-sm font-medium text-gray-700 mb-1">النوع</label>
+               <label className="block text-sm font-medium text-gray-700 mb-1">{window.__t("النوع")}</label>
                <select value={newEventType} onChange={e => setNewEventType(e.target.value)} className="w-full border rounded px-3 py-2">
-                 <option value="hearing">جلسة محكمة</option>
-                 <option value="meeting">اجتماع موكل</option>
-                 <option value="deadline">أجل قانوني</option>
+                 <option value="hearing">{window.__t("جلسة محكمة")}</option>
+                 <option value="meeting">{window.__t("اجتماع موكل")}</option>
+                 <option value="deadline">{window.__t("أجل قانوني")}</option>
                </select>
              </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">ملاحظات</label>
-            <textarea value={newEventDesc} onChange={e => setNewEventDesc(e.target.value)} className="w-full border rounded px-3 py-2 h-20" placeholder="تفاصيل إضافية..." />
+            <label className="block text-sm font-medium text-gray-700 mb-1">{window.__t("ملاحظات")}</label>
+            <textarea value={newEventDesc} onChange={e => setNewEventDesc(e.target.value)} className="w-full border rounded px-3 py-2 h-20" placeholder={window.__t("تفاصيل إضافية...")} />
           </div>
-          <button onClick={handleAddEvent} className="w-full bg-slate-900 text-white py-2 rounded hover:bg-slate-800">حفظ الموعد</button>
+          <button onClick={handleAddEvent} className="w-full bg-slate-900 text-white py-2 rounded hover:bg-slate-800">{window.__t("حفظ الموعد")}</button>
         </div>
       </Modal>
 
-      <Modal isOpen={showEventDetailsModal} onClose={() => { setShowEventDetailsModal(false); setSelectedEvent(null); }} title="تفاصيل الموعد">
+      <Modal isOpen={showEventDetailsModal} onClose={() => { setShowEventDetailsModal(false); setSelectedEvent(null); }} title={window.__t("تفاصيل الموعد")}>
         {selectedEvent && (
           <div className="space-y-6">
             <div className="flex items-center justify-center">
@@ -271,40 +271,40 @@ export const Calendar = () => {
                 selectedEvent.type === 'hearing' ? 'bg-red-100 text-red-800' : 
                 selectedEvent.type === 'meeting' ? 'bg-blue-100 text-blue-800' : 'bg-gold-100 text-gold-800'
               }`}>
-                {selectedEvent.type === 'hearing' ? 'جلسة محكمة' : selectedEvent.type === 'meeting' ? 'اجتماع موكل' : 'أجل قانوني'}
+                {selectedEvent.type === 'hearing' ? window.__t("جلسة محكمة") : selectedEvent.type === 'meeting' ? window.__t("اجتماع موكل") : window.__t("أجل قانوني")}
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-500 mb-1">عنوان الموعد</label>
+              <label className="block text-sm font-medium text-gray-500 mb-1">{window.__t("عنوان الموعد")}</label>
               <p className="text-lg font-bold text-gray-900">{selectedEvent.title}</p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">التاريخ</label>
-                <p className="text-gray-900 font-medium">{new Date(selectedEvent.date).toLocaleDateString('ar-TN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                <label className="block text-sm font-medium text-gray-500 mb-1">{window.__t("التاريخ")}</label>
+                <p className="text-gray-900 font-medium">{new Date(selectedEvent.date).toLocaleDateString((document.documentElement.lang === 'ar' ? 'ar-TN' : 'fr-FR'), { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">الوقت</label>
-                <p className="text-gray-900 font-medium">{selectedEvent.time || 'غير محدد'}</p>
+                <label className="block text-sm font-medium text-gray-500 mb-1">{window.__t("الوقت")}</label>
+                <p className="text-gray-900 font-medium">{selectedEvent.time || window.__t("غير محدد")}</p>
               </div>
             </div>
             {selectedEvent.caseTitle && (
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">القضية المرتبطة</label>
+                <label className="block text-sm font-medium text-gray-500 mb-1">{window.__t("القضية المرتبطة")}</label>
                 <p className="text-gray-900 font-medium">{selectedEvent.caseTitle}</p>
               </div>
             )}
             {selectedEvent.description && (
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-2">الملاحظات</label>
+                <label className="block text-sm font-medium text-gray-500 mb-2">{window.__t("الملاحظات")}</label>
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                   <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{selectedEvent.description}</p>
                 </div>
               </div>
             )}
             <div className="flex space-x-3 space-x-reverse pt-4 border-t">
-              <button onClick={() => handleDeleteEvent(selectedEvent.id)} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium">حذف</button>
-              <button onClick={() => { setShowEventDetailsModal(false); setSelectedEvent(null); }} className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium">إغلاق</button>
+              <button onClick={() => handleDeleteEvent(selectedEvent.id)} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium">{window.__t("حذف")}</button>
+              <button onClick={() => { setShowEventDetailsModal(false); setSelectedEvent(null); }} className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium">{window.__t("إغلاق")}</button>
             </div>
           </div>
         )}
@@ -314,10 +314,10 @@ export const Calendar = () => {
         isOpen={showDeleteConfirm}
         onClose={() => { setShowDeleteConfirm(false); setEventToDelete(null); }}
         onConfirm={confirmDeleteEvent}
-        title="حذف الموعد"
-        message="هل أنت متأكد من حذف هذا الموعد؟ لا يمكن التراجع عن هذه العملية."
-        confirmText="حذف"
-        cancelText="إلغاء"
+        title={window.__t("حذف الموعد")}
+        message={window.__t("هل أنت متأكد من حذف هذا الموعد؟ لا يمكن التراجع عن هذه العملية.")}
+        confirmText={window.__t("حذف")}
+        cancelText={window.__t("إلغاء")}
         type="danger"
       />
       {/* Toast Notification */}

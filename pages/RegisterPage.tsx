@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Eye, EyeOff, Mail, Phone, User, GraduationCap, Scale, Building2, FileText, Check, Sun, Moon, Loader2, AlertCircle, CheckCircle2, X, Lock } from 'lucide-react';
+import { Eye, EyeOff, Mail, Phone, User, GraduationCap, Scale, Building2, FileText, Check, Sun, Moon, Loader2, AlertCircle, CheckCircle2, X, Lock, Home } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { apiService } from '../services/apiService';
@@ -122,10 +122,10 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
 
   const getPasswordStrengthLabel = () => {
     if (passwordStrength === 0) return '';
-    if (passwordStrength === 1) return 'ضعيفة';
-    if (passwordStrength === 2) return 'متوسطة';
-    if (passwordStrength === 3) return 'جيدة';
-    return 'قوية جداً';
+    if (passwordStrength === 1) return window.__t("ضعيفة");
+    if (passwordStrength === 2) return window.__t("متوسطة");
+    if (passwordStrength === 3) return window.__t("جيدة");
+    return window.__t("قوية جداً");
   };
 
   const getPasswordStrengthColor = () => {
@@ -150,59 +150,59 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
     let isValid = true;
 
     if (!formData.fullName.trim()) {
-      newErrors.fullName = 'أدخل اسمك الكامل';
+      newErrors.fullName = window.__t("أدخل اسمك الكامل");
       isValid = false;
     } else if (formData.fullName.trim().length < 10) {
-      newErrors.fullName = 'أدخل اسمك الكامل';
+      newErrors.fullName = window.__t("أدخل اسمك الكامل");
       isValid = false;
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'البريد الإلكتروني مطلوب';
+      newErrors.email = window.__t("البريد الإلكتروني مطلوب");
       isValid = false;
     } else if (!validateEmail(formData.email)) {
-      newErrors.email = 'البريد الإلكتروني غير صالح';
+      newErrors.email = window.__t("البريد الإلكتروني غير صالح");
       isValid = false;
     }
 
     if (!formData.phone.trim()) {
-      newErrors.phone = 'رقم الهاتف مطلوب';
+      newErrors.phone = window.__t("رقم الهاتف مطلوب");
       isValid = false;
     } else if (!validateTunisianPhone(formData.phone)) {
-      newErrors.phone = 'رقم هاتف تونسي غير صالح';
+      newErrors.phone = window.__t("رقم هاتف تونسي غير صالح");
       isValid = false;
     }
 
     if (userType === 'student' && !formData.university.trim()) {
-      newErrors.university = 'اسم الجامعة مطلوب';
+      newErrors.university = window.__t("اسم الجامعة مطلوب");
       isValid = false;
     }
 
     if (userType === 'lawyer' && !formData.barNumber.trim()) {
-      newErrors.barNumber = 'رقم بطاقة المحاماة مطلوب';
+      newErrors.barNumber = window.__t("رقم بطاقة المحاماة مطلوب");
       isValid = false;
     }
 
     if (userType === 'cabinet' && !formData.cabinetName.trim()) {
-      newErrors.cabinetName = 'اسم المكتب مطلوب';
+      newErrors.cabinetName = window.__t("اسم المكتب مطلوب");
       isValid = false;
     }
 
     if (userType === 'cabinet' && !formData.barRegistrationNumber.trim()) {
-      newErrors.barRegistrationNumber = 'رقم التسجيل بالهيئة مطلوب';
+      newErrors.barRegistrationNumber = window.__t("رقم التسجيل بالهيئة مطلوب");
       isValid = false;
     }
 
     if (userType === 'cabinet' && !formData.officeAddress.trim()) {
-      newErrors.officeAddress = 'العنوان مطلوب';
+      newErrors.officeAddress = window.__t("العنوان مطلوب");
       isValid = false;
     }
 
     if (userType === 'cabinet' && !formData.numberOfLawyers.trim()) {
-      newErrors.numberOfLawyers = 'عدد المحامين مطلوب';
+      newErrors.numberOfLawyers = window.__t("عدد المحامين مطلوب");
       isValid = false;
     } else if (userType === 'cabinet' && (isNaN(parseInt(formData.numberOfLawyers)) || parseInt(formData.numberOfLawyers) < 1)) {
-      newErrors.numberOfLawyers = 'الرجاء إدخال عدد صحيح من المحامين';
+      newErrors.numberOfLawyers = window.__t("الرجاء إدخال عدد صحيح من المحامين");
       isValid = false;
     }
 
@@ -211,18 +211,18 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
     const hasNumber = /\d/.test(formData.password);
 
     if (!formData.password || formData.password.length < 8) {
-      newErrors.password = 'كلمة المرور يجب أن تتكون من 8 أحرف على الأقل';
+      newErrors.password = window.__t("كلمة المرور يجب أن تتكون من 8 أحرف على الأقل");
       isValid = false;
     } else if (!hasUpper || !hasLower || !hasNumber) {
-      newErrors.password = 'كلمة المرور يجب أن تحتوي على حرف كبير، حرف صغير ورقم على الأقل';
+      newErrors.password = window.__t("كلمة المرور يجب أن تحتوي على حرف كبير، حرف صغير ورقم على الأقل");
       isValid = false;
     }
 
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'تأكيد كلمة المرور مطلوب';
+      newErrors.confirmPassword = window.__t("تأكيد كلمة المرور مطلوب");
       isValid = false;
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'كلمات المرور غير متطابقة';
+      newErrors.confirmPassword = window.__t("كلمات المرور غير متطابقة");
       isValid = false;
     }
 
@@ -232,7 +232,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
 
   const handleNextStep1 = () => {
     if (!userType) {
-      toast.error('يرجى اختيار نوع الحساب');
+      toast.error(window.__t("يرجى اختيار نوع الحساب"));
       return;
     }
     setStep(2);
@@ -240,7 +240,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
 
   const handleNextStep2 = async () => {
     if (!validateStep2()) {
-      toast.error('يرجى تصحيح الأخطاء في النموذج');
+      toast.error(window.__t("يرجى تصحيح الأخطاء في النموذج"));
       return;
     }
 
@@ -271,18 +271,18 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
         userType || 'lawyer'
       );
       setOtpSent(true);
-      toast.success('✅ تم إرسال الرمز إلى بريدك الإلكتروني');
+      toast.success(window.__t("✅ تم إرسال الرمز إلى بريدك الإلكتروني"));
       return true;
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'فشل إرسال الرمز';
+      const errorMsg = error instanceof Error ? error.message : window.__t("فشل إرسال الرمز");
       
       // If email already exists error, highlight the email field
-      if (errorMsg.includes('البريد مسجل') || errorMsg.includes('already')) {
+      if (errorMsg.includes(window.__t("البريد مسجل")) || errorMsg.includes('already')) {
         setErrors((prev) => ({
           ...prev,
-          email: 'هذا البريد موجود بالفعل، حاول باستخدام بريد آخر',
+          email: window.__t("هذا البريد موجود بالفعل، حاول باستخدام بريد آخر"),
         }));
-        toast.error('⚠️ البريد الإلكتروني مستخدم بالفعل');
+        toast.error(window.__t("⚠️ البريد الإلكتروني مستخدم بالفعل"));
       } else {
         toast.error(`❌ ${errorMsg}`);
       }
@@ -294,7 +294,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
 
   const handleVerifyOTP = async () => {
     if (!otpCode || otpCode.length !== 6) {
-      toast.error('يرجى إدخال رمز صحيح');
+      toast.error(window.__t("يرجى إدخال رمز صحيح"));
       return;
     }
 
@@ -308,11 +308,11 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
       
       await apiService.verifyRegistrationOTP(formData.email.trim(), otpCode);
       setOtpVerified(true);
-      toast.success('✅ تم التحقق من البريد الإلكتروني بنجاح!');
+      toast.success(window.__t("✅ تم التحقق من البريد الإلكتروني بنجاح!"));
       console.log('✅ Moving to Step 4 - Plan Selection');
       setStep(4);
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'فشل التحقق من الرمز';
+      const errorMsg = error instanceof Error ? error.message : window.__t("فشل التحقق من الرمز");
       console.error('❌ OTP Verification failed:', errorMsg);
       toast.error(`❌ ${errorMsg}`);
     } finally {
@@ -334,7 +334,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
     e.preventDefault();
 
     if (!selectedPlan) {
-      toast.error('يرجى اختيار خطة');
+      toast.error(window.__t("يرجى اختيار خطة"));
       return;
     }
 
@@ -351,7 +351,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
       }
 
       if (!token) {
-        toast.error('reCAPTCHA مطلوب');
+        toast.error(window.__t("reCAPTCHA مطلوب"));
         return;
       }
 
@@ -374,9 +374,9 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
       );
 
       console.log('Registration successful:', response);
-      alert('تم إنشاء حسابك بنجاح! مرحباً بك في المحامي');
-      toast.success('تم إنشاء حسابك بنجاح!', {
-        description: 'مرحباً بك في المحامي - سيتم توجيهك إلى الصفحة الرئيسية',
+      alert(window.__t("تم إنشاء حسابك بنجاح! مرحباً بك في المحامي"));
+      toast.success(window.__t("تم إنشاء حسابك بنجاح!"), {
+        description: window.__t("مرحباً بك في المحامي - سيتم توجيهك إلى الصفحة الرئيسية"),
         duration: 5000,
       });
       
@@ -385,7 +385,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
         onLogin(response.user);
       }, 500);
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'فشل إنشاء الحساب';
+      const errorMsg = error instanceof Error ? error.message : window.__t("فشل إنشاء الحساب");
       toast.error(errorMsg);
     } finally {
       setIsLoading(false);
@@ -394,26 +394,35 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-amber-50 dark:from-slate-700 dark:via-slate-700 dark:to-slate-600 flex items-center justify-center p-4 relative RTL"
-      style={{ fontFamily: "'Tajawal', 'Inter', sans-serif" }}
+      className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-amber-50 dark:from-slate-700 dark:via-slate-700 dark:to-slate-600 flex items-center justify-center p-4 relative"
+      style={{ fontFamily: "var(--font-sans)" }}
     >
       {/* Decorative Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-10 right-10 w-96 h-96 bg-amber-100/20 dark:bg-slate-700/15 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-10 left-10 w-96 h-96 bg-amber-100/20 dark:bg-slate-700/15 rounded-full blur-3xl"></div>
+        <div className="absolute top-10 end-10 w-96 h-96 bg-amber-100/20 dark:bg-slate-700/15 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-10 start-10 w-96 h-96 bg-amber-100/20 dark:bg-slate-700/15 rounded-full blur-3xl"></div>
       </div>
 
       {/* Theme Toggle */}
       <button
         onClick={toggleTheme}
-        className="absolute top-6 left-6 w-11 h-11 rounded-xl bg-white dark:bg-slate-800 border-2 border-amber-200 dark:border-amber-900/50 flex items-center justify-center hover:bg-amber-50 dark:hover:bg-slate-700 transition-all shadow-sm hover:shadow-md z-20"
-        aria-label="تبديل الوضع"
+        className="absolute top-6 start-6 w-11 h-11 rounded-xl bg-white dark:bg-slate-800 border-2 border-amber-200 dark:border-amber-900/50 flex items-center justify-center hover:bg-amber-50 dark:hover:bg-slate-700 transition-all shadow-sm hover:shadow-md z-20"
+        aria-label={window.__t("تبديل الوضع")}
       >
         {theme === 'dark' ? (
           <Sun className="w-5 h-5 text-amber-500" />
         ) : (
           <Moon className="w-5 h-5 text-amber-600" />
         )}
+      </button>
+
+      {/* Back to Home Button */}
+      <button
+        onClick={() => onNavigate('landing')}
+        className="absolute top-6 end-6 px-4 h-11 rounded-xl bg-white dark:bg-slate-800 border-2 border-amber-200 dark:border-amber-900/50 flex items-center justify-center gap-2 hover:bg-amber-50 dark:hover:bg-slate-700 transition-all shadow-sm hover:shadow-md z-20 text-amber-900 dark:text-amber-200 font-medium"
+      >
+        <Home className="w-5 h-5" />
+        <span className="hidden sm:inline-block">{window.__t("العودة للرئيسية")}</span>
       </button>
 
       <div className="w-full max-w-4xl relative z-10">
@@ -435,10 +444,10 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
             </div>
           </div>
           <h1 className="text-3xl text-amber-900 dark:text-amber-200 font-bold" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>
-            إنشاء حساب جديد
+            {window.__t("إنشاء حساب جديد")}
           </h1>
           <p className="text-amber-700 dark:text-amber-400 text-sm mt-1" style={{ fontFamily: "'Tajawal', sans-serif" }}>
-            انضم إلى المحامي اليوم
+            {window.__t("انضم إلى المحامي اليوم")}
           </p>
         </div>
 
@@ -475,10 +484,10 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
               <div className="space-y-5">
                 <div className="text-center mb-6">
                   <h2 className="text-2xl text-amber-900 dark:text-amber-200 font-bold" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>
-                    اختر نوع الحساب
+                    {window.__t("اختر نوع الحساب")}
                   </h2>
                   <p className="text-amber-700 dark:text-amber-400 text-sm mt-1" style={{ fontFamily: "'Tajawal', sans-serif" }}>
-                    حدد الخيار المناسب لاحتياجاتك
+                    {window.__t("حدد الخيار المناسب لاحتياجاتك")}
                   </p>
                 </div>
 
@@ -487,7 +496,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                   <button
                     type="button"
                     onClick={() => setUserType('lawyer')}
-                    className={`p-5 rounded-xl border-2 transition-all text-right ${
+                    className={`p-5 rounded-xl border-2 transition-all text-start ${
                       userType === 'lawyer'
                         ? 'border-amber-500 bg-gradient-to-br from-amber-50 to-transparent'
                         : 'border-gray-200 hover:border-amber-300'
@@ -504,12 +513,12 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                         >
                           <Scale className={`w-7 h-7 ${userType === 'lawyer' ? 'text-white' : 'text-gray-500'}`} />
                         </div>
-                        <div className="text-right flex-1">
-                          <h3 className="text-lg text-amber-900 dark:text-amber-200 font-bold" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>
-                            محامي
+                        <div className="text-start flex-1">
+                          <h3 className="text-lg text-amber-900 dark:text-amber-200 font-bold" style={{ fontFamily: "var(--font-sans)", fontWeight: 700 }}>
+                            {window.__t("محامي")}
                           </h3>
-                          <p className="text-sm text-amber-700 dark:text-amber-400" style={{ fontFamily: "'Tajawal', sans-serif" }}>
-                            للمحامين المرخصين
+                          <p className="text-sm text-amber-700 dark:text-amber-400" style={{ fontFamily: "var(--font-sans)" }}>
+                            {window.__t("للمحامين المرخصين")}
                           </p>
                         </div>
                       </div>
@@ -527,7 +536,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                   <button
                     type="button"
                     onClick={() => setUserType('cabinet')}
-                    className={`p-5 rounded-xl border-2 transition-all text-right ${
+                    className={`p-5 rounded-xl border-2 transition-all text-start ${
                       userType === 'cabinet'
                         ? 'border-amber-500 bg-gradient-to-br from-amber-50 to-transparent'
                         : 'border-gray-200 hover:border-amber-300'
@@ -544,12 +553,12 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                         >
                           <Building2 className={`w-7 h-7 ${userType === 'cabinet' ? 'text-white' : 'text-gray-500'}`} />
                         </div>
-                        <div className="text-right flex-1">
-                          <h3 className="text-lg text-amber-900 dark:text-amber-200 font-bold" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>
-                            مكتب محاماة
+                        <div className="text-start flex-1">
+                          <h3 className="text-lg text-amber-900 dark:text-amber-200 font-bold" style={{ fontFamily: "var(--font-sans)", fontWeight: 700 }}>
+                            {window.__t("مكتب محاماة")}
                           </h3>
-                          <p className="text-sm text-amber-700 dark:text-amber-400" style={{ fontFamily: "'Tajawal', sans-serif" }}>
-                            للمكاتب القانونية
+                          <p className="text-sm text-amber-700 dark:text-amber-400" style={{ fontFamily: "var(--font-sans)" }}>
+                            {window.__t("للمكاتب القانونية")}
                           </p>
                         </div>
                       </div>
@@ -567,7 +576,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                   <button
                     type="button"
                     onClick={() => setUserType('student')}
-                    className={`p-5 rounded-xl border-2 transition-all text-right ${
+                    className={`p-5 rounded-xl border-2 transition-all text-start ${
                       userType === 'student'
                         ? 'border-amber-500 bg-gradient-to-br from-amber-50 to-transparent'
                         : 'border-gray-200 hover:border-amber-300'
@@ -584,12 +593,12 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                         >
                           <GraduationCap className={`w-7 h-7 ${userType === 'student' ? 'text-white' : 'text-gray-500'}`} />
                         </div>
-                        <div className="text-right flex-1">
-                          <h3 className="text-lg text-amber-900 dark:text-amber-200 font-bold" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>
-                            طالب قانون
+                        <div className="text-start flex-1">
+                          <h3 className="text-lg text-amber-900 dark:text-amber-200 font-bold" style={{ fontFamily: "var(--font-sans)", fontWeight: 700 }}>
+                            {window.__t("طالب قانون")}
                           </h3>
-                          <p className="text-sm text-amber-700 dark:text-amber-400" style={{ fontFamily: "'Tajawal', sans-serif" }}>
-                            لطلاب كليات الحقوق
+                          <p className="text-sm text-amber-700 dark:text-amber-400" style={{ fontFamily: "var(--font-sans)" }}>
+                            {window.__t("لطلاب كليات الحقوق")}
                           </p>
                         </div>
                       </div>
@@ -611,7 +620,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                   className="w-full bg-gradient-to-l from-amber-500 to-amber-600 text-white h-12 rounded-xl font-bold text-base"
                   style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}
                 >
-                  التالي — معلوماتك الشخصية
+                  {window.__t("التالي — معلوماتك الشخصية")}
                 </Button>
 
                 <div className="text-center pt-2">
@@ -621,7 +630,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                     className="text-sm text-amber-700 hover:text-amber-900 transition-colors"
                     style={{ fontFamily: "'Tajawal', sans-serif" }}
                   >
-                    لديك حساب؟ <span className="text-amber-600 font-bold">تسجيل الدخول</span>
+                    {window.__t("لديك حساب؟")} <span className="text-amber-600 font-bold">{window.__t("تسجيل الدخول")}</span>
                   </button>
                 </div>
               </div>
@@ -632,85 +641,85 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
               <div className="space-y-5">
                 <div className="text-center mb-6">
                   <h2 className="text-2xl text-amber-900 dark:text-amber-200 font-bold" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>
-                    معلوماتك الشخصية
+                    {window.__t("معلوماتك الشخصية")}
                   </h2>
                   <p className="text-amber-700 dark:text-amber-400 text-sm mt-1" style={{ fontFamily: "'Tajawal', sans-serif" }}>
-                    أدخل بياناتك لإنشاء حسابك
+                    {window.__t("أدخل بياناتك لإنشاء حسابك")}
                   </p>
                 </div>
 
                 <div className="space-y-4">
                   {/* Full Name */}
                   <div className="space-y-2">
-                    <label className="text-sm text-amber-900 block text-right font-bold" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>
-                      الاسم الكامل
-                      {errors.fullName && <span className="text-red-600"> مطلوب</span>}
+                    <label className="text-sm text-amber-900 dark:text-amber-200 block text-start font-bold" style={{ fontFamily: "var(--font-sans)", fontWeight: 700 }}>
+                      {window.__t("الاسم الكامل")}
+                      {errors.fullName && <span className="text-red-600"> {window.__t("مطلوب")}</span>}
                     </label>
                     <div className="relative group">
                       <Input
                         ref={firstInputRef}
                         type="text"
-                        placeholder="أدخل اسمك الكامل"
+                        placeholder={window.__t("أدخل اسمك الكامل")}
                         value={formData.fullName}
                         onChange={(e) => handleInputChange('fullName', e.target.value)}
                         disabled={isLoading}
-                        className={`w-full pl-11 h-11 ${errors.fullName ? 'border-2 border-red-500' : ''}`}
+                        className={`w-full ps-11 h-11 ${errors.fullName ? 'border-2 border-red-500' : ''}`}
                         required
                       />
-                      <User className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.fullName ? 'text-red-500' : 'text-muted-foreground'}`} />
+                      <User className={`absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.fullName ? 'text-red-500' : 'text-muted-foreground'}`} />
                     </div>
-                    {errors.fullName && <p className="text-red-500 text-xs text-right">{errors.fullName}</p>}
+                    {errors.fullName && <p className="text-red-500 text-xs text-end">{errors.fullName}</p>}
                   </div>
 
                   {/* Email & Phone */}
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm text-foreground dark:text-amber-200 block text-right font-medium">
-                        البريد الإلكتروني
-                        {errors.email && <span className="text-red-500"> مطلوب</span>}
+                      <label className="text-sm text-foreground dark:text-amber-200 block text-start font-medium">
+                        {window.__t("البريد الإلكتروني")}
+                        {errors.email && <span className="text-red-500"> {window.__t("مطلوب")}</span>}
                       </label>
                       <div className="relative group">
                         <Input
                           type="email"
-                          placeholder="أدخل بريدك الإلكتروني"
+                          placeholder={window.__t("أدخل بريدك الإلكتروني")}
                           value={formData.email}
                           onChange={(e) => handleInputChange('email', e.target.value)}
                           disabled={isLoading}
-                          className={`w-full pl-11 h-11 ${errors.email ? 'border-2 border-red-500' : ''}`}
+                          className={`w-full ps-11 h-11 ${errors.email ? 'border-2 border-red-500' : ''}`}
                           required
                         />
-                        <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.email ? 'text-red-500' : 'text-muted-foreground'}`} />
+                        <Mail className={`absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.email ? 'text-red-500' : 'text-muted-foreground'}`} />
                       </div>
-                      {errors.email && <p className="text-red-500 text-xs text-right">{errors.email}</p>}
+                      {errors.email && <p className="text-red-500 text-xs text-end">{errors.email}</p>}
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm text-foreground dark:text-amber-200 block text-right font-medium">
-                        رقم الهاتف
-                        {errors.phone && <span className="text-red-500"> مطلوب</span>}
+                      <label className="text-sm text-foreground dark:text-amber-200 block text-start font-medium">
+                        {window.__t("رقم الهاتف")}
+                        {errors.phone && <span className="text-red-500"> {window.__t("مطلوب")}</span>}
                       </label>
                       <div className="relative group">
                         <Input
                           type="number"
-                          placeholder="🇹🇳 أدخل رقم هاتفك"
+                          placeholder={window.__t("🇹🇳 أدخل رقم هاتفك")}
                           value={formData.phone}
                           onChange={(e) => handleInputChange('phone', e.target.value)}
                           disabled={isLoading}
-                          className={`w-full pl-11 h-11 ${errors.phone ? 'border-2 border-red-500' : ''}`}
+                          className={`w-full ps-11 h-11 ${errors.phone ? 'border-2 border-red-500' : ''}`}
                           required
                         />
-                        <Phone className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.phone ? 'text-red-500' : 'text-muted-foreground'}`} />
+                        <Phone className={`absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.phone ? 'text-red-500' : 'text-muted-foreground'}`} />
                       </div>
-                      {errors.phone && <p className="text-red-500 text-xs text-right">{errors.phone}</p>}
+                      {errors.phone && <p className="text-red-500 text-xs text-end">{errors.phone}</p>}
                     </div>
                   </div>
 
                   {/* Conditional Fields */}
                   {userType === 'student' && (
                     <div className="space-y-2">
-                      <label className="text-sm text-foreground dark:text-amber-200 block text-right font-medium">
-                        الكلية أو المؤسسة
-                        {errors.university && <span className="text-red-500"> مطلوب</span>}
+                      <label className="text-sm text-foreground dark:text-amber-200 block text-start font-medium">
+                        {window.__t("الكلية أو المؤسسة")}
+                        {errors.university && <span className="text-red-500"> {window.__t("مطلوب")}</span>}
                       </label>
                       <FacultySelector
                         value={formData.university}
@@ -724,141 +733,141 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
 
                   {userType === 'lawyer' && (
                     <div className="space-y-2">
-                      <label className="text-sm text-foreground dark:text-amber-200 block text-right font-medium">
-                        رقم بطاقة المحاماة
-                        {errors.barNumber && <span className="text-red-500"> مطلوب</span>}
+                      <label className="text-sm text-foreground dark:text-amber-200 block text-start font-medium">
+                        {window.__t("رقم بطاقة المحاماة")}
+                        {errors.barNumber && <span className="text-red-500"> {window.__t("مطلوب")}</span>}
                       </label>
                       <div className="relative group">
                         <Input
                           type="text"
-                          placeholder="أدخل رقم بطاقة المحاماة"
+                          placeholder={window.__t("أدخل رقم بطاقة المحاماة")}
                           value={formData.barNumber}
                           onChange={(e) => handleInputChange('barNumber', e.target.value)}
                           disabled={isLoading}
-                          className={`w-full pl-11 h-11 ${errors.barNumber ? 'border-2 border-red-500' : ''}`}
+                          className={`w-full ps-11 h-11 ${errors.barNumber ? 'border-2 border-red-500' : ''}`}
                           required
                         />
-                        <FileText className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.barNumber ? 'text-red-500' : 'text-muted-foreground'}`} />
+                        <FileText className={`absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.barNumber ? 'text-red-500' : 'text-muted-foreground'}`} />
                       </div>
-                      {errors.barNumber && <p className="text-red-500 text-xs text-right">{errors.barNumber}</p>}
+                      {errors.barNumber && <p className="text-red-500 text-xs text-end">{errors.barNumber}</p>}
                     </div>
                   )}
 
                   {userType === 'cabinet' && (
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <label className="text-sm text-foreground dark:text-amber-200 block text-right font-medium">
-                          اسم المكتب
-                          {errors.cabinetName && <span className="text-red-500"> مطلوب</span>}
+                        <label className="text-sm text-foreground dark:text-amber-200 block text-start font-medium">
+                          {window.__t("اسم المكتب")}
+                          {errors.cabinetName && <span className="text-red-500"> {window.__t("مطلوب")}</span>}
                         </label>
                         <div className="relative group">
                           <Input
                             type="text"
-                            placeholder="أدخل اسم المكتب القانوني"
+                            placeholder={window.__t("أدخل اسم المكتب القانوني")}
                             value={formData.cabinetName}
                             onChange={(e) => handleInputChange('cabinetName', e.target.value)}
                             disabled={isLoading}
-                            className={`w-full pl-11 h-11 ${errors.cabinetName ? 'border-2 border-red-500' : ''}`}
+                            className={`w-full ps-11 h-11 ${errors.cabinetName ? 'border-2 border-red-500' : ''}`}
                             required
                           />
-                          <Building2 className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.cabinetName ? 'text-red-500' : 'text-muted-foreground'}`} />
+                          <Building2 className={`absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.cabinetName ? 'text-red-500' : 'text-muted-foreground'}`} />
                         </div>
-                        {errors.cabinetName && <p className="text-red-500 text-xs text-right">{errors.cabinetName}</p>}
+                        {errors.cabinetName && <p className="text-red-500 text-xs text-end">{errors.cabinetName}</p>}
                       </div>
 
                       {/* Bar Registration Number */}
                       <div className="space-y-2">
-                        <label className="text-sm text-foreground dark:text-amber-200 block text-right font-medium">
-                          رقم التسجيل بالهيئة
-                          {errors.barRegistrationNumber && <span className="text-red-500"> مطلوب</span>}
+                        <label className="text-sm text-foreground dark:text-amber-200 block text-start font-medium">
+                          {window.__t("رقم التسجيل بالهيئة")}
+                          {errors.barRegistrationNumber && <span className="text-red-500"> {window.__t("مطلوب")}</span>}
                         </label>
                         <div className="relative group">
                           <Input
                             type="text"
-                            placeholder="أدخل رقم التسجيل"
+                            placeholder={window.__t("أدخل رقم التسجيل")}
                             value={formData.barRegistrationNumber}
                             onChange={(e) => handleInputChange('barRegistrationNumber', e.target.value)}
                             disabled={isLoading}
-                            className={`w-full pl-11 h-11 ${errors.barRegistrationNumber ? 'border-2 border-red-500' : ''}`}
+                            className={`w-full ps-11 h-11 ${errors.barRegistrationNumber ? 'border-2 border-red-500' : ''}`}
                             required
                           />
-                          <FileText className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.barRegistrationNumber ? 'text-red-500' : 'text-muted-foreground'}`} />
+                          <FileText className={`absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.barRegistrationNumber ? 'text-red-500' : 'text-muted-foreground'}`} />
                         </div>
-                        {errors.barRegistrationNumber && <p className="text-red-500 text-xs text-right">{errors.barRegistrationNumber}</p>}
+                        {errors.barRegistrationNumber && <p className="text-red-500 text-xs text-end">{errors.barRegistrationNumber}</p>}
                       </div>
 
                       {/* Office Address */}
                       <div className="space-y-2">
-                        <label className="text-sm text-foreground dark:text-amber-200 block text-right font-medium">
-                          العنوان
-                          {errors.officeAddress && <span className="text-red-500"> مطلوب</span>}
+                        <label className="text-sm text-foreground dark:text-amber-200 block text-start font-medium">
+                          {window.__t("العنوان")}
+                          {errors.officeAddress && <span className="text-red-500"> {window.__t("مطلوب")}</span>}
                         </label>
                         <div className="relative group">
                           <Input
                             type="text"
-                            placeholder="أدخل عنوان المكتب"
+                            placeholder={window.__t("أدخل عنوان المكتب")}
                             value={formData.officeAddress}
                             onChange={(e) => handleInputChange('officeAddress', e.target.value)}
                             disabled={isLoading}
-                            className={`w-full pl-11 h-11 ${errors.officeAddress ? 'border-2 border-red-500' : ''}`}
+                            className={`w-full ps-11 h-11 ${errors.officeAddress ? 'border-2 border-red-500' : ''}`}
                             required
                           />
-                          <Building2 className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.officeAddress ? 'text-red-500' : 'text-muted-foreground'}`} />
+                          <Building2 className={`absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.officeAddress ? 'text-red-500' : 'text-muted-foreground'}`} />
                         </div>
-                        {errors.officeAddress && <p className="text-red-500 text-xs text-right">{errors.officeAddress}</p>}
+                        {errors.officeAddress && <p className="text-red-500 text-xs text-end">{errors.officeAddress}</p>}
                       </div>
 
                       {/* Number of Lawyers */}
                       <div className="space-y-2">
-                        <label className="text-sm text-foreground dark:text-amber-200 block text-right font-medium">
-                          عدد المحامين
-                          {errors.numberOfLawyers && <span className="text-red-500"> مطلوب</span>}
+                        <label className="text-sm text-foreground dark:text-amber-200 block text-start font-medium">
+                          {window.__t("عدد المحامين")}
+                          {errors.numberOfLawyers && <span className="text-red-500"> {window.__t("مطلوب")}</span>}
                         </label>
                         <div className="relative group">
                           <Input
                             type="number"
                             min="1"
-                            placeholder="أدخل عدد المحامين"
+                            placeholder={window.__t("أدخل عدد المحامين")}
                             value={formData.numberOfLawyers}
                             onChange={(e) => handleInputChange('numberOfLawyers', e.target.value)}
                             disabled={isLoading}
-                            className={`w-full pl-11 h-11 ${errors.numberOfLawyers ? 'border-2 border-red-500' : ''}`}
+                            className={`w-full ps-11 h-11 ${errors.numberOfLawyers ? 'border-2 border-red-500' : ''}`}
                             required
                           />
-                          <Scale className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.numberOfLawyers ? 'text-red-500' : 'text-muted-foreground'}`} />
+                          <Scale className={`absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.numberOfLawyers ? 'text-red-500' : 'text-muted-foreground'}`} />
                         </div>
-                        {errors.numberOfLawyers && <p className="text-red-500 text-xs text-right">{errors.numberOfLawyers}</p>}
+                        {errors.numberOfLawyers && <p className="text-red-500 text-xs text-end">{errors.numberOfLawyers}</p>}
                       </div>
                     </div>
                   )}
 
                   {/* Password */}
                   <div className="space-y-2">
-                    <label className="text-sm text-foreground dark:text-amber-200 block text-right font-medium">
-                      كلمة المرور
-                      {errors.password && <span className="text-red-500"> مطلوب</span>}
+                    <label className="text-sm text-foreground dark:text-amber-200 block text-start font-medium">
+                      {window.__t("كلمة المرور")}
+                      {errors.password && <span className="text-red-500"> {window.__t("مطلوب")}</span>}
                     </label>
                     <div className="relative group">
                       <Input
                         type={showPassword ? 'text' : 'password'}
-                        placeholder="أدخل كلمة مرور قوية (8 أحرف، تحتوي على أرقام وحروف)"
+                        placeholder={window.__t("أدخل كلمة مرور قوية (8 أحرف، تحتوي على أرقام وحروف)")}
                         value={formData.password}
                         onChange={(e) => handleInputChange('password', e.target.value)}
                         disabled={isLoading}
-                        className={`w-full pr-11 pl-11 h-11 ${errors.password ? 'border-2 border-red-500' : ''}`}
+                        className={`w-full px-11 h-11 ${errors.password ? 'border-2 border-red-500' : ''}`}
                         required
                       />
-                      <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.password ? 'text-red-500' : 'text-muted-foreground'}`} />
+                      <Lock className={`absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.password ? 'text-red-500' : 'text-muted-foreground'}`} />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                         disabled={isLoading}
                       >
                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                       </button>
                     </div>
-                    {errors.password && <p className="text-red-500 text-xs text-right">{errors.password}</p>}
+                    {errors.password && <p className="text-red-500 text-xs text-end">{errors.password}</p>}
                     {formData.password && (
                       <div className="flex items-center gap-2">
                         <div className={`flex-1 h-1.5 rounded-full ${getPasswordStrengthColor()}`}></div>
@@ -869,31 +878,31 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
 
                   {/* Confirm Password */}
                   <div className="space-y-2">
-                    <label className="text-sm text-foreground dark:text-amber-200 block text-right font-medium">
-                      تأكيد كلمة المرور
-                      {errors.confirmPassword && <span className="text-red-500"> مطلوب</span>}
+                    <label className="text-sm text-foreground dark:text-amber-200 block text-start font-medium">
+                      {window.__t("تأكيد كلمة المرور")}
+                      {errors.confirmPassword && <span className="text-red-500"> {window.__t("مطلوب")}</span>}
                     </label>
                     <div className="relative group">
                       <Input
                         type={showConfirmPassword ? 'text' : 'password'}
-                        placeholder="أعد إدخال كلمة المرور للتأكيد"
+                        placeholder={window.__t("أعد إدخال كلمة المرور للتأكيد")}
                         value={formData.confirmPassword}
                         onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
                         disabled={isLoading}
-                        className={`w-full pr-11 pl-11 h-11 ${errors.confirmPassword ? 'border-2 border-red-500' : ''}`}
+                        className={`w-full px-11 h-11 ${errors.confirmPassword ? 'border-2 border-red-500' : ''}`}
                         required
                       />
-                      <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.confirmPassword ? 'text-red-500' : 'text-muted-foreground'}`} />
+                      <Lock className={`absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.confirmPassword ? 'text-red-500' : 'text-muted-foreground'}`} />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                         disabled={isLoading}
                       >
                         {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                       </button>
                     </div>
-                    {errors.confirmPassword && <p className="text-red-500 text-xs text-right">{errors.confirmPassword}</p>}
+                    {errors.confirmPassword && <p className="text-red-500 text-xs text-end">{errors.confirmPassword}</p>}
                   </div>
                 </div>
 
@@ -906,7 +915,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                     className="flex-1 h-12 rounded-lg text-sm"
                     disabled={isLoading}
                   >
-                    رجوع
+                    {window.__t("رجوع")}
                   </Button>
                   <Button
                     type="button"
@@ -917,10 +926,10 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                     {isLoading ? (
                       <span className="flex items-center gap-2">
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        جارٍ الإرسال...
+                        {window.__t("جارٍ الإرسال...")}
                       </span>
                     ) : (
-                      'تحقق من البريد'
+                      window.__t("تحقق من البريد")
                     )}
                   </Button>
                 </div>
@@ -932,10 +941,10 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
               <div className="space-y-5">
                 <div className="text-center mb-6">
                   <h2 className="text-2xl text-amber-900 dark:text-amber-200 font-bold" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>
-                    التحقق من البريد الإلكتروني
+                    {window.__t("التحقق من البريد الإلكتروني")}
                   </h2>
                   <p className="text-amber-700 dark:text-amber-400 text-sm mt-1" style={{ fontFamily: "'Tajawal', sans-serif" }}>
-                    أدخل رمز التحقق المرسل إلى <span className="font-bold">{formData.email}</span>
+                    {window.__t("أدخل رمز التحقق المرسل إلى")} <span className="font-bold">{formData.email}</span>
                   </p>
                 </div>
 
@@ -950,10 +959,10 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                     {isLoading ? (
                       <span className="flex items-center gap-2">
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        جارٍ الإرسال...
+                        {window.__t("جارٍ الإرسال...")}
                       </span>
                     ) : (
-                      'إرسال رمز التحقق'
+                      window.__t("إرسال رمز التحقق")
                     )}
                   </Button>
                 ) : (
@@ -962,15 +971,15 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                     <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-4 flex items-start gap-3">
                       <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
                       <div className="text-sm text-green-700 dark:text-green-300" style={{ fontFamily: "'Tajawal', sans-serif" }}>
-                        تم إرسال رمز التحقق بنجاح! تحقق من بريدك الإلكتروني (قد يستغرق دقيقة واحدة).
+                        {window.__t("تم إرسال رمز التحقق بنجاح! تحقق من بريدك الإلكتروني (قد يستغرق دقيقة واحدة).")}
                       </div>
                     </div>
 
                     {/* OTP Input */}
                     <div className="space-y-2">
-                      <label className="text-sm text-foreground dark:text-amber-200 block text-right font-medium">
-                        رمز التحقق (6 أرقام)
-                        {errors.otp && <span className="text-red-500"> مطلوب</span>}
+                      <label className="text-sm text-foreground dark:text-amber-200 block text-start font-medium">
+                        {window.__t("رمز التحقق (6 أرقام)")}
+                        {errors.otp && <span className="text-red-500"> {window.__t("مطلوب")}</span>}
                       </label>
                       <OtpInput
                         value={otpCode}
@@ -982,7 +991,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                         }}
                         length={6}
                         disabled={isLoading}
-                        error={errors.otp ? 'رمز التحقق مطلوب' : undefined}
+                        error={errors.otp ? window.__t("رمز التحقق مطلوب") : undefined}
                         autoFocus
                       />
                     </div>
@@ -998,12 +1007,12 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                       {isLoading ? (
                         <span className="flex items-center gap-2">
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          جارٍ التحقق...
+                          {window.__t("جارٍ التحقق...")}
                         </span>
                       ) : (
                         <>
-                          <CheckCircle2 className="w-4 h-4 ml-2" />
-                          التحقق من الرمز
+                          <CheckCircle2 className="w-4 h-4 ms-2" />
+                          {window.__t("التحقق من الرمز")}
                         </>
                       )}
                     </Button>
@@ -1021,7 +1030,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                         className="text-sm text-amber-600 hover:text-amber-700 transition-colors font-medium"
                         style={{ fontFamily: "'Tajawal', sans-serif" }}
                       >
-                        لم تتلقَ الرمز؟ <span className="underline">اطلب رمزاً جديداً</span>
+                        {window.__t("لم تتلقَ الرمز؟")} <span className="underline">{window.__t("اطلب رمزاً جديداً")}</span>
                       </button>
                     </div>
                   </div>
@@ -1036,7 +1045,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                     className="flex-1 h-12 rounded-lg text-sm"
                     disabled={isLoading}
                   >
-                    رجوع
+                    {window.__t("رجوع")}
                   </Button>
                 </div>
               </div>
@@ -1047,10 +1056,10 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
               <div className="space-y-5">
                 <div className="text-center mb-8">
                   <h2 className="text-2xl text-amber-900 dark:text-amber-200 font-bold" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>
-                    باقات تناسب جميع المحامين
+                    {window.__t("باقات تناسب جميع المحامين")}
                   </h2>
                   <p className="text-amber-700 dark:text-amber-400 text-sm mt-2" style={{ fontFamily: "'Tajawal', sans-serif" }}>
-                    اختر الباقة المناسبة لاحتياجاتك واحصل على جميع المميزات
+                    {window.__t("اختر الباقة المناسبة لاحتياجاتك واحصل على جميع المميزات")}
                   </p>
                 </div>
 
@@ -1059,36 +1068,36 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                   <button
                     type="button"
                     onClick={() => setSelectedPlan('basic')}
-                    className={`relative p-6 rounded-xl border-2 transition-all text-right ${
+                    className={`relative p-6 rounded-xl border-2 transition-all text-start ${
                       selectedPlan === 'basic'
                         ? 'border-primary bg-gradient-to-br from-primary/10 to-transparent shadow-lg'
                         : 'border-border hover:border-primary/50 hover:shadow-md'
                     }`}
                   >
-                    <h3 className="text-lg font-semibold text-foreground dark:text-amber-200 mb-1">البداية</h3>
-                    <p className="text-muted-foreground dark:text-amber-400 text-xs mb-4">للمحامين المبتدئين والفرادى</p>
+                    <h3 className="text-lg font-semibold text-foreground dark:text-amber-200 mb-1">{window.__t("البداية")}</h3>
+                    <p className="text-muted-foreground dark:text-amber-400 text-xs mb-4">{window.__t("للمحامين المبتدئين والفرادى")}</p>
 
                     <div className="text-3xl font-bold text-primary mb-6">
-                      0 <span className="text-sm">د.ت</span>
+                      0 <span className="text-sm">{window.__t("د.ت")}</span>
                     </div>
 
                     <div className="space-y-2.5 mb-6 text-sm text-muted-foreground dark:text-amber-400">
                       <p className="flex items-center gap-3">
-                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> إدارة {planLimits.basic.cases} قضايا
+                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> {window.__t("إدارة")} {planLimits.basic.cases} {window.__t("قضايا")}
                       </p>
                       <p className="flex items-center gap-3">
-                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> تحضير {planLimits.basic.contracts} عقد
+                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> {window.__t("تحضير")} {planLimits.basic.contracts} {window.__t("عقد")}
                       </p>
                       <p className="flex items-center gap-3">
-                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> الوصول للمكتبة
+                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> {window.__t("الوصول للمكتبة")}
                       </p>
                       <p className="flex items-center gap-3">
-                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> دعم عام
+                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> {window.__t("دعم عام")}
                       </p>
                     </div>
 
                     <div
-                      className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center absolute top-6 left-6 ${
+                      className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center absolute top-6 start-6 ${
                         selectedPlan === 'basic' ? 'border-primary bg-primary' : 'border-border'
                       }`}
                     >
@@ -1100,43 +1109,43 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                   <button
                     type="button"
                     onClick={() => setSelectedPlan('pro')}
-                    className={`relative p-6 rounded-xl border-2 transition-all text-right ${
+                    className={`relative p-6 rounded-xl border-2 transition-all text-start ${
                       selectedPlan === 'pro'
                         ? 'border-primary bg-gradient-to-br from-primary/10 to-transparent shadow-lg ring-2 ring-primary/20'
                         : 'border-border hover:border-primary/50 hover:shadow-md'
                     }`}
                   >
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-[#D4941C] text-white px-4 py-1 rounded-full text-xs font-medium">
-                      الأفضل
+                    <div className="absolute -top-4 start-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-[#D4941C] text-white px-4 py-1 rounded-full text-xs font-medium">
+                      {window.__t("الأفضل")}
                     </div>
 
-                    <h3 className="text-lg font-semibold text-foreground dark:text-amber-200 mb-1">المحترف</h3>
-                    <p className="text-muted-foreground dark:text-amber-400 text-xs mb-4">للمحامين المهنيين</p>
+                    <h3 className="text-lg font-semibold text-foreground dark:text-amber-200 mb-1">{window.__t("المحترف")}</h3>
+                    <p className="text-muted-foreground dark:text-amber-400 text-xs mb-4">{window.__t("للمحامين المهنيين")}</p>
 
                     <div className="text-3xl font-bold text-primary mb-6">
-                      {pricing.pro} <span className="text-sm">د.ت/سنة</span>
+                      {pricing.pro} <span className="text-sm">{window.__t("د.ت/سنة")}</span>
                     </div>
 
                     <div className="space-y-2.5 mb-6 text-sm text-muted-foreground dark:text-amber-400">
                       <p className="flex items-center gap-3">
-                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> إدارة {planLimits.pro.cases} قضية
+                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> {window.__t("إدارة")} {planLimits.pro.cases} {window.__t("قضية")}
                       </p>
                       <p className="flex items-center gap-3">
-                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> تحضير {planLimits.pro.contracts} عقد
+                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> {window.__t("تحضير")} {planLimits.pro.contracts} {window.__t("عقد")}
                       </p>
                       <p className="flex items-center gap-3">
-                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> تحليل AI
+                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> {window.__t("تحليل AI")}
                       </p>
                       <p className="flex items-center gap-3">
-                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> تقارير احترافية
+                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> {window.__t("تقارير احترافية")}
                       </p>
                       <p className="flex items-center gap-3">
-                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> دعم ممتاز 24/7
+                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> {window.__t("دعم ممتاز 24/7")}
                       </p>
                     </div>
 
                     <div
-                      className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center absolute top-6 left-6 ${
+                      className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center absolute top-6 start-6 ${
                         selectedPlan === 'pro' ? 'border-primary bg-primary' : 'border-border'
                       }`}
                     >
@@ -1148,42 +1157,42 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                   <button
                     type="button"
                     onClick={() => setSelectedPlan('enterprise')}
-                    className={`relative p-6 rounded-xl border-2 transition-all text-right ${
+                    className={`relative p-6 rounded-xl border-2 transition-all text-start ${
                       selectedPlan === 'enterprise'
                         ? 'border-primary bg-gradient-to-br from-primary/10 to-transparent shadow-lg'
                         : 'border-border hover:border-primary/50 hover:shadow-md'
                     }`}
                   >
-                    <h3 className="text-lg font-semibold text-foreground dark:text-amber-200 mb-1">المكتب</h3>
-                    <p className="text-muted-foreground dark:text-amber-400 text-xs mb-4">للمكاتب والشركات</p>
+                    <h3 className="text-lg font-semibold text-foreground dark:text-amber-200 mb-1">{window.__t("المكتب")}</h3>
+                    <p className="text-muted-foreground dark:text-amber-400 text-xs mb-4">{window.__t("للمكاتب والشركات")}</p>
 
                     <div className="text-3xl font-bold text-primary mb-6">
-                      {pricing.enterprise} <span className="text-sm">د.ت/سنة</span>
+                      {pricing.enterprise} <span className="text-sm">{window.__t("د.ت/سنة")}</span>
                     </div>
 
                     <div className="space-y-2.5 mb-6 text-sm text-muted-foreground dark:text-amber-400">
                       <p className="flex items-center gap-3">
-                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> قضايا غير محدودة
+                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> {window.__t("قضايا غير محدودة")}
                       </p>
                       <p className="flex items-center gap-3">
-                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> عقود غير محدودة
+                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> {window.__t("عقود غير محدودة")}
                       </p>
                       <p className="flex items-center gap-3">
-                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> فريق متعدد
+                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> {window.__t("فريق متعدد")}
                       </p>
                       <p className="flex items-center gap-3">
-                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> تحليل AI متقدم
+                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> {window.__t("تحليل AI متقدم")}
                       </p>
                       <p className="flex items-center gap-3">
-                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> واجهة برمجية (API)
+                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> {window.__t("واجهة برمجية (API)")}
                       </p>
                       <p className="flex items-center gap-3">
-                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> دعم خاص 24/7
+                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> {window.__t("دعم خاص 24/7")}
                       </p>
                     </div>
 
                     <div
-                      className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center absolute top-6 left-6 ${
+                      className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center absolute top-6 start-6 ${
                         selectedPlan === 'enterprise' ? 'border-primary bg-primary' : 'border-border'
                       }`}
                     >
@@ -1193,7 +1202,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                 </div>
 
                 <p className="text-center text-xs text-muted-foreground dark:text-amber-400 mt-6">
-                  بالاشتراك، توافق على شروط الخدمة وسياسة الخصوصية
+                  {window.__t("بالاشتراك، توافق على شروط الخدمة وسياسة الخصوصية")}
                 </p>
 
                 {/* Navigation Buttons */}
@@ -1205,7 +1214,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                     className="flex-1 h-12 rounded-lg text-sm"
                     disabled={isLoading}
                   >
-                    رجوع
+                    {window.__t("رجوع")}
                   </Button>
                   <Button
                     type="submit"
@@ -1215,10 +1224,10 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                     {isLoading ? (
                       <span className="flex items-center gap-2">
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        جارٍ الإنشاء...
+                        {window.__t("جارٍ الإنشاء...")}
                       </span>
                     ) : (
-                      'إنشاء الحساب'
+                      window.__t("إنشاء الحساب")
                     )}
                   </Button>
                 </div>
@@ -1229,7 +1238,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
 
         {/* Footer */}
         <div className="mt-8 text-center">
-          <p className="text-muted-foreground text-xs">© 2026 المحامي - جميع الحقوق محفوظة</p>
+          <p className="text-muted-foreground text-xs">{window.__t("© 2026 المحامي - جميع الحقوق محفوظة")}</p>
         </div>
       </div>
     </div>

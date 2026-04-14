@@ -88,7 +88,7 @@ export const CaseDetail = ({ caseId, onBack }: { caseId: string, onBack: () => v
       await storageService.updateCase(updatedCase);
       setCaseData(updatedCase);
       setUploading(false);
-      showNotification('تم رفع المستند بنجاح', 'success');
+      showNotification(window.__t("تم رفع المستند بنجاح"), 'success');
       e.target.value = '';
     };
   };
@@ -108,7 +108,7 @@ export const CaseDetail = ({ caseId, onBack }: { caseId: string, onBack: () => v
     setCaseData(updatedCase);
     if (docs.length === 0) setAnalysisResult('');
     if (docs.length === 0) setChatMessages([]);
-    showNotification('تم حذف المستند', 'success');
+    showNotification(window.__t("تم حذف المستند"), 'success');
   };
 
   const runAnalysis = async () => {
@@ -120,7 +120,7 @@ export const CaseDetail = ({ caseId, onBack }: { caseId: string, onBack: () => v
     const result = await analyzeDocument(
       lastDoc.content, 
       lastDoc.type,
-      "أنت خبير قانوني تونسي. قم بتحليل هذا المستند واستخرج الثغرات القانونية الممكنة، نقاط الضعف في ادعاء الخصم، والمواد القانونية ذات الصلة من المجلة الجزائية أو المدنية."
+      window.__t("أنت خبير قانوني تونسي. قم بتحليل هذا المستند واستخرج الثغرات القانونية الممكنة، نقاط الضعف في ادعاء الخصم، والمواد القانونية ذات الصلة من المجلة الجزائية أو المدنية.")
     );
 
     setAnalysisResult(result);
@@ -129,7 +129,7 @@ export const CaseDetail = ({ caseId, onBack }: { caseId: string, onBack: () => v
     await storageService.updateCase(updatedCase);
     setCaseData(updatedCase);
     setIsAnalyzing(false);
-    showNotification('تم اكتمال التحليل بنجاح', 'success');
+    showNotification(window.__t("تم اكتمال التحليل بنجاح"), 'success');
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -176,7 +176,7 @@ export const CaseDetail = ({ caseId, onBack }: { caseId: string, onBack: () => v
         </button>
         <div className="flex-1">
           <h2 className="text-2xl font-bold text-slate-800">{caseData.title}</h2>
-          <p className="text-sm text-gray-500">الموكل: {caseData.clientName} | {caseData.type === 'criminal' ? 'جنائي' : caseData.type === 'civil' ? 'مدني' : 'تجاري'}</p>
+          <p className="text-sm text-gray-500">{window.__t("الموكل:")} {caseData.clientName} | {caseData.type === 'criminal' ? window.__t("جنائي") : caseData.type === 'civil' ? window.__t("مدني") : window.__t("تجاري")}</p>
           <select
             value={caseData.status}
             onChange={async (e) => {
@@ -184,16 +184,16 @@ export const CaseDetail = ({ caseId, onBack }: { caseId: string, onBack: () => v
               const updated = { ...caseData, status: s };
               await storageService.updateCase(updated);
               setCaseData(updated);
-              showNotification('تم تحديث حالة القضية', 'success');
+              showNotification(window.__t("تم تحديث حالة القضية"), 'success');
             }}
             className={`mt-2 px-3 py-1.5 rounded-lg text-sm font-medium border ${
               caseData.status === 'active' ? 'bg-green-100 text-green-700 border-green-200' :
               caseData.status === 'pending' ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-gray-100 text-gray-600 border-gray-200'
             }`}
           >
-            <option value="active">نشطة</option>
-            <option value="pending">بانتظار الإجراء</option>
-            <option value="closed">منتهية</option>
+            <option value="active">{window.__t("نشطة")}</option>
+            <option value="pending">{window.__t("بانتظار الإجراء")}</option>
+            <option value="closed">{window.__t("منتهية")}</option>
           </select>
         </div>
       </div>
@@ -202,13 +202,13 @@ export const CaseDetail = ({ caseId, onBack }: { caseId: string, onBack: () => v
         {/* Left Column: Documents List */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex flex-col min-h-0 lg:min-h-[600px]">
           <h3 className="font-bold text-slate-800 mb-4 flex justify-between items-center shrink-0">
-            <span>المستندات</span>
+            <span>{window.__t("المستندات")}</span>
             <span className="text-xs font-normal bg-gray-100 px-2 py-1 rounded text-gray-600">{caseData.documents.length}</span>
           </h3>
           
-          <div className="flex-1 overflow-y-auto space-y-3 mb-4 pr-1 min-h-0">
+          <div className="flex-1 overflow-y-auto space-y-3 mb-4 pe-1 min-h-0">
              {caseData.documents.length === 0 ? (
-               <div className="text-center py-10 text-gray-400 text-sm border-2 border-dashed border-gray-100 rounded-lg">لا توجد مستندات.<br/>قم برفع ملف لبدء التحليل.</div>
+               <div className="text-center py-10 text-gray-400 text-sm border-2 border-dashed border-gray-100 rounded-lg">{window.__t("لا توجد مستندات.")}<br/>{window.__t("قم برفع ملف لبدء التحليل.")}</div>
              ) : (
                caseData.documents.map(doc => (
                  <div key={doc.id} className="p-3 border border-slate-100 rounded-lg flex items-center justify-between group hover:border-gold-500 transition bg-slate-50 hover:bg-white">
@@ -216,15 +216,15 @@ export const CaseDetail = ({ caseId, onBack }: { caseId: string, onBack: () => v
                       <div className="w-8 h-8 rounded bg-red-100 flex items-center justify-center text-red-500 shrink-0">
                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                       </div>
-                      <div className="text-right min-w-0">
+                      <div className="text-end min-w-0">
                          <div className="text-sm font-medium text-slate-700 truncate max-w-[120px]">{doc.name}</div>
-                         <div className="text-xs text-gray-400">{new Date(doc.uploadDate).toLocaleDateString('ar-TN')}</div>
+                         <div className="text-xs text-gray-400">{new Date(doc.uploadDate).toLocaleDateString((document.documentElement.lang === 'ar' ? 'ar-TN' : 'fr-FR'))}</div>
                       </div>
                     </div>
                     <button
                       onClick={(ev) => { ev.stopPropagation(); handleDeleteDocument(doc.id); }}
                       className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition shrink-0"
-                      title="حذف المستند"
+                      title={window.__t("حذف المستند")}
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
@@ -240,7 +240,7 @@ export const CaseDetail = ({ caseId, onBack }: { caseId: string, onBack: () => v
             ) : (
                <>
                  <svg className="w-8 h-8 text-primary-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
-                 <span className="text-sm font-bold text-primary-700">اضغط لرفع ملف</span>
+                 <span className="text-sm font-bold text-primary-700">{window.__t("اضغط لرفع ملف")}</span>
                  <span className="text-xs text-primary-400 mt-1">PDF, JPG, PNG (Max {maxFileSizeMB} MB)</span>
                </>
             )}
@@ -255,13 +255,13 @@ export const CaseDetail = ({ caseId, onBack }: { caseId: string, onBack: () => v
               onClick={() => setActiveTab('analysis')}
               className={`flex-1 py-4 text-sm font-bold text-center transition ${activeTab === 'analysis' ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50' : 'text-gray-500 hover:text-gray-700'}`}
             >
-              📊 تقرير التحليل
+              {window.__t("📊 تقرير التحليل")}
             </button>
             <button 
               onClick={() => setActiveTab('chat')}
               className={`flex-1 py-4 text-sm font-bold text-center transition ${activeTab === 'chat' ? 'text-gold-600 border-b-2 border-gold-600 bg-gold-50' : 'text-gray-500 hover:text-gray-700'}`}
             >
-              💬 المساعد الذكي
+              {window.__t("💬 المساعد الذكي")}
             </button>
           </div>
 
@@ -270,7 +270,7 @@ export const CaseDetail = ({ caseId, onBack }: { caseId: string, onBack: () => v
              {activeTab === 'analysis' && (
                 <div className="flex-1 flex flex-col p-6 min-h-0 overflow-hidden">
                    <div className="flex justify-between items-center mb-4 shrink-0 flex-wrap gap-2">
-                      <h3 className="font-bold text-slate-700">الثغرات المستخرجة</h3>
+                      <h3 className="font-bold text-slate-700">{window.__t("الثغرات المستخرجة")}</h3>
                       <button 
                         onClick={runAnalysis}
                         disabled={isAnalyzing || caseData.documents.length === 0}
@@ -281,8 +281,8 @@ export const CaseDetail = ({ caseId, onBack }: { caseId: string, onBack: () => v
                         }`}
                       >
                         {isAnalyzing ? (
-                          <span className="flex items-center space-x-2 space-x-reverse"><Spinner /> <span>جاري المعالجة...</span></span>
-                        ) : 'بدء تحليل جديد'}
+                          <span className="flex items-center space-x-2 space-x-reverse"><Spinner /> <span>{window.__t("جاري المعالجة...")}</span></span>
+                        ) : window.__t("بدء تحليل جديد")}
                       </button>
                    </div>
                    
@@ -296,8 +296,8 @@ export const CaseDetail = ({ caseId, onBack }: { caseId: string, onBack: () => v
                           <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm border border-slate-100">
                              <span className="text-4xl">📄</span>
                           </div>
-                          <p className="font-medium">لم يتم تحليل الملف بعد</p>
-                          <p className="text-sm mt-2 max-w-xs text-center">اضغط على زر "بدء تحليل جديد" ليقوم الذكاء الاصطناعي بقراءة الملف واستخراج الثغرات.</p>
+                          <p className="font-medium">{window.__t("لم يتم تحليل الملف بعد")}</p>
+                          <p className="text-sm mt-2 max-w-xs text-center">{window.__t("اضغط على زر \"بدء تحليل جديد\" ليقوم الذكاء الاصطناعي بقراءة الملف واستخراج الثغرات.")}</p>
                         </div>
                       )}
                    </div>
@@ -313,10 +313,10 @@ export const CaseDetail = ({ caseId, onBack }: { caseId: string, onBack: () => v
                           <div className="inline-block p-4 bg-white rounded-full shadow-sm mb-4">
                             <span className="text-4xl">🤖</span>
                           </div>
-                          <h3 className="text-lg font-bold text-slate-700">مرحباً بك أيها الأستاذ</h3>
-                          <p className="text-gray-500 text-sm mt-2">أنا مساعدك القانوني الذكي. لقد اطلعت على الملف، اسألني أي شيء عنه.</p>
+                          <h3 className="text-lg font-bold text-slate-700">{window.__t("مرحباً بك أيها الأستاذ")}</h3>
+                          <p className="text-gray-500 text-sm mt-2">{window.__t("أنا مساعدك القانوني الذكي. لقد اطلعت على الملف، اسألني أي شيء عنه.")}</p>
                           <div className="mt-6 flex flex-wrap justify-center gap-2">
-                             {['لخص لي وقائع القضية', 'ما هي الثغرات الشكلية؟', 'هل هناك تناقض في التواريخ؟'].map(q => (
+                             {[window.__t("لخص لي وقائع القضية"), window.__t("ما هي الثغرات الشكلية؟"), window.__t("هل هناك تناقض في التواريخ؟")].map(q => (
                                <button key={q} onClick={() => setChatInput(q)} className="bg-white border border-gray-200 px-3 py-1.5 rounded-full text-xs text-gray-600 hover:border-gold-500 hover:text-gold-600 transition">
                                  {q}
                                </button>
@@ -355,7 +355,7 @@ export const CaseDetail = ({ caseId, onBack }: { caseId: string, onBack: () => v
                         type="text" 
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
-                        placeholder="اكتب سؤالك هنا..."
+                        placeholder={window.__t("اكتب سؤالك هنا...")}
                         className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gold-500 transition"
                         disabled={isChatting || caseData.documents.length === 0}
                       />

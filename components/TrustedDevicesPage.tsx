@@ -41,7 +41,7 @@ export const TrustedDevicesPage: React.FC = () => {
         setDevices(data);
         setError('');
       } catch (err) {
-        setError('فشل تحميل قائمة الأجهزة');
+        setError(window.__t("فشل تحميل قائمة الأجهزة"));
         console.error('Error fetching devices:', err);
       } finally {
         setLoading(false);
@@ -86,7 +86,7 @@ export const TrustedDevicesPage: React.FC = () => {
       setShowConfirmDelete(false);
       setSelectedDevice(null);
     } catch (err) {
-      setError('فشل حذف الجهاز');
+      setError(window.__t("فشل حذف الجهاز"));
       console.error('Error deleting device:', err);
     } finally {
       setDeletingId('');
@@ -95,7 +95,7 @@ export const TrustedDevicesPage: React.FC = () => {
 
   // Logout from all devices
   const handleLogoutAll = async () => {
-    if (!window.confirm('هل أنت متأكد من رغبتك في تسجيل الخروج من جميع الأجهزة؟')) {
+    if (!window.confirm(window.__t("هل أنت متأكد من رغبتك في تسجيل الخروج من جميع الأجهزة؟"))) {
       return;
     }
 
@@ -113,7 +113,7 @@ export const TrustedDevicesPage: React.FC = () => {
         window.location.href = '/login';
       }
     } catch (err) {
-      setError('فشل تسجيل الخروج من جميع الأجهزة');
+      setError(window.__t("فشل تسجيل الخروج من جميع الأجهزة"));
       console.error('Error logging out:', err);
     }
   };
@@ -121,8 +121,8 @@ export const TrustedDevicesPage: React.FC = () => {
   return (
     <div className="trusted-devices-container" dir="rtl">
       <div className="devices-header">
-        <h1>الأجهزة الموثوقة</h1>
-        <p>إدارة الأجهزة التي تثق بها</p>
+        <h1>{window.__t("الأجهزة الموثوقة")}</h1>
+        <p>{window.__t("إدارة الأجهزة التي تثق بها")}</p>
       </div>
 
       {/* Error Message */}
@@ -137,7 +137,7 @@ export const TrustedDevicesPage: React.FC = () => {
       {loading && (
         <div className="loading-state">
           <div className="spinner"></div>
-          <p>جاري تحميل الأجهزة...</p>
+          <p>{window.__t("جاري تحميل الأجهزة...")}</p>
         </div>
       )}
 
@@ -145,8 +145,8 @@ export const TrustedDevicesPage: React.FC = () => {
       {!loading && devices.length === 0 && (
         <div className="empty-state">
           <div className="empty-icon">📱</div>
-          <h3>لا توجد أجهزة موثوقة</h3>
-          <p>عند تسجيل دخولك من جهاز جديد، سيتم إضافته هنا بعد التحقق منه.</p>
+          <h3>{window.__t("لا توجد أجهزة موثوقة")}</h3>
+          <p>{window.__t("عند تسجيل دخولك من جهاز جديد، سيتم إضافته هنا بعد التحقق منه.")}</p>
         </div>
       )}
 
@@ -166,15 +166,15 @@ export const TrustedDevicesPage: React.FC = () => {
 
                 <div className="device-details">
                   <div className="detail-row">
-                    <span className="detail-label">الموقع:</span>
+                    <span className="detail-label">{window.__t("الموقع:")}</span>
                     <span className="detail-value">
                       {device.city && device.country
                         ? `${device.city}, ${device.country}`
-                        : 'غير متوفر'}
+                        : window.__t("غير متوفر")}
                     </span>
                   </div>
                   <div className="detail-row">
-                    <span className="detail-label">آخر دخول:</span>
+                    <span className="detail-label">{window.__t("آخر دخول:")}</span>
                     <span className="detail-value">{formatDate(device.last_seen)}</span>
                   </div>
                 </div>
@@ -187,7 +187,7 @@ export const TrustedDevicesPage: React.FC = () => {
                   }}
                   disabled={deletingId === device.device_id}
                 >
-                  {deletingId === device.device_id ? 'حذف...' : 'إزالة الجهاز'}
+                  {deletingId === device.device_id ? window.__t("حذف...") : window.__t("إزالة الجهاز")}
                 </button>
               </div>
             ))}
@@ -196,7 +196,7 @@ export const TrustedDevicesPage: React.FC = () => {
           {/* Action Buttons */}
           <div className="action-section">
             <button className="logout-all-button" onClick={handleLogoutAll}>
-              تسجيل الخروج من جميع الأجهزة
+              {window.__t("تسجيل الخروج من جميع الأجهزة")}
             </button>
           </div>
         </>
@@ -206,24 +206,24 @@ export const TrustedDevicesPage: React.FC = () => {
       {showConfirmDelete && (
         <div className="modal-overlay" onClick={() => setShowConfirmDelete(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>تأكيد حذف الجهاز</h2>
-            <p>هل أنت متأكد من رغبتك في إزالة هذا الجهاز؟</p>
+            <h2>{window.__t("تأكيد حذف الجهاز")}</h2>
+            <p>{window.__t("هل أنت متأكد من رغبتك في إزالة هذا الجهاز؟")}</p>
             <p className="warning">
-              ستحتاج إلى التحقق عبر OTP عند تسجيل الدخول من هذا الجهاز مرة أخرى.
+              {window.__t("ستحتاج إلى التحقق عبر OTP عند تسجيل الدخول من هذا الجهاز مرة أخرى.")}
             </p>
             <div className="modal-actions">
               <button
                 className="cancel-button"
                 onClick={() => setShowConfirmDelete(false)}
               >
-                إلغاء
+                {window.__t("إلغاء")}
               </button>
               <button
                 className="confirm-button"
                 onClick={() => handleDeleteDevice(selectedDevice!)}
                 disabled={deletingId === selectedDevice}
               >
-                {deletingId === selectedDevice ? 'جاري الحذف...' : 'تأكيد الحذف'}
+                {deletingId === selectedDevice ? window.__t("جاري الحذف...") : window.__t("تأكيد الحذف")}
               </button>
             </div>
           </div>
@@ -232,12 +232,12 @@ export const TrustedDevicesPage: React.FC = () => {
 
       {/* Security Tips */}
       <div className="security-tips">
-        <h3>💡 نصائح الأمان</h3>
+        <h3>{window.__t("💡 نصائح الأمان")}</h3>
         <ul>
-          <li>تحقق بانتظام من قائمة الأجهزة الموثوقة</li>
-          <li>احذف أي جهاز لا تعرفه أو لا تستخدمه</li>
-          <li>في حالة الاشتباه، استخدم "تسجيل الخروج من جميع الأجهزة"</li>
-          <li>غير كلمة مرورك بانتظام لتعزيز الأمان</li>
+          <li>{window.__t("تحقق بانتظام من قائمة الأجهزة الموثوقة")}</li>
+          <li>{window.__t("احذف أي جهاز لا تعرفه أو لا تستخدمه")}</li>
+          <li>{window.__t("في حالة الاشتباه، استخدم \"تسجيل الخروج من جميع الأجهزة\"")}</li>
+          <li>{window.__t("غير كلمة مرورك بانتظام لتعزيز الأمان")}</li>
         </ul>
       </div>
     </div>

@@ -27,7 +27,7 @@ const UserRow: React.FC<{ user: User; onUpdate: () => void; onDelete: () => void
       setShowEditModal(false);
     } catch (error) {
       console.error('Error updating user:', error);
-      alert('حدث خطأ أثناء تحديث المستخدم');
+      alert(window.__t("حدث خطأ أثناء تحديث المستخدم"));
     } finally {
       setLoading(false);
     }
@@ -41,7 +41,7 @@ const UserRow: React.FC<{ user: User; onUpdate: () => void; onDelete: () => void
       setShowDeleteConfirm(false);
     } catch (error) {
       console.error('Error deleting user:', error);
-      alert('حدث خطأ أثناء حذف المستخدم');
+      alert(window.__t("حدث خطأ أثناء حذف المستخدم"));
     } finally {
       setLoading(false);
     }
@@ -53,17 +53,17 @@ const UserRow: React.FC<{ user: User; onUpdate: () => void; onDelete: () => void
       await storageService.upgradeUserPlan(user.id, selectedPlan as any);
       // Send upgrade email
       const planNames: Record<string, string> = {
-        basic: 'البداية',
-        pro: 'المحترف',
-        enterprise: 'المكتب'
+        basic: window.__t("البداية"),
+        pro: window.__t("المحترف"),
+        enterprise: window.__t("المكتب")
       };
       await emailService.sendPlanUpgradeEmail(user.email, user.name, planNames[selectedPlan] || selectedPlan);
       onUpdate();
       setShowUpgradeModal(false);
-      alert('تم ترقية الباقة بنجاح وتم إرسال بريد إلكتروني للمستخدم');
+      alert(window.__t("تم ترقية الباقة بنجاح وتم إرسال بريد إلكتروني للمستخدم"));
     } catch (error) {
       console.error('Error upgrading plan:', error);
-      alert('حدث خطأ أثناء ترقية الباقة');
+      alert(window.__t("حدث خطأ أثناء ترقية الباقة"));
     } finally {
       setLoading(false);
     }
@@ -80,15 +80,15 @@ const UserRow: React.FC<{ user: User; onUpdate: () => void; onDelete: () => void
             user.subscriptionPlan === 'pro' ? 'bg-purple-100 text-purple-700' : 
             'bg-gold-100 text-gold-800'
           }`}>
-            {user.subscriptionPlan === 'basic' ? 'البداية' : 
-             user.subscriptionPlan === 'pro' ? 'المحترف' : 'المكتب'}
+            {user.subscriptionPlan === 'basic' ? window.__t("البداية") : 
+             user.subscriptionPlan === 'pro' ? window.__t("المحترف") : window.__t("المكتب")}
           </span>
         </td>
         <td className="px-6 py-4">
           {user.subscriptionStatus === 'pending_approval' ? (
-            <span className="text-orange-500 font-bold text-xs">قيد المراجعة</span>
+            <span className="text-orange-500 font-bold text-xs">{window.__t("قيد المراجعة")}</span>
           ) : (
-            <span className="text-green-600 text-xs font-bold">نشط</span>
+            <span className="text-green-600 text-xs font-bold">{window.__t("نشط")}</span>
           )}
         </td>
         <td className="px-6 py-4">
@@ -96,21 +96,21 @@ const UserRow: React.FC<{ user: User; onUpdate: () => void; onDelete: () => void
             <button
               onClick={() => setShowEditModal(true)}
               className="text-blue-600 hover:text-blue-800 text-xs px-2 py-1 rounded hover:bg-blue-50 transition"
-              title="تعديل"
+              title={window.__t("تعديل")}
             >
               ✏️
             </button>
             <button
               onClick={() => setShowUpgradeModal(true)}
               className="text-green-600 hover:text-green-800 text-xs px-2 py-1 rounded hover:bg-green-50 transition"
-              title="ترقية الباقة"
+              title={window.__t("ترقية الباقة")}
             >
               ⬆️
             </button>
             <button
               onClick={() => setShowDeleteConfirm(true)}
               className="text-red-600 hover:text-red-800 text-xs px-2 py-1 rounded hover:bg-red-50 transition"
-              title="حذف"
+              title={window.__t("حذف")}
             >
               🗑️
             </button>
@@ -119,10 +119,10 @@ const UserRow: React.FC<{ user: User; onUpdate: () => void; onDelete: () => void
       </tr>
 
       {/* Edit Modal */}
-      <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="تعديل المستخدم">
+      <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title={window.__t("تعديل المستخدم")}>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">الاسم</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{window.__t("الاسم")}</label>
             <input
               type="text"
               value={editName}
@@ -131,7 +131,7 @@ const UserRow: React.FC<{ user: User; onUpdate: () => void; onDelete: () => void
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">البريد الإلكتروني</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{window.__t("البريد الإلكتروني")}</label>
             <input
               type="email"
               value={editEmail}
@@ -144,24 +144,24 @@ const UserRow: React.FC<{ user: User; onUpdate: () => void; onDelete: () => void
             disabled={loading}
             className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
           >
-            {loading ? 'جاري الحفظ...' : 'حفظ التغييرات'}
+            {loading ? window.__t("جاري الحفظ...") : window.__t("حفظ التغييرات")}
           </button>
         </div>
       </Modal>
 
       {/* Upgrade Modal */}
-      <Modal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} title="ترقية الباقة">
+      <Modal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} title={window.__t("ترقية الباقة")}>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">اختر الباقة الجديدة</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{window.__t("اختر الباقة الجديدة")}</label>
             <select
               value={selectedPlan}
               onChange={(e) => setSelectedPlan(e.target.value)}
               className="w-full border rounded px-3 py-2"
             >
-              <option value="basic">البداية</option>
-              <option value="pro">المحترف</option>
-              <option value="enterprise">المكتب</option>
+              <option value="basic">{window.__t("البداية")}</option>
+              <option value="pro">{window.__t("المحترف")}</option>
+              <option value="enterprise">{window.__t("المكتب")}</option>
             </select>
           </div>
           <button
@@ -169,29 +169,29 @@ const UserRow: React.FC<{ user: User; onUpdate: () => void; onDelete: () => void
             disabled={loading || selectedPlan === user.subscriptionPlan}
             className="w-full bg-gold-500 text-slate-900 py-2 rounded hover:bg-gold-400 disabled:opacity-50 font-bold"
           >
-            {loading ? 'جاري الترقية...' : 'ترقية الباقة'}
+            {loading ? window.__t("جاري الترقية...") : window.__t("ترقية الباقة")}
           </button>
         </div>
       </Modal>
 
       {/* Delete Confirm Modal */}
-      <Modal isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} title="تأكيد الحذف">
+      <Modal isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} title={window.__t("تأكيد الحذف")}>
         <div className="space-y-4">
-          <p className="text-red-600">هل أنت متأكد من حذف المستخدم <strong>{user.name}</strong>؟</p>
-          <p className="text-sm text-gray-600">لا يمكن التراجع عن هذه العملية.</p>
+          <p className="text-red-600">{window.__t("هل أنت متأكد من حذف المستخدم")} <strong>{user.name}</strong>{window.__t("؟")}</p>
+          <p className="text-sm text-gray-600">{window.__t("لا يمكن التراجع عن هذه العملية.")}</p>
           <div className="flex space-x-3 space-x-reverse">
             <button
               onClick={handleDelete}
               disabled={loading}
               className="flex-1 bg-red-600 text-white py-2 rounded hover:bg-red-700 disabled:opacity-50"
             >
-              {loading ? 'جاري الحذف...' : 'حذف'}
+              {loading ? window.__t("جاري الحذف...") : window.__t("حذف")}
             </button>
             <button
               onClick={() => setShowDeleteConfirm(false)}
               className="flex-1 bg-gray-200 text-gray-700 py-2 rounded hover:bg-gray-300"
             >
-              إلغاء
+              {window.__t("إلغاء")}
             </button>
           </div>
         </div>
@@ -280,7 +280,7 @@ export const AdminDashboard = ({ view = 'overview' }: { view?: 'overview' | 'use
   };
 
   const handleApprove = async (id: string) => {
-      if(!confirm('تأكيد تفعيل الباقة لهذا المستخدم؟')) return;
+      if(!confirm(window.__t("تأكيد تفعيل الباقة لهذا المستخدم؟"))) return;
       setLoading(true);
       try {
       await storageService.approveInvoice(id);
@@ -291,7 +291,7 @@ export const AdminDashboard = ({ view = 'overview' }: { view?: 'overview' | 'use
           await notificationService.createNotification(
             'admin-1', // Admin user ID
             'admin',
-            'تم تفعيل اشتراك',
+            window.__t("تم تفعيل اشتراك"),
             `تم تفعيل باقة ${invoice.planName} للمستخدم ${invoice.userName}`,
             '/admin-dashboard',
             { invoiceId: id, userId: invoice.userEmail }
@@ -300,9 +300,9 @@ export const AdminDashboard = ({ view = 'overview' }: { view?: 'overview' | 'use
           // Send upgrade email to user
           try {
             const planNames: Record<string, string> = {
-              basic: 'البداية',
-              pro: 'المحترف',
-              enterprise: 'المكتب'
+              basic: window.__t("البداية"),
+              pro: window.__t("المحترف"),
+              enterprise: window.__t("المكتب")
             };
             const planName = planNames[invoice.planName] || invoice.planName;
             await emailService.sendPlanUpgradeEmail(invoice.userEmail || '', invoice.userName || '', planName);
@@ -320,7 +320,7 @@ export const AdminDashboard = ({ view = 'overview' }: { view?: 'overview' | 'use
   };
 
   const handleReject = async (id: string) => {
-      if(!confirm('رفض هذا الطلب؟')) return;
+      if(!confirm(window.__t("رفض هذا الطلب؟"))) return;
       setLoading(true);
       try {
       await storageService.rejectInvoice(id);
@@ -331,7 +331,7 @@ export const AdminDashboard = ({ view = 'overview' }: { view?: 'overview' | 'use
           await notificationService.createNotification(
             'admin-1', // Admin user ID
             'admin',
-            'تم رفض طلب تفعيل',
+            window.__t("تم رفض طلب تفعيل"),
             `تم رفض طلب تفعيل باقة ${invoice.planName} للمستخدم ${invoice.userName}`,
             '/admin-dashboard',
             { invoiceId: id, userId: invoice.userEmail }
@@ -349,33 +349,33 @@ export const AdminDashboard = ({ view = 'overview' }: { view?: 'overview' | 'use
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-slate-800">لوحة تحكم المسؤول</h2>
+      <h2 className="text-2xl font-bold text-slate-800">{window.__t("لوحة تحكم المسؤول")}</h2>
       
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <div className="bg-slate-900 text-white p-6 rounded-xl shadow-lg">
-          <p className="text-slate-400 text-sm mb-1">إجمالي المستخدمين</p>
+          <p className="text-slate-400 text-sm mb-1">{window.__t("إجمالي المستخدمين")}</p>
           <h3 className="text-4xl font-bold">{users.length}</h3>
         </div>
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-          <p className="text-gray-500 text-sm mb-1">المحامين النشطين</p>
+          <p className="text-gray-500 text-sm mb-1">{window.__t("المحامين النشطين")}</p>
           <h3 className="text-4xl font-bold text-slate-800">{lawyers.length}</h3>
         </div>
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-          <p className="text-gray-500 text-sm mb-1">طلبات التفعيل</p>
+          <p className="text-gray-500 text-sm mb-1">{window.__t("طلبات التفعيل")}</p>
           <h3 className={`text-4xl font-bold ${pendingInvoices.length > 0 ? 'text-orange-500' : 'text-slate-800'}`}>{pendingInvoices.length}</h3>
         </div>
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-xl shadow-lg">
-          <p className="text-blue-100 text-sm mb-1">زوار المنصة (اليوم)</p>
+          <p className="text-blue-100 text-sm mb-1">{window.__t("زوار المنصة (اليوم)")}</p>
           <h3 className="text-4xl font-bold">
             {loadingStats ? <Spinner /> : visitorStats?.visitsToday || 0}
           </h3>
           <p className="text-blue-100 text-xs mt-2">
-            إجمالي: {visitorStats?.totalVisits || 0} | فريد: {visitorStats?.uniqueVisitors || 0}
+            {window.__t("إجمالي:")} {visitorStats?.totalVisits || 0} {window.__t("| فريد:")} {visitorStats?.uniqueVisitors || 0}
           </p>
         </div>
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-          <p className="text-gray-500 text-sm mb-1">إيرادات الشهر</p>
+          <p className="text-gray-500 text-sm mb-1">{window.__t("إيرادات الشهر")}</p>
           <h3 className="text-4xl font-bold text-slate-800">{advancedStats?.revenueThisMonth?.toFixed(2) ?? '0'} TND</h3>
         </div>
       </div>
@@ -384,23 +384,23 @@ export const AdminDashboard = ({ view = 'overview' }: { view?: 'overview' | 'use
       {advancedStats && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
           <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white p-6 rounded-xl shadow-lg">
-            <p className="text-emerald-100 text-sm mb-1">إجمالي الإيرادات</p>
-            <h3 className="text-3xl font-bold">{advancedStats.revenueTotal.toFixed(2)} د.ت</h3>
+            <p className="text-emerald-100 text-sm mb-1">{window.__t("إجمالي الإيرادات")}</p>
+            <h3 className="text-3xl font-bold">{advancedStats.revenueTotal.toFixed(2)} {window.__t("د.ت")}</h3>
           </div>
           <div className="bg-gradient-to-br from-violet-500 to-violet-600 text-white p-6 rounded-xl shadow-lg">
-            <p className="text-violet-100 text-sm mb-1">قضايا هذا الشهر</p>
+            <p className="text-violet-100 text-sm mb-1">{window.__t("قضايا هذا الشهر")}</p>
             <h3 className="text-3xl font-bold">{advancedStats.newCasesThisMonth}</h3>
           </div>
           <div className="bg-gradient-to-br from-cyan-500 to-cyan-600 text-white p-6 rounded-xl shadow-lg">
-            <p className="text-cyan-100 text-sm mb-1">إجمالي العقود</p>
+            <p className="text-cyan-100 text-sm mb-1">{window.__t("إجمالي العقود")}</p>
             <h3 className="text-3xl font-bold">{advancedStats.totalContracts}</h3>
           </div>
           <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-            <p className="text-gray-500 text-sm mb-2">توزيع الباقات</p>
+            <p className="text-gray-500 text-sm mb-2">{window.__t("توزيع الباقات")}</p>
             <div className="space-y-1 text-sm">
-              <div className="flex justify-between"><span>البداية</span><span className="font-bold text-blue-600">{advancedStats.planBreakdown.basic}</span></div>
-              <div className="flex justify-between"><span>المحترف</span><span className="font-bold text-gold-600">{advancedStats.planBreakdown.pro}</span></div>
-              <div className="flex justify-between"><span>المكتب</span><span className="font-bold text-purple-600">{advancedStats.planBreakdown.enterprise}</span></div>
+              <div className="flex justify-between"><span>{window.__t("البداية")}</span><span className="font-bold text-blue-600">{advancedStats.planBreakdown.basic}</span></div>
+              <div className="flex justify-between"><span>{window.__t("المحترف")}</span><span className="font-bold text-gold-600">{advancedStats.planBreakdown.pro}</span></div>
+              <div className="flex justify-between"><span>{window.__t("المكتب")}</span><span className="font-bold text-purple-600">{advancedStats.planBreakdown.enterprise}</span></div>
             </div>
           </div>
         </div>
@@ -410,36 +410,36 @@ export const AdminDashboard = ({ view = 'overview' }: { view?: 'overview' | 'use
       {visitorStats && (
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 mt-6">
           <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-            📊 إحصائيات الزوار والتسجيلات
+            {window.__t("📊 إحصائيات الزوار والتسجيلات")}
             <button
               onClick={loadVisitorStats}
               className="text-sm text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50 transition"
-              title="تحديث"
+              title={window.__t("تحديث")}
             >
               🔄
             </button>
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-              <p className="text-blue-600 text-sm mb-1">إجمالي الزيارات</p>
+              <p className="text-blue-600 text-sm mb-1">{window.__t("إجمالي الزيارات")}</p>
               <p className="text-2xl font-bold text-blue-900">{visitorStats.totalVisits.toLocaleString()}</p>
             </div>
             <div className="bg-green-50 p-4 rounded-lg border border-green-100">
-              <p className="text-green-600 text-sm mb-1">زوار فريدون</p>
+              <p className="text-green-600 text-sm mb-1">{window.__t("زوار فريدون")}</p>
               <p className="text-2xl font-bold text-green-900">{visitorStats.uniqueVisitors.toLocaleString()}</p>
             </div>
             <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
-              <p className="text-purple-600 text-sm mb-1">هذا الأسبوع</p>
+              <p className="text-purple-600 text-sm mb-1">{window.__t("هذا الأسبوع")}</p>
               <p className="text-2xl font-bold text-purple-900">{visitorStats.visitsThisWeek.toLocaleString()}</p>
             </div>
             <div className="bg-gold-50 p-4 rounded-lg border border-gold-200">
-              <p className="text-gold-700 text-sm mb-1">هذا الشهر</p>
+              <p className="text-gold-700 text-sm mb-1">{window.__t("هذا الشهر")}</p>
               <p className="text-2xl font-bold text-gold-900">{visitorStats.visitsThisMonth.toLocaleString()}</p>
             </div>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div>
-              <h4 className="font-bold text-slate-700 mb-3">الزيارات (آخر 14 يوم)</h4>
+              <h4 className="font-bold text-slate-700 mb-3">{window.__t("الزيارات (آخر 14 يوم)")}</h4>
               <div className="h-56">
                 {visitsChartData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
@@ -452,12 +452,12 @@ export const AdminDashboard = ({ view = 'overview' }: { view?: 'overview' | 'use
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-full flex items-center justify-center text-gray-400">لا توجد بيانات</div>
+                  <div className="h-full flex items-center justify-center text-gray-400">{window.__t("لا توجد بيانات")}</div>
                 )}
               </div>
             </div>
             <div>
-              <h4 className="font-bold text-slate-700 mb-3">التسجيلات (آخر 6 أشهر)</h4>
+              <h4 className="font-bold text-slate-700 mb-3">{window.__t("التسجيلات (آخر 6 أشهر)")}</h4>
               <div className="h-56">
                 {registrationsChartData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
@@ -470,7 +470,7 @@ export const AdminDashboard = ({ view = 'overview' }: { view?: 'overview' | 'use
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-full flex items-center justify-center text-gray-400">لا توجد بيانات</div>
+                  <div className="h-full flex items-center justify-center text-gray-400">{window.__t("لا توجد بيانات")}</div>
                 )}
               </div>
             </div>
@@ -483,18 +483,18 @@ export const AdminDashboard = ({ view = 'overview' }: { view?: 'overview' | 'use
           {/* Financial Requests Panel */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden lg:col-span-2">
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-orange-50">
-                <h3 className="font-bold text-orange-800">طلبات تفعيل الاشتراك (تحويل بنكي)</h3>
+                <h3 className="font-bold text-orange-800">{window.__t("طلبات تفعيل الاشتراك (تحويل بنكي)")}</h3>
             </div>
             <div className="overflow-x-auto">
-                <table className="w-full text-sm text-right">
+                <table className="w-full text-sm text-end">
                     <thead className="bg-slate-50 text-slate-500">
                         <tr>
-                            <th className="px-6 py-3">المحامي</th>
-                            <th className="px-6 py-3">الباقة المطلوبة</th>
-                            <th className="px-6 py-3">المبلغ</th>
-                            <th className="px-6 py-3">التاريخ</th>
-                            <th className="px-6 py-3">الوصل</th>
-                            <th className="px-6 py-3">إجراءات</th>
+                            <th className="px-6 py-3">{window.__t("المحامي")}</th>
+                            <th className="px-6 py-3">{window.__t("الباقة المطلوبة")}</th>
+                            <th className="px-6 py-3">{window.__t("المبلغ")}</th>
+                            <th className="px-6 py-3">{window.__t("التاريخ")}</th>
+                            <th className="px-6 py-3">{window.__t("الوصل")}</th>
+                            <th className="px-6 py-3">{window.__t("إجراءات")}</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -506,23 +506,23 @@ export const AdminDashboard = ({ view = 'overview' }: { view?: 'overview' | 'use
                                 </td>
                                 <td className="px-6 py-4 font-bold text-slate-800">{inv.planName}</td>
                                 <td className="px-6 py-4">{inv.amount} TND</td>
-                                <td className="px-6 py-4">{new Date(inv.date).toLocaleDateString('ar-TN')}</td>
+                                <td className="px-6 py-4">{new Date(inv.date).toLocaleDateString((document.documentElement.lang === 'ar' ? 'ar-TN' : 'fr-FR'))}</td>
                                 <td className="px-6 py-4">
                                     <button 
                                       onClick={() => setSelectedReceipt(inv.receiptData || null)}
                                       className="text-blue-600 hover:underline text-xs"
                                     >
-                                        معاينة الصورة
+                                        {window.__t("معاينة الصورة")}
                                     </button>
                                 </td>
                                 <td className="px-6 py-4 flex space-x-2 space-x-reverse">
-                                    <button onClick={() => handleApprove(inv.id)} className="bg-green-100 text-green-700 px-3 py-1 rounded hover:bg-green-200 transition">تفعيل</button>
-                                    <button onClick={() => handleReject(inv.id)} className="bg-red-100 text-red-700 px-3 py-1 rounded hover:bg-red-200 transition">رفض</button>
+                                    <button onClick={() => handleApprove(inv.id)} className="bg-green-100 text-green-700 px-3 py-1 rounded hover:bg-green-200 transition">{window.__t("تفعيل")}</button>
+                                    <button onClick={() => handleReject(inv.id)} className="bg-red-100 text-red-700 px-3 py-1 rounded hover:bg-red-200 transition">{window.__t("رفض")}</button>
                                 </td>
                             </tr>
                         ))}
                         {pendingInvoices.length === 0 && (
-                            <tr><td colSpan={6} className="text-center py-8 text-gray-400">لا توجد طلبات معلقة</td></tr>
+                            <tr><td colSpan={6} className="text-center py-8 text-gray-400">{window.__t("لا توجد طلبات معلقة")}</td></tr>
                         )}
                     </tbody>
                 </table>
@@ -532,17 +532,17 @@ export const AdminDashboard = ({ view = 'overview' }: { view?: 'overview' | 'use
           {/* Users List */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden lg:col-span-2">
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="font-bold text-slate-800">قائمة المحامين</h3>
+              <h3 className="font-bold text-slate-800">{window.__t("قائمة المحامين")}</h3>
             </div>
             <div className="overflow-x-auto max-h-80 overflow-y-auto">
-              <table className="w-full text-sm text-right">
+              <table className="w-full text-sm text-end">
                 <thead className="bg-slate-50 text-slate-500">
                   <tr>
-                    <th className="px-6 py-3">الاسم</th>
-                    <th className="px-6 py-3">البريد</th>
-                    <th className="px-6 py-3">الباقة</th>
-                    <th className="px-6 py-3">الحالة</th>
-                    <th className="px-6 py-3">إجراءات</th>
+                    <th className="px-6 py-3">{window.__t("الاسم")}</th>
+                    <th className="px-6 py-3">{window.__t("البريد")}</th>
+                    <th className="px-6 py-3">{window.__t("الباقة")}</th>
+                    <th className="px-6 py-3">{window.__t("الحالة")}</th>
+                    <th className="px-6 py-3">{window.__t("إجراءات")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -561,7 +561,7 @@ export const AdminDashboard = ({ view = 'overview' }: { view?: 'overview' | 'use
       </div>
 
       {/* Receipt Modal */}
-      <Modal isOpen={!!selectedReceipt} onClose={() => setSelectedReceipt(null)} title="صورة وصل التحويل">
+      <Modal isOpen={!!selectedReceipt} onClose={() => setSelectedReceipt(null)} title={window.__t("صورة وصل التحويل")}>
           <div className="flex justify-center bg-gray-100 p-4 rounded">
               {selectedReceipt && (
                   <img src={`data:image/png;base64,${selectedReceipt}`} alt="Receipt" className="max-w-full max-h-[60vh] object-contain" />

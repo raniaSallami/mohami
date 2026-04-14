@@ -2,6 +2,7 @@
  * Storage Service - Handles localStorage and session data
  */
 import { User } from '../types';
+import { fetchWithTokenRefresh } from './apiInterceptor';
 
 const API_BASE = 'http://localhost:3001/api';
 
@@ -618,48 +619,63 @@ class StorageService {
     }
   }
 
-  async addEvent(event: any): Promise<void> {
+  async addEvent(event: any): Promise<CalendarEvent> {
     try {
       const payload: any = {
         title: event.title,
         date: event.date,
-        type: event.type
+        type: event.type,
       };
-      
+
       if (event.time) payload.time = event.time;
       if (event.description) payload.description = event.description;
       if (event.caseId) payload.case_id = event.caseId;
-      
-      const response = await fetch(`${API_BASE}/events`, {
+
+      const response = await fetchWithTokenRefresh(`${API_BASE}/events`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(this.getAccessToken() && { Authorization: `Bearer ${this.getAccessToken()}` }),
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error("Backend validation error details:", JSON.stringify(errorData, null, 2));
+        console.error('Backend validation error details:', JSON.stringify(errorData, null, 2));
         throw new Error(`Failed to add event: ${response.status}`);
       }
+
+      const data = await response.json();
+      return {
+        ...data,
+        caseId: data.case_id,
+        userId: data.user_id,
+        userName: data.user?.name || data.user_name || undefined,
+        caseTitle: data.case?.title || data.case_title || undefined,
+      };
     } catch (e) {
-      console.error("Failed to add event", e);
+      console.error('Failed to add event', e);
       throw e;
     }
   }
 
   async deleteEvent(id: string): Promise<void> {
     try {
-      await fetch(`${API_BASE}/events/${id}`, {
+      const response = await fetchWithTokenRefresh(`${API_BASE}/events/${id}`, {
         method: 'DELETE',
         headers: {
-          ...(this.getAccessToken() && { Authorization: `Bearer ${this.getAccessToken()}` }),
-        }
+          'Content-Type': 'application/json',
+        },
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Failed to delete event details:', JSON.stringify(errorData, null, 2));
+        throw new Error(`Failed to delete event: ${response.status}`);
+      }
     } catch (e) {
-      console.error("Failed to delete event", e);
+      console.error('Failed to delete event', e);
+      throw e;
     }
   }
 

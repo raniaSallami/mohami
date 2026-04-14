@@ -78,7 +78,7 @@ export const Dashboard = ({ onNavigate, user }: { onNavigate: (page: string, cas
       onClick={onClick}
       className={`bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between hover:shadow-lg transition duration-300 relative overflow-hidden group ${onClick ? 'cursor-pointer active:scale-95 hover:border-slate-300' : ''}`}
     >
-      <div className={`absolute -right-6 -top-6 w-24 h-24 bg-gradient-to-br ${gradient} opacity-10 rounded-full group-hover:scale-150 transition-transform duration-500`}></div>
+      <div className={`absolute -end-6 -top-6 w-24 h-24 bg-gradient-to-br ${gradient} opacity-10 rounded-full group-hover:scale-150 transition-transform duration-500`}></div>
       <div className="flex justify-between items-start z-10">
         <div>
           <p className="text-sm text-gray-500 font-medium mb-2">{title}</p>
@@ -91,10 +91,10 @@ export const Dashboard = ({ onNavigate, user }: { onNavigate: (page: string, cas
       {trend && (
         <div className="mt-4 flex items-center text-xs font-medium text-green-600">
           <span className="bg-green-100 px-1.5 py-0.5 rounded flex items-center">
-             <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+             <svg className="w-3 h-3 ms-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
              {trend}
           </span>
-          <span className="mr-2 text-gray-400">مقارنة بالشهر الماضي</span>
+          <span className="me-2 text-gray-400">{window.__t("مقارنة بالشهر الماضي")}</span>
         </div>
       )}
     </div>
@@ -104,21 +104,21 @@ export const Dashboard = ({ onNavigate, user }: { onNavigate: (page: string, cas
     <div className="space-y-8 animate-fadeIn pb-10">
       <div className="flex flex-col md:flex-row justify-between items-center bg-gradient-to-r from-slate-900 to-slate-800 p-8 rounded-3xl text-white shadow-xl">
         <div>
-          <h2 className="text-3xl font-bold mb-2">لوحة القيادة</h2>
-          <p className="text-slate-300">مرحباً بك، إليك ملخص نشاط مكتبك اليوم.</p>
+          <h2 className="text-3xl font-bold mb-2">{window.__t("لوحة القيادة")}</h2>
+          <p className="text-slate-300">{window.__t("مرحباً بك، إليك ملخص نشاط مكتبك اليوم.")}</p>
         </div>
         <div className="mt-4 md:mt-0 flex items-center space-x-3 space-x-reverse bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/20">
           <span 
             onClick={() => onNavigate('calendar')}
             className="text-2xl cursor-pointer hover:scale-110 transition-transform p-1 rounded-lg hover:bg-white/10"
-            title="التقويم"
+            title={window.__t("التقويم")}
           >
             📅
           </span>
-          <div className="text-right">
-             <p className="text-xs text-slate-300">اليوم</p>
+          <div className="text-end">
+             <p className="text-xs text-slate-300">{window.__t("اليوم")}</p>
              <p className="font-bold text-sm tracking-tight text-white">
-               {new Date().toLocaleDateString('ar-TN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+               {new Date().toLocaleDateString((document.documentElement.lang === 'ar' ? 'ar-TN' : 'fr-FR'), { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
              </p>
           </div>
         </div>
@@ -126,12 +126,12 @@ export const Dashboard = ({ onNavigate, user }: { onNavigate: (page: string, cas
 
       {/* KPI Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-        <StatCard title="إجمالي القضايا" value={totalCases} icon="📁" gradient="from-blue-500 to-blue-600" onClick={() => onNavigate('cases')} />
-        <StatCard title="قضايا جارية" value={activeCases} icon="⚡" gradient="from-emerald-500 to-emerald-600" onClick={() => onNavigate('cases', 'active')} />
-        <StatCard title="بانتظار الإجراء" value={pendingCases} icon="⏳" gradient="from-amber-400 to-amber-500" onClick={() => onNavigate('cases', 'pending')} />
-        <StatCard title="قضايا منتهية" value={closedCases} icon="✅" gradient="from-purple-500 to-purple-600" onClick={() => onNavigate('cases', 'closed')} />
-        <StatCard title="إجمالي العقود" value={contractsCount} icon="📝" gradient="from-indigo-500 to-indigo-600" onClick={() => onNavigate('contracts')} />
-        <StatCard title="نسبة الإنجاز" value={totalCases > 0 ? `${Math.round((closedCases / totalCases) * 100)}%` : '0%'} icon="📊" gradient="from-rose-500 to-rose-600" onClick={() => onNavigate('cases', 'closed')} />
+        <StatCard title={window.__t("إجمالي القضايا")} value={totalCases} icon="📁" gradient="from-blue-500 to-blue-600" onClick={() => onNavigate('cases')} />
+        <StatCard title={window.__t("قضايا جارية")} value={activeCases} icon="⚡" gradient="from-emerald-500 to-emerald-600" onClick={() => onNavigate('cases', 'active')} />
+        <StatCard title={window.__t("بانتظار الإجراء")} value={pendingCases} icon="⏳" gradient="from-amber-400 to-amber-500" onClick={() => onNavigate('cases', 'pending')} />
+        <StatCard title={window.__t("قضايا منتهية")} value={closedCases} icon="✅" gradient="from-purple-500 to-purple-600" onClick={() => onNavigate('cases', 'closed')} />
+        <StatCard title={window.__t("إجمالي العقود")} value={contractsCount} icon="📝" gradient="from-indigo-500 to-indigo-600" onClick={() => onNavigate('contracts')} />
+        <StatCard title={window.__t("نسبة الإنجاز")} value={totalCases > 0 ? `${Math.round((closedCases / totalCases) * 100)}%` : '0%'} icon="📊" gradient="from-rose-500 to-rose-600" onClick={() => onNavigate('cases', 'closed')} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -139,12 +139,12 @@ export const Dashboard = ({ onNavigate, user }: { onNavigate: (page: string, cas
         <div className="lg:col-span-2 bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
           <div className="flex justify-between items-center mb-8">
              <div>
-               <h3 className="text-xl font-bold text-slate-800">تحليل القضايا</h3>
-               <p className="text-sm text-gray-400">معدل القضايا الجديدة شهرياً</p>
+               <h3 className="text-xl font-bold text-slate-800">{window.__t("تحليل القضايا")}</h3>
+               <p className="text-sm text-gray-400">{window.__t("معدل القضايا الجديدة شهرياً")}</p>
              </div>
              <select className="text-sm bg-gray-50 border-gray-200 rounded-lg text-gray-500 focus:ring-primary-500 focus:border-primary-500 cursor-pointer">
-               <option>آخر 6 أشهر</option>
-               <option>هذه السنة</option>
+               <option>{window.__t("آخر 6 أشهر")}</option>
+               <option>{window.__t("هذه السنة")}</option>
              </select>
           </div>
           <div className="h-80 w-full" dir="ltr">
@@ -173,32 +173,32 @@ export const Dashboard = ({ onNavigate, user }: { onNavigate: (page: string, cas
         {/* Quick Actions & Recent */}
         <div className="flex flex-col space-y-6">
           <div className="bg-gradient-to-b from-slate-900 to-slate-800 p-8 rounded-2xl shadow-lg text-white relative overflow-hidden">
-             <div className="absolute top-0 right-0 w-32 h-32 bg-gold-500 rounded-full blur-3xl opacity-10 -mr-10 -mt-10"></div>
-             <h3 className="text-lg font-bold mb-6 relative z-10">إجراءات سريعة</h3>
+             <div className="absolute top-0 end-0 w-32 h-32 bg-gold-500 rounded-full blur-3xl opacity-10 -me-10 -mt-10"></div>
+             <h3 className="text-lg font-bold mb-6 relative z-10">{window.__t("إجراءات سريعة")}</h3>
              <div className="space-y-4 relative z-10">
                <button 
                   onClick={() => onNavigate('new-case')}
                   className="w-full py-3.5 px-4 bg-gold-500 text-slate-900 rounded-xl hover:bg-gold-400 transition flex items-center justify-center space-x-2 space-x-reverse font-bold shadow-lg shadow-gold-500/20 transform hover:-translate-y-0.5"
                >
                   <span className="text-xl">➕</span>
-                  <span>إضافة قضية جديدة</span>
+                  <span>{window.__t("إضافة قضية جديدة")}</span>
                </button>
                <button 
                   onClick={() => onNavigate('calendar')}
                   className="w-full py-3.5 px-4 bg-white/5 text-white border border-white/10 rounded-xl hover:bg-white/10 transition flex items-center justify-center space-x-2 space-x-reverse backdrop-blur-sm"
                >
                   <span className="text-xl">📅</span>
-                  <span>جدولة جلسة</span>
+                  <span>{window.__t("جدولة جلسة")}</span>
                </button>
              </div>
           </div>
 
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex-1 flex flex-col">
              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold text-slate-800">أحدث الملفات</h3>
-                <button onClick={() => onNavigate('cases')} className="text-xs font-bold text-primary-600 bg-primary-50 px-3 py-1 rounded-full hover:bg-primary-100 transition">عرض الكل</button>
+                <h3 className="text-lg font-bold text-slate-800">{window.__t("أحدث الملفات")}</h3>
+                <button onClick={() => onNavigate('cases')} className="text-xs font-bold text-primary-600 bg-primary-50 px-3 py-1 rounded-full hover:bg-primary-100 transition">{window.__t("عرض الكل")}</button>
              </div>
-             <div className="space-y-4 overflow-y-auto flex-1 pr-1">
+             <div className="space-y-4 overflow-y-auto flex-1 pe-1">
                {displayCases.slice(0, 4).map(c => (
                  <div key={c.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition cursor-pointer group border border-transparent hover:border-slate-100" onClick={() => onNavigate('case-detail', c.id)}>
                    <div className="flex items-center space-x-4 space-x-reverse">
@@ -217,7 +217,7 @@ export const Dashboard = ({ onNavigate, user }: { onNavigate: (page: string, cas
                ))}
                {cases.length === 0 && (
                  <div className="text-center py-8">
-                   <p className="text-gray-400 text-sm">لا توجد قضايا حديثة</p>
+                   <p className="text-gray-400 text-sm">{window.__t("لا توجد قضايا حديثة")}</p>
                  </div>
                )}
              </div>

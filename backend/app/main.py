@@ -4,6 +4,15 @@ Mouhami AI - Legal Case Management Backend
 """
 import sys
 import asyncio
+import socket
+
+# Force IPv4 for local resolution to avoid gaierror [Errno 11001] on Windows
+original_getaddrinfo = socket.getaddrinfo
+
+def patched_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+    return original_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
+
+socket.getaddrinfo = patched_getaddrinfo
 
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())

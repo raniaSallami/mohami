@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Eye, EyeOff, Mail, Lock, Sun, Moon, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, Sun, Moon, Loader2, Home } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { apiService } from '../services/apiService';
@@ -72,18 +72,18 @@ export const LoginPage = ({ onLogin, onNavigate, allowRegistrations = true }: { 
     let isValid = true;
 
     if (!email) {
-      newErrors.email = 'البريد الإلكتروني مطلوب';
+      newErrors.email = window.__t("البريد الإلكتروني مطلوب");
       isValid = false;
     } else if (!validateEmail(email)) {
-      newErrors.email = 'البريد الإلكتروني غير صالح';
+      newErrors.email = window.__t("البريد الإلكتروني غير صالح");
       isValid = false;
     }
 
     if (!password) {
-      newErrors.password = 'كلمة المرور مطلوبة';
+      newErrors.password = window.__t("كلمة المرور مطلوبة");
       isValid = false;
     } else if (password.length < 6) {
-      newErrors.password = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
+      newErrors.password = window.__t("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
       isValid = false;
     }
 
@@ -104,17 +104,17 @@ export const LoginPage = ({ onLogin, onNavigate, allowRegistrations = true }: { 
     try {
       const freshToken = await getFreshRecaptchaToken('forgot_password') || forgotRecaptchaToken;
       if (!freshToken) {
-        setForgotError('reCAPTCHA requis');
+        setForgotError(window.__t('reCAPTCHA requis'));
         return;
       }
       setForgotRecaptchaToken(freshToken);
 
       await apiService.forgotPasswordStep1(forgotEmail.trim());
       setForgotStep('otp');
-      setForgotSuccess('تم إرسال رمز التحقق إلى بريدك الإلكتروني. صلاحيته 10 دقائق.');
-      toast.success('تم إرسال رمز التحقق');
+      setForgotSuccess(window.__t("تم إرسال رمز التحقق إلى بريدك الإلكتروني. صلاحيته 10 دقائق."));
+      toast.success(window.__t("تم إرسال رمز التحقق"));
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'حدث خطأ';
+      const errorMsg = err instanceof Error ? err.message : window.__t("حدث خطأ");
       setForgotError(errorMsg);
       toast.error(errorMsg);
     } finally {
@@ -125,13 +125,13 @@ export const LoginPage = ({ onLogin, onNavigate, allowRegistrations = true }: { 
   const handleForgotReset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPasswordValidation.isValid) {
-      setForgotError('كلمة المرور لا تحقق جميع المتطلبات');
-      toast.error('كلمة المرور لا تحقق جميع المتطلبات');
+      setForgotError(window.__t("كلمة المرور لا تحقق جميع المتطلبات"));
+      toast.error(window.__t("كلمة المرور لا تحقق جميع المتطلبات"));
       return;
     }
     if (newPassword !== confirmPassword) {
-      setForgotError('كلمة المرور غير مطابقة');
-      toast.error('كلمة المرور غير مطابقة');
+      setForgotError(window.__t("كلمة المرور غير مطابقة"));
+      toast.error(window.__t("كلمة المرور غير مطابقة"));
       return;
     }
     setForgotLoading(true);
@@ -139,8 +139,8 @@ export const LoginPage = ({ onLogin, onNavigate, allowRegistrations = true }: { 
     setForgotSuccess('');
     try {
       await apiService.forgotPasswordStep2(forgotEmail.trim(), otp, newPassword);
-      setForgotSuccess('تم تغيير كلمة المرور بنجاح. يمكنك تسجيل الدخول الآن.');
-      toast.success('تم تغيير كلمة المرور بنجاح');
+      setForgotSuccess(window.__t("تم تغيير كلمة المرور بنجاح. يمكنك تسجيل الدخول الآن."));
+      toast.success(window.__t("تم تغيير كلمة المرور بنجاح"));
       setTimeout(() => {
         setShowForgotModal(false);
         setForgotStep('email');
@@ -150,7 +150,7 @@ export const LoginPage = ({ onLogin, onNavigate, allowRegistrations = true }: { 
         setForgotEmail('');
       }, 1500);
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'حدث خطأ';
+      const errorMsg = err instanceof Error ? err.message : window.__t("حدث خطأ");
       setForgotError(errorMsg);
       toast.error(errorMsg);
     } finally {
@@ -162,7 +162,7 @@ export const LoginPage = ({ onLogin, onNavigate, allowRegistrations = true }: { 
     e.preventDefault();
     
     if (!validateForm()) {
-      toast.error('يرجى تصحيح الأخطاء في النموذج');
+      toast.error(window.__t("يرجى تصحيح الأخطاء في النموذج"));
       return;
     }
 
@@ -172,8 +172,8 @@ export const LoginPage = ({ onLogin, onNavigate, allowRegistrations = true }: { 
     try {
       const freshToken = await getFreshRecaptchaToken('login') || recaptchaToken;
       if (!freshToken) {
-        setError('reCAPTCHA requis');
-        toast.error('reCAPTCHA requis');
+        setError(window.__t('reCAPTCHA requis'));
+        toast.error(window.__t('reCAPTCHA requis'));
         return;
       }
       setRecaptchaToken(freshToken);
@@ -184,7 +184,7 @@ export const LoginPage = ({ onLogin, onNavigate, allowRegistrations = true }: { 
       const result = await apiService.loginEmailStep1(email.trim(), password, freshToken, fingerprintValue);
       
       if (result.needs_otp) {
-        toast.success('تم إرسال رمز التحقق إلى بريدك الإلكتروني');
+        toast.success(window.__t("تم إرسال رمز التحقق إلى بريدك الإلكتروني"));
         // Store for next step
         sessionStorage.setItem('login_user_id', result.user_id || '');
         onNavigate('device_verification'); // or handle OTP verification
@@ -195,13 +195,13 @@ export const LoginPage = ({ onLogin, onNavigate, allowRegistrations = true }: { 
           storageService.setToken(result.token);
           storageService.setUser(result.user);
           onLogin(result.user);
-          toast.success('تم تسجيل الدخول بنجاح');
+          toast.success(window.__t("تم تسجيل الدخول بنجاح"));
         } else {
-          throw new Error('فشل تسجيل الدخول: بيانات المستخدم أو التوكن غير متاحة');
+          throw new Error(window.__t("فشل تسجيل الدخول: بيانات المستخدم أو التوكن غير متاحة"));
         }
       }
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'فشل تسجيل الدخول';
+      const errorMsg = err instanceof Error ? err.message : window.__t("فشل تسجيل الدخول");
       setError(errorMsg);
       toast.error(errorMsg);
     } finally {
@@ -216,24 +216,33 @@ export const LoginPage = ({ onLogin, onNavigate, allowRegistrations = true }: { 
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-amber-50 dark:from-slate-700 dark:via-slate-700 dark:to-slate-600 flex items-center justify-center p-4 relative RTL" style={{ fontFamily: "'Tajawal', 'Inter', sans-serif" }}>
+    <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-amber-50 dark:from-slate-700 dark:via-slate-700 dark:to-slate-600 flex items-center justify-center p-4 relative" style={{ fontFamily: "var(--font-sans)" }}>
       {/* Decorative Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-10 right-10 w-96 h-96 bg-amber-100/20 dark:bg-slate-700/15 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-10 left-10 w-96 h-96 bg-amber-100/20 dark:bg-slate-700/15 rounded-full blur-3xl"></div>
+        <div className="absolute top-10 end-10 w-96 h-96 bg-amber-100/20 dark:bg-slate-700/15 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-10 start-10 w-96 h-96 bg-amber-100/20 dark:bg-slate-700/15 rounded-full blur-3xl"></div>
       </div>
 
       {/* Theme Toggle */}
       <button
         onClick={toggleTheme}
-        className="absolute top-6 left-6 w-11 h-11 rounded-xl bg-white dark:bg-slate-800 border-2 border-amber-200 dark:border-amber-900/50 flex items-center justify-center hover:bg-amber-50 dark:hover:bg-slate-700 transition-all shadow-sm hover:shadow-md z-20"
-        aria-label="تبديل الوضع"
+        className="absolute top-6 start-6 w-11 h-11 rounded-xl bg-white dark:bg-slate-800 border-2 border-amber-200 dark:border-amber-900/50 flex items-center justify-center hover:bg-amber-50 dark:hover:bg-slate-700 transition-all shadow-sm hover:shadow-md z-20"
+        aria-label={window.__t("تبديل الوضع")}
       >
         {theme === 'dark' ? (
           <Sun className="w-5 h-5 text-amber-500" />
         ) : (
           <Moon className="w-5 h-5 text-amber-600" />
         )}
+      </button>
+
+      {/* Back to Home Button */}
+      <button
+        onClick={() => onNavigate('landing')}
+        className="absolute top-6 end-6 px-4 h-11 rounded-xl bg-white dark:bg-slate-800 border-2 border-amber-200 dark:border-amber-900/50 flex items-center justify-center gap-2 hover:bg-amber-50 dark:hover:bg-slate-700 transition-all shadow-sm hover:shadow-md z-20 text-amber-900 dark:text-amber-200 font-medium"
+      >
+        <Home className="w-5 h-5" />
+        <span className="hidden sm:inline-block">{window.__t("العودة للرئيسية")}</span>
       </button>
 
       <div className="w-full max-w-md relative z-10">
@@ -254,21 +263,21 @@ export const LoginPage = ({ onLogin, onNavigate, allowRegistrations = true }: { 
               </svg>
             </div>
           </div>
-          <h1 className="text-3xl text-amber-900 dark:text-amber-200 font-bold mb-1" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>المحامي</h1>
-          <p className="text-amber-700 dark:text-amber-400 text-sm" style={{ fontFamily: "'Tajawal', sans-serif" }}>منصة ذكية لإدارة القضايا القانونية</p>
+          <h1 className="text-3xl text-amber-900 dark:text-amber-200 font-bold mb-1" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>{window.__t("المحامي")}</h1>
+          <p className="text-amber-700 dark:text-amber-400 text-sm" style={{ fontFamily: "'Tajawal', sans-serif" }}>{window.__t("منصة ذكية لإدارة القضايا القانونية")}</p>
         </div>
 
         {/* Login Card */}
         <div className="bg-white dark:bg-slate-800 border border-amber-100 dark:border-amber-900/30 rounded-2xl p-8 shadow-xl" style={{ fontFamily: "'Tajawal', sans-serif" }}>
           <div className="mb-8">
-            <h2 className="text-2xl text-amber-900 dark:text-amber-200 text-center mb-2 font-bold" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>تسجيل الدخول</h2>
-            <p className="text-amber-700 dark:text-amber-400 text-sm text-center" style={{ fontFamily: "'Tajawal', sans-serif" }}>مرحباً بعودتك إلى المحامي</p>
+            <h2 className="text-2xl text-amber-900 dark:text-amber-200 text-center mb-2 font-bold" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>{window.__t("تسجيل الدخول")}</h2>
+            <p className="text-amber-700 dark:text-amber-400 text-sm text-center" style={{ fontFamily: "'Tajawal', sans-serif" }}>{window.__t("مرحباً بعودتك إلى المحامي")}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email */}
             <div className="space-y-2">
-              <label className="text-amber-900 dark:text-amber-200 text-sm block text-right font-medium">البريد الإلكتروني</label>
+              <label className="text-amber-900 dark:text-amber-200 text-sm block text-start font-medium">{window.__t("البريد الإلكتروني")}</label>
               <div className="relative group">
                 <Input
                   ref={emailInputRef}
@@ -280,18 +289,18 @@ export const LoginPage = ({ onLogin, onNavigate, allowRegistrations = true }: { 
                     if (errors.email) setErrors({ ...errors, email: '' });
                   }}
                   onKeyPress={handleKeyPress}
-                  className={`w-full h-12 pr-11 text-right ${errors.email ? 'border-red-500' : ''}`}
+                  className={`w-full h-12 px-11 text-start ${errors.email ? 'border-red-500' : ''}`}
                   disabled={loading}
                   required
                 />
-                <Mail className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.email ? 'text-red-500' : 'text-amber-600 dark:text-amber-500'}`} />
+                <Mail className={`absolute start-3.5 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.email ? 'text-red-500' : 'text-amber-600 dark:text-amber-500'}`} />
               </div>
-              {errors.email && <p className="text-red-500 text-xs text-right">{errors.email}</p>}
+              {errors.email && <p className="text-red-500 text-xs text-end">{errors.email}</p>}
             </div>
 
             {/* Password */}
             <div className="space-y-2">
-              <label className="text-amber-900 dark:text-amber-200 text-sm block text-right font-medium">كلمة المرور</label>
+              <label className="text-amber-900 dark:text-amber-200 text-sm block text-start font-medium">{window.__t("كلمة المرور")}</label>
               <div className="relative group">
                 <Input
                   type={showPassword ? 'text' : 'password'}
@@ -302,36 +311,36 @@ export const LoginPage = ({ onLogin, onNavigate, allowRegistrations = true }: { 
                     if (errors.password) setErrors({ ...errors, password: '' });
                   }}
                   onKeyPress={handleKeyPress}
-                  className={`w-full h-12 pr-11 pl-11 text-right ${errors.password ? 'border-red-500' : ''}`}
+                  className={`w-full h-12 px-11 text-start ${errors.password ? 'border-red-500' : ''}`}
                   disabled={loading}
                   required
                 />
-                <Lock className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.password ? 'text-red-500' : 'text-amber-600 dark:text-amber-500'}`} />
+                <Lock className={`absolute start-3.5 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.password ? 'text-red-500' : 'text-amber-600 dark:text-amber-500'}`} />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400"
+                  className="absolute end-3.5 top-1/2 -translate-y-1/2 text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400"
                   disabled={loading}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              {errors.password && <p className="text-red-500 text-xs text-right">{errors.password}</p>}
+              {errors.password && <p className="text-red-500 text-xs text-end">{errors.password}</p>}
             </div>
 
             {/* Forgot Password */}
-            <div className="text-right">
+            <div className="text-start">
               <button
                 type="button"
                 onClick={() => setShowForgotModal(true)}
                 className="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 text-sm font-medium"
               >
-                نسيت كلمة المرور؟
+                {window.__t("نسيت كلمة المرور؟")}
               </button>
             </div>
 
             {/* Error */}
-            {error && <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 text-sm text-right">{error}</div>}
+            {error && <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 text-sm text-start">{error}</div>}
 
             {/* Login Button */}
             <Button
@@ -343,10 +352,10 @@ export const LoginPage = ({ onLogin, onNavigate, allowRegistrations = true }: { 
               {loading ? (
                 <span className="flex items-center gap-2">
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  جارٍ...
+                  {window.__t("جارٍ...")}
                 </span>
               ) : (
-                'تسجيل الدخول'
+                window.__t("تسجيل الدخول")
               )}
             </Button>
 
@@ -354,13 +363,13 @@ export const LoginPage = ({ onLogin, onNavigate, allowRegistrations = true }: { 
             {allowRegistrations && (
               <div className="text-center pt-4">
                   <p className="text-amber-700 dark:text-amber-400 text-sm">
-                  ليس لديك حساب؟{' '}
+                  {window.__t("ليس لديك حساب؟")}{' '}
                   <button
                     type="button"
                     onClick={() => onNavigate('register')}
                       className="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 font-bold"
                   >
-                    إنشاء حساب
+                    {window.__t("إنشاء حساب")}
                   </button>
                 </p>
               </div>
@@ -382,12 +391,12 @@ export const LoginPage = ({ onLogin, onNavigate, allowRegistrations = true }: { 
               setForgotError('');
               setForgotSuccess('');
             }}
-            title="إعادة تعيين كلمة المرور"
+            title={window.__t("إعادة تعيين كلمة المرور")}
           >
             <form onSubmit={forgotStep === 'email' ? handleForgotSendOtp : handleForgotReset} className="space-y-4">
               {forgotStep === 'email' ? (
                 <div>
-                  <label className="block text-sm font-medium mb-2">البريد الإلكتروني</label>
+                  <label className="block text-sm font-medium mb-2">{window.__t("البريد الإلكتروني")}</label>
                   <Input
                     type="email"
                     placeholder="example@example.tn"
@@ -400,21 +409,21 @@ export const LoginPage = ({ onLogin, onNavigate, allowRegistrations = true }: { 
               ) : (
                 <>
                   <div>
-                    <label className="block text-sm font-medium mb-3 text-right">رمز التحقق</label>
+                    <label className="block text-sm font-medium mb-3 text-start">{window.__t("رمز التحقق")}</label>
                     <OtpInput
                       value={otp}
                       onChange={setOtp}
                       length={6}
                       disabled={forgotLoading}
-                      error={forgotError && otp.length !== 6 ? 'أدخل 6 أرقام' : undefined}
+                      error={forgotError && otp.length !== 6 ? window.__t("أدخل 6 أرقام") : undefined}
                       autoFocus
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">كلمة المرور الجديدة</label>
+                    <label className="block text-sm font-medium mb-2">{window.__t("كلمة المرور الجديدة")}</label>
                     <Input
                       type="password"
-                      placeholder="كلمة مرور قوية"
+                      placeholder={window.__t("كلمة مرور قوية")}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       disabled={forgotLoading}
@@ -422,10 +431,10 @@ export const LoginPage = ({ onLogin, onNavigate, allowRegistrations = true }: { 
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">تأكيد كلمة المرور</label>
+                    <label className="block text-sm font-medium mb-2">{window.__t("تأكيد كلمة المرور")}</label>
                     <Input
                       type="password"
-                      placeholder="تأكيد كلمة المرور"
+                      placeholder={window.__t("تأكيد كلمة المرور")}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       disabled={forgotLoading}
@@ -439,8 +448,8 @@ export const LoginPage = ({ onLogin, onNavigate, allowRegistrations = true }: { 
               {forgotSuccess && <div className="text-green-500 text-sm">{forgotSuccess}</div>}
 
               <Button type="submit" disabled={forgotLoading} className="w-full">
-                {forgotLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                {forgotStep === 'email' ? 'إرسال رمز' : 'تغيير كلمة المرور'}
+                {forgotLoading ? <Loader2 className="w-4 h-4 animate-spin me-2" /> : null}
+                {forgotStep === 'email' ? window.__t("إرسال رمز") : window.__t("تغيير كلمة المرور")}
               </Button>
             </form>
           </Modal>

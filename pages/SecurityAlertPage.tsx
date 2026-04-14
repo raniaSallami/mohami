@@ -45,10 +45,10 @@ export const SecurityAlertPage: React.FC<SecurityAlertPageProps> = ({ onNavigate
 
     // Set initial message based on action
     if (alertType === 'confirm') {
-      setMessage('تم تسجيل الدخول من جهاز جديد. يرجى إدخال الرمز المرسل إلى بريدك الإلكتروني.');
+      setMessage(window.__t("تم تسجيل الدخول من جهاز جديد. يرجى إدخال الرمز المرسل إلى بريدك الإلكتروني."));
       setMessageType('info');
     } else if (alertType === 'not-me') {
-      setMessage('تم اكتشاف نشاط مريب. يرجى تغيير كلمة المرور الخاصة بك فوراً.');
+      setMessage(window.__t("تم اكتشاف نشاط مريب. يرجى تغيير كلمة المرور الخاصة بك فوراً."));
       setMessageType('error');
     }
   }, [alertType]);
@@ -73,7 +73,7 @@ export const SecurityAlertPage: React.FC<SecurityAlertPageProps> = ({ onNavigate
   const handleConfirmOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!otp) {
-      setMessage('يرجى إدخال الرمز');
+      setMessage(window.__t("يرجى إدخال الرمز"));
       setMessageType('error');
       return;
     }
@@ -87,7 +87,7 @@ export const SecurityAlertPage: React.FC<SecurityAlertPageProps> = ({ onNavigate
       const response = await apiService.loginEmailStep2(userId, otp, fingerprint);
 
       if (response.ok && response.user && response.token) {
-        setMessage('✅ تم التحقق بنجاح! جاري تسجيل الدخول...');
+        setMessage(window.__t("✅ تم التحقق بنجاح! جاري تسجيل الدخول..."));
         setMessageType('success');
         
         storageService.setCurrentUser(response.user);
@@ -98,11 +98,11 @@ export const SecurityAlertPage: React.FC<SecurityAlertPageProps> = ({ onNavigate
         
         setTimeout(() => onNavigate('dashboard'), 1500);
       } else {
-        setMessage(response.message || 'رمز غير صحيح أو انتهت صلاحيته');
+        setMessage(response.message || window.__t("رمز غير صحيح أو انتهت صلاحيته"));
         setMessageType('error');
       }
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'حدث خطأ');
+      setMessage(err instanceof Error ? err.message : window.__t("حدث خطأ"));
       setMessageType('error');
     } finally {
       setLoading(false);
@@ -121,13 +121,13 @@ export const SecurityAlertPage: React.FC<SecurityAlertPageProps> = ({ onNavigate
     }
 
     if (newPassword !== confirmPassword) {
-      setMessage('كلمات المرور غير متطابقة');
+      setMessage(window.__t("كلمات المرور غير متطابقة"));
       setMessageType('error');
       return;
     }
 
     if (!email) {
-      setMessage('البريد الإلكتروني غير موجود');
+      setMessage(window.__t("البريد الإلكتروني غير موجود"));
       setMessageType('error');
       return;
     }
@@ -140,7 +140,7 @@ export const SecurityAlertPage: React.FC<SecurityAlertPageProps> = ({ onNavigate
       const response = await apiService.emergencyResetPassword(email, newPassword, logoutAllDevices);
 
       if (response.ok) {
-        setMessage('✅ تم تغيير كلمة المرور بنجاح! يرجى تسجيل الدخول مجدداً.');
+        setMessage(window.__t("✅ تم تغيير كلمة المرور بنجاح! يرجى تسجيل الدخول مجدداً."));
         setMessageType('success');
         
         localStorage.removeItem('pending_device_verification_user_id');
@@ -148,11 +148,11 @@ export const SecurityAlertPage: React.FC<SecurityAlertPageProps> = ({ onNavigate
         
         setTimeout(() => onNavigate('login'), 2000);
       } else {
-        setMessage(response.message || 'حدث خطأ أثناء تغيير كلمة المرور');
+        setMessage(response.message || window.__t("حدث خطأ أثناء تغيير كلمة المرور"));
         setMessageType('error');
       }
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'حدث خطأ');
+      setMessage(err instanceof Error ? err.message : window.__t("حدث خطأ"));
       setMessageType('error');
     } finally {
       setLoading(false);
@@ -171,7 +171,7 @@ export const SecurityAlertPage: React.FC<SecurityAlertPageProps> = ({ onNavigate
             </span>
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            {alertType === 'confirm' ? 'التحقق من الجهاز الجديد' : 'تأمين حسابك'}
+            {alertType === 'confirm' ? window.__t("التحقق من الجهاز الجديد") : window.__t("تأمين حسابك")}
           </h2>
         </div>
 
@@ -182,7 +182,7 @@ export const SecurityAlertPage: React.FC<SecurityAlertPageProps> = ({ onNavigate
             messageType === 'success' ? 'bg-green-100 text-green-800 border border-green-300' :
             'bg-blue-100 text-blue-800 border border-blue-300'
           }`}>
-            <p className="text-right">{message}</p>
+            <p className="text-end">{message}</p>
           </div>
         )}
 
@@ -191,7 +191,7 @@ export const SecurityAlertPage: React.FC<SecurityAlertPageProps> = ({ onNavigate
           <form onSubmit={handleConfirmOtp} className="space-y-4">
             <div>
               <label htmlFor="otp" className="block text-sm font-medium text-gray-700">
-                رمز التحقق (6 أرقام)
+                {window.__t("رمز التحقق (6 أرقام)")}
               </label>
               <input
                 id="otp"
@@ -204,7 +204,7 @@ export const SecurityAlertPage: React.FC<SecurityAlertPageProps> = ({ onNavigate
                 disabled={loading}
               />
               <p className="mt-2 text-sm text-gray-500">
-                تم إرسال الرمز إلى: <strong>{email}</strong>
+                {window.__t("تم إرسال الرمز إلى:")} <strong>{email}</strong>
               </p>
             </div>
 
@@ -213,7 +213,7 @@ export const SecurityAlertPage: React.FC<SecurityAlertPageProps> = ({ onNavigate
               disabled={loading || !otp}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              {loading ? <Spinner /> : 'تحقق من الرمز'}
+              {loading ? <Spinner /> : window.__t("تحقق من الرمز")}
             </button>
           </form>
         )}
@@ -223,14 +223,14 @@ export const SecurityAlertPage: React.FC<SecurityAlertPageProps> = ({ onNavigate
           <form onSubmit={handleChangePassword} className="space-y-4">
             <div>
               <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
-                كلمة المرور الجديدة
+                {window.__t("كلمة المرور الجديدة")}
               </label>
               <input
                 id="newPassword"
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="أدخل كلمة مرور جديدة قوية"
+                placeholder={window.__t("أدخل كلمة مرور جديدة قوية")}
                 className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 ${
                   newPassword && !passwordValidation.isValid
                     ? 'border-red-300 bg-red-50'
@@ -266,14 +266,14 @@ export const SecurityAlertPage: React.FC<SecurityAlertPageProps> = ({ onNavigate
 
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                تأكيد كلمة المرور
+                {window.__t("تأكيد كلمة المرور")}
               </label>
               <input
                 id="confirmPassword"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="أعد إدخال كلمة المرور"
+                placeholder={window.__t("أعد إدخال كلمة المرور")}
                 className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 ${
                   confirmPassword && newPassword !== confirmPassword
                     ? 'border-red-300 bg-red-50'
@@ -284,10 +284,10 @@ export const SecurityAlertPage: React.FC<SecurityAlertPageProps> = ({ onNavigate
                 disabled={loading}
               />
               {confirmPassword && newPassword !== confirmPassword && (
-                <p className="mt-1 text-xs text-red-700">كلمات المرور غير متطابقة</p>
+                <p className="mt-1 text-xs text-red-700">{window.__t("كلمات المرور غير متطابقة")}</p>
               )}
               {confirmPassword && newPassword === confirmPassword && (
-                <p className="mt-1 text-xs text-green-700">كلمات المرور متطابقة ✓</p>
+                <p className="mt-1 text-xs text-green-700">{window.__t("كلمات المرور متطابقة ✓")}</p>
               )}
             </div>
 
@@ -300,8 +300,8 @@ export const SecurityAlertPage: React.FC<SecurityAlertPageProps> = ({ onNavigate
                 className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
                 disabled={loading}
               />
-              <label htmlFor="logoutAll" className="mr-2 block text-sm text-gray-700">
-                تسجيل الخروج من جميع الأجهزة الأخرى <span className="text-xs text-gray-500">(اختياري)</span>
+              <label htmlFor="logoutAll" className="me-2 block text-sm text-gray-700">
+                {window.__t("تسجيل الخروج من جميع الأجهزة الأخرى")} <span className="text-xs text-gray-500">{window.__t("(اختياري)")}</span>
               </label>
             </div>
 
@@ -310,7 +310,7 @@ export const SecurityAlertPage: React.FC<SecurityAlertPageProps> = ({ onNavigate
               disabled={loading || !passwordValidation.isValid || newPassword !== confirmPassword}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              {loading ? <Spinner /> : 'تغيير كلمة المرور'}
+              {loading ? <Spinner /> : window.__t("تغيير كلمة المرور")}
             </button>
           </form>
         )}
@@ -318,7 +318,7 @@ export const SecurityAlertPage: React.FC<SecurityAlertPageProps> = ({ onNavigate
         {/* No Action */}
         {!alertType && (
           <div className="text-center">
-            <p className="text-gray-600">جاري التحميل...</p>
+            <p className="text-gray-600">{window.__t("جاري التحميل...")}</p>
             <Spinner />
           </div>
         )}
@@ -329,7 +329,7 @@ export const SecurityAlertPage: React.FC<SecurityAlertPageProps> = ({ onNavigate
             onClick={() => onNavigate('login')}
             className="text-sm text-gray-600 hover:text-gray-800 underline"
           >
-            العودة إلى تسجيل الدخول
+            {window.__t("العودة إلى تسجيل الدخول")}
           </button>
         </div>
       </div>

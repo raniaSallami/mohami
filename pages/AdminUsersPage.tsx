@@ -58,7 +58,7 @@ export const AdminUsersPage: React.FC = () => {
     setUpgradeLoading(true);
     try {
       await storageService.upgradeUserPlan(selectedUser.id, selectedPlan as any);
-      const planNames: Record<string, string> = { basic: 'البداية', pro: 'المحترف', enterprise: 'المكتب' };
+      const planNames: Record<string, string> = { basic: window.__t("البداية"), pro: window.__t("المحترف"), enterprise: window.__t("المكتب") };
       await emailService.sendPlanUpgradeEmail(selectedUser.email, selectedUser.name, planNames[selectedPlan] || selectedPlan);
       setSelectedUser({ ...selectedUser, subscriptionPlan: selectedPlan as any, subscriptionStatus: 'active' });
       loadUsers();
@@ -78,31 +78,31 @@ export const AdminUsersPage: React.FC = () => {
     return matchPlan && matchStatus && matchSearch;
   });
 
-  const planLabel = (p?: string) => ({ basic: 'البداية', pro: 'المحترف', enterprise: 'المكتب' }[p || 'basic'] || p);
-  const statusLabel = (s?: string) => ({ active: 'نشط', pending_approval: 'قيد المراجعة', expired: 'منتهي' }[s || 'active'] || s);
+  const planLabel = (p?: string) => ({ basic: window.__t("البداية"), pro: window.__t("المحترف"), enterprise: window.__t("المكتب") }[p || 'basic'] || p);
+  const statusLabel = (s?: string) => ({ active: window.__t("نشط"), pending_approval: window.__t("قيد المراجعة"), expired: window.__t("منتهي") }[s || 'active'] || s);
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-slate-800">المستخدمين</h2>
+      <h2 className="text-2xl font-bold text-slate-800">{window.__t("المستخدمين")}</h2>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 flex flex-wrap gap-4 items-center">
         <input
           type="text"
-          placeholder="بحث بالاسم أو البريد..."
+          placeholder={window.__t("بحث بالاسم أو البريد...")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="px-4 py-2 border rounded-lg flex-1 min-w-[200px]"
         />
         <select value={filterPlan} onChange={(e) => setFilterPlan(e.target.value)} className="px-4 py-2 border rounded-lg">
-          <option value="all">جميع الباقات</option>
-          <option value="basic">البداية</option>
-          <option value="pro">المحترف</option>
-          <option value="enterprise">المكتب</option>
+          <option value="all">{window.__t("جميع الباقات")}</option>
+          <option value="basic">{window.__t("البداية")}</option>
+          <option value="pro">{window.__t("المحترف")}</option>
+          <option value="enterprise">{window.__t("المكتب")}</option>
         </select>
         <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="px-4 py-2 border rounded-lg">
-          <option value="all">جميع الحالات</option>
-          <option value="active">نشط</option>
-          <option value="pending_approval">قيد المراجعة</option>
+          <option value="all">{window.__t("جميع الحالات")}</option>
+          <option value="active">{window.__t("نشط")}</option>
+          <option value="pending_approval">{window.__t("قيد المراجعة")}</option>
         </select>
       </div>
 
@@ -111,14 +111,14 @@ export const AdminUsersPage: React.FC = () => {
           <div className="flex justify-center py-16"><Spinner /></div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-right">
+            <table className="w-full text-sm text-end">
               <thead className="bg-slate-50 text-slate-500">
                 <tr>
-                  <th className="px-6 py-3">الاسم</th>
-                  <th className="px-6 py-3">البريد</th>
-                  <th className="px-6 py-3">الباقة</th>
-                  <th className="px-6 py-3">الحالة</th>
-                  <th className="px-6 py-3">الدور</th>
+                  <th className="px-6 py-3">{window.__t("الاسم")}</th>
+                  <th className="px-6 py-3">{window.__t("البريد")}</th>
+                  <th className="px-6 py-3">{window.__t("الباقة")}</th>
+                  <th className="px-6 py-3">{window.__t("الحالة")}</th>
+                  <th className="px-6 py-3">{window.__t("الدور")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -143,7 +143,7 @@ export const AdminUsersPage: React.FC = () => {
                         {statusLabel(u.subscriptionStatus)}
                       </span>
                     </td>
-                    <td className="px-6 py-4">{u.role === UserRole.ADMIN ? 'مدير' : 'محامي'}</td>
+                    <td className="px-6 py-4">{u.role === UserRole.ADMIN ? window.__t("مدير") : window.__t("محامي")}</td>
                   </tr>
                 ))}
               </tbody>
@@ -151,28 +151,28 @@ export const AdminUsersPage: React.FC = () => {
           </div>
         )}
         {!loading && filtered.length === 0 && (
-          <div className="text-center py-12 text-gray-500">لا يوجد مستخدمون matching الفلاتر</div>
+          <div className="text-center py-12 text-gray-500">{window.__t("لا يوجد مستخدمون matching الفلاتر")}</div>
         )}
       </div>
 
-      <Modal isOpen={!!selectedUser} onClose={() => setSelectedUser(null)} title="تفاصيل المستخدم">
+      <Modal isOpen={!!selectedUser} onClose={() => setSelectedUser(null)} title={window.__t("تفاصيل المستخدم")}>
         {selectedUser && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">الاسم</label>
+                <label className="block text-xs text-gray-500 mb-1">{window.__t("الاسم")}</label>
                 <p className="font-medium">{selectedUser.name}</p>
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">البريد</label>
+                <label className="block text-xs text-gray-500 mb-1">{window.__t("البريد")}</label>
                 <p className="font-medium">{selectedUser.email}</p>
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">الباقة</label>
+                <label className="block text-xs text-gray-500 mb-1">{window.__t("الباقة")}</label>
                 <p>{planLabel(selectedUser.subscriptionPlan)}</p>
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">الحالة</label>
+                <label className="block text-xs text-gray-500 mb-1">{window.__t("الحالة")}</label>
                 <p>{statusLabel(selectedUser.subscriptionStatus)}</p>
               </div>
               <div>
@@ -181,51 +181,51 @@ export const AdminUsersPage: React.FC = () => {
               </div>
               {selectedUser.account_type && (
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">نوع الحساب</label>
-                  <p className="font-medium">{selectedUser.account_type === 'lawyer' ? 'محامي' : selectedUser.account_type === 'student' ? 'طالب' : 'مكتب'}</p>
+                  <label className="block text-xs text-gray-500 mb-1">{window.__t("نوع الحساب")}</label>
+                  <p className="font-medium">{selectedUser.account_type === 'lawyer' ? window.__t("محامي") : selectedUser.account_type === 'student' ? window.__t("طالب") : window.__t("مكتب")}</p>
                 </div>
               )}
               {selectedUser.bar_number && (
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">رقم البطاقة</label>
+                  <label className="block text-xs text-gray-500 mb-1">{window.__t("رقم البطاقة")}</label>
                   <p className="font-medium">{selectedUser.bar_number}</p>
                 </div>
               )}
               {selectedUser.cabinet_name && (
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">اسم المكتب</label>
+                  <label className="block text-xs text-gray-500 mb-1">{window.__t("اسم المكتب")}</label>
                   <p className="font-medium">{selectedUser.cabinet_name}</p>
                 </div>
               )}
               {selectedUser.university && (
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">الجامعة</label>
+                  <label className="block text-xs text-gray-500 mb-1">{window.__t("الجامعة")}</label>
                   <p className="font-medium">{selectedUser.university}</p>
                 </div>
               )}
               {selectedUser.organizationOwnerId && (
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">عضو فريق (المكتب)</label>
-                  <p className="text-xs">نعم</p>
+                  <label className="block text-xs text-gray-500 mb-1">{window.__t("عضو فريق (المكتب)")}</label>
+                  <p className="text-xs">{window.__t("نعم")}</p>
                 </div>
               )}
             </div>
 
             {userStats && (
               <div className="border-t pt-4">
-                <h4 className="font-bold text-slate-700 mb-2">إحصائيات</h4>
+                <h4 className="font-bold text-slate-700 mb-2">{window.__t("إحصائيات")}</h4>
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <div className="bg-blue-50 p-3 rounded-lg">
                     <p className="text-2xl font-bold text-blue-700">{userStats.cases}</p>
-                    <p className="text-xs text-blue-600">قضايا</p>
+                    <p className="text-xs text-blue-600">{window.__t("قضايا")}</p>
                   </div>
                   <div className="bg-purple-50 p-3 rounded-lg">
                     <p className="text-2xl font-bold text-purple-700">{userStats.contracts}</p>
-                    <p className="text-xs text-purple-600">عقود</p>
+                    <p className="text-xs text-purple-600">{window.__t("عقود")}</p>
                   </div>
                   <div className="bg-green-50 p-3 rounded-lg">
                     <p className="text-2xl font-bold text-green-700">{userStats.events}</p>
-                    <p className="text-xs text-green-600">مواعيد</p>
+                    <p className="text-xs text-green-600">{window.__t("مواعيد")}</p>
                   </div>
                 </div>
               </div>
@@ -233,23 +233,23 @@ export const AdminUsersPage: React.FC = () => {
 
             {selectedUser.role !== UserRole.ADMIN && (
               <div className="border-t pt-4">
-                <h4 className="font-bold text-slate-700 mb-2">ترقية الباقة</h4>
+                <h4 className="font-bold text-slate-700 mb-2">{window.__t("ترقية الباقة")}</h4>
                 <div className="flex gap-2">
                   <select
                     value={selectedPlan}
                     onChange={(e) => setSelectedPlan(e.target.value)}
                     className="flex-1 px-3 py-2 border rounded-lg"
                   >
-                    <option value="basic">البداية</option>
-                    <option value="pro">المحترف</option>
-                    <option value="enterprise">المكتب</option>
+                    <option value="basic">{window.__t("البداية")}</option>
+                    <option value="pro">{window.__t("المحترف")}</option>
+                    <option value="enterprise">{window.__t("المكتب")}</option>
                   </select>
                   <button
                     onClick={handleUpgrade}
                     disabled={upgradeLoading || selectedPlan === (selectedUser.subscriptionPlan || 'basic')}
                     className="px-4 py-2 bg-gold-500 text-slate-900 rounded-lg font-bold hover:bg-gold-400 disabled:opacity-50"
                   >
-                    {upgradeLoading ? <Spinner /> : 'ترقية'}
+                    {upgradeLoading ? <Spinner /> : window.__t("ترقية")}
                   </button>
                 </div>
               </div>

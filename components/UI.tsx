@@ -20,9 +20,9 @@ export const Toast: React.FC<ToastProps> = ({ message, type, onClose }) => {
   };
 
   return (
-    <div className={`fixed top-5 left-1/2 transform -translate-x-1/2 z-50 flex items-center p-4 mb-4 w-full max-w-sm text-white rounded-lg shadow-lg animate-slideInDown ${bgColors[type]}`}>
-      <div className="ml-3 text-sm font-bold flex-1">{message}</div>
-      <button onClick={onClose} className="ml-auto bg-transparent text-white hover:text-gray-200">
+    <div className={`fixed top-5 start-1/2 transform -translate-x-1/2 z-50 flex items-center p-4 mb-4 w-full max-w-sm text-white rounded-lg shadow-lg animate-slideInDown ${bgColors[type]}`}>
+      <div className="ms-3 text-sm font-bold flex-1">{message}</div>
+      <button onClick={onClose} className="ms-auto bg-transparent text-white hover:text-gray-200">
         ✕
       </button>
     </div>
@@ -54,7 +54,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
             <h3 className="text-xl font-bold text-slate-800">{title}</h3>
             {!preventClose && (
               <button
-                className="p-1 ml-auto bg-transparent border-0 text-slate-500 hover:text-red-500 float-right text-3xl leading-none font-semibold outline-none focus:outline-none"
+                className="p-1 ms-auto bg-transparent border-0 text-slate-500 hover:text-red-500 float-right text-3xl leading-none font-semibold outline-none focus:outline-none"
                 onClick={onClose}
               >
                 <span className="block h-6 w-6 text-2xl outline-none focus:outline-none">×</span>
@@ -83,7 +83,7 @@ export const LoadingOverlay = () => (
   <div className="fixed inset-0 z-[60] flex items-center justify-center bg-white bg-opacity-75 backdrop-blur-sm">
     <div className="flex flex-col items-center">
       <div className="w-12 h-12 border-4 border-gold-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-      <p className="text-slate-800 font-bold">جاري المعالجة...</p>
+      <p className="text-slate-800 font-bold">{window.__t("جاري المعالجة...")}</p>
     </div>
   </div>
 );

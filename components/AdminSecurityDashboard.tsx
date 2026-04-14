@@ -41,12 +41,12 @@ export const AdminSecurityDashboard: React.FC = () => {
   };
 
   const eventTypeLabels = {
-    device_verified: 'جهاز تم التحقق منه',
-    failed_otp: 'فشل التحقق من الرمز',
-    unauthorized_reported: 'نشاط مريب مبلغ عنه',
-    logout_all_devices: 'تسجيل خروج من جميع الأجهزة',
-    device_confirmed: 'جهاز تم تأكيده',
-    device_removed: 'جهاز تم حذفه',
+    device_verified: window.__t("جهاز تم التحقق منه"),
+    failed_otp: window.__t("فشل التحقق من الرمز"),
+    unauthorized_reported: window.__t("نشاط مريب مبلغ عنه"),
+    logout_all_devices: window.__t("تسجيل خروج من جميع الأجهزة"),
+    device_confirmed: window.__t("جهاز تم تأكيده"),
+    device_removed: window.__t("جهاز تم حذفه"),
   };
 
   // Fetch security data
@@ -71,7 +71,7 @@ export const AdminSecurityDashboard: React.FC = () => {
         setStats(data.stats);
         setError('');
       } catch (err) {
-        setError('فشل تحميل بيانات الأمان');
+        setError(window.__t("فشل تحميل بيانات الأمان"));
         console.error('Error fetching security data:', err);
       } finally {
         setLoading(false);
@@ -118,7 +118,7 @@ export const AdminSecurityDashboard: React.FC = () => {
       a.download = `security_logs_${new Date().toISOString().split('T')[0]}.csv`;
       a.click();
     } catch (err) {
-      setError('فشل تصدير السجلات');
+      setError(window.__t("فشل تصدير السجلات"));
     }
   };
 
@@ -126,8 +126,8 @@ export const AdminSecurityDashboard: React.FC = () => {
     <div className="admin-security-dashboard" dir="rtl">
       {/* Header */}
       <div className="dashboard-header">
-        <h1>لوحة تحكم الأمان</h1>
-        <p>مراقبة أحداث أمان الأجهزة والمستخدمين</p>
+        <h1>{window.__t("لوحة تحكم الأمان")}</h1>
+        <p>{window.__t("مراقبة أحداث أمان الأجهزة والمستخدمين")}</p>
       </div>
 
       {/* Error Message */}
@@ -142,23 +142,23 @@ export const AdminSecurityDashboard: React.FC = () => {
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-value">{stats?.total_events || 0}</div>
-          <div className="stat-label">إجمالي الأحداث</div>
+          <div className="stat-label">{window.__t("إجمالي الأحداث")}</div>
         </div>
         <div className="stat-card success">
           <div className="stat-value">{stats?.device_verified || 0}</div>
-          <div className="stat-label">أجهزة تم التحقق منها</div>
+          <div className="stat-label">{window.__t("أجهزة تم التحقق منها")}</div>
         </div>
         <div className="stat-card warning">
           <div className="stat-value">{stats?.failed_otp || 0}</div>
-          <div className="stat-label">محاولات فشل الرمز</div>
+          <div className="stat-label">{window.__t("محاولات فشل الرمز")}</div>
         </div>
         <div className="stat-card danger">
           <div className="stat-value">{stats?.unauthorized_reported || 0}</div>
-          <div className="stat-label">أنشطة مريبة</div>
+          <div className="stat-label">{window.__t("أنشطة مريبة")}</div>
         </div>
         <div className="stat-card info">
           <div className="stat-value">{stats?.last_24h || 0}</div>
-          <div className="stat-label">الأحداث - آخر 24 ساعة</div>
+          <div className="stat-label">{window.__t("الأحداث - آخر 24 ساعة")}</div>
         </div>
       </div>
 
@@ -166,36 +166,36 @@ export const AdminSecurityDashboard: React.FC = () => {
       <div className="controls-section">
         <div className="filters">
           <div className="filter-group">
-            <label>نوع الحدث:</label>
+            <label>{window.__t("نوع الحدث:")}</label>
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
             >
-              <option value="all">جميع الأحداث</option>
-              <option value="device_verified">أجهزة تم التحقق منها</option>
-              <option value="failed_otp">فشل الرمز</option>
-              <option value="unauthorized_reported">نشاط مريب</option>
-              <option value="logout_all_devices">تسجيل خروج كامل</option>
-              <option value="device_confirmed">أجهزة تم تأكيدها</option>
-              <option value="device_removed">أجهزة تم حذفها</option>
+              <option value="all">{window.__t("جميع الأحداث")}</option>
+              <option value="device_verified">{window.__t("أجهزة تم التحقق منها")}</option>
+              <option value="failed_otp">{window.__t("فشل الرمز")}</option>
+              <option value="unauthorized_reported">{window.__t("نشاط مريب")}</option>
+              <option value="logout_all_devices">{window.__t("تسجيل خروج كامل")}</option>
+              <option value="device_confirmed">{window.__t("أجهزة تم تأكيدها")}</option>
+              <option value="device_removed">{window.__t("أجهزة تم حذفها")}</option>
             </select>
           </div>
 
           <div className="filter-group">
-            <label>الفترة الزمنية:</label>
+            <label>{window.__t("الفترة الزمنية:")}</label>
             <select
               value={filterDays}
               onChange={(e) => setFilterDays(parseInt(e.target.value))}
             >
-              <option value={1}>آخر 24 ساعة</option>
-              <option value={7}>آخر 7 أيام</option>
-              <option value={30}>آخر 30 يوم</option>
-              <option value={90}>آخر 3 أشهر</option>
+              <option value={1}>{window.__t("آخر 24 ساعة")}</option>
+              <option value={7}>{window.__t("آخر 7 أيام")}</option>
+              <option value={30}>{window.__t("آخر 30 يوم")}</option>
+              <option value={90}>{window.__t("آخر 3 أشهر")}</option>
             </select>
           </div>
 
           <button className="export-button" onClick={handleExport}>
-            📥 تصدير السجلات
+            {window.__t("📥 تصدير السجلات")}
           </button>
         </div>
       </div>
@@ -204,23 +204,23 @@ export const AdminSecurityDashboard: React.FC = () => {
       {loading && (
         <div className="loading-state">
           <div className="spinner"></div>
-          <p>جاري تحميل الأحداث...</p>
+          <p>{window.__t("جاري تحميل الأحداث...")}</p>
         </div>
       )}
 
       {/* Events Table */}
       {!loading && events.length > 0 && (
         <div className="events-section">
-          <h2>آخر الأحداث الأمنية</h2>
+          <h2>{window.__t("آخر الأحداث الأمنية")}</h2>
           <div className="events-table">
             <table>
               <thead>
                 <tr>
-                  <th>التاريخ والوقت</th>
-                  <th>نوع الحدث</th>
-                  <th>عنوان IP</th>
-                  <th>معرف المستخدم</th>
-                  <th>التفاصيل</th>
+                  <th>{window.__t("التاريخ والوقت")}</th>
+                  <th>{window.__t("نوع الحدث")}</th>
+                  <th>{window.__t("عنوان IP")}</th>
+                  <th>{window.__t("معرف المستخدم")}</th>
+                  <th>{window.__t("التفاصيل")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -257,26 +257,26 @@ export const AdminSecurityDashboard: React.FC = () => {
       {!loading && events.length === 0 && (
         <div className="empty-state">
           <div className="empty-icon">📭</div>
-          <h3>لا توجد أحداث</h3>
-          <p>لم يتم تسجيل أحداث أمنية للفترة المحددة</p>
+          <h3>{window.__t("لا توجد أحداث")}</h3>
+          <p>{window.__t("لم يتم تسجيل أحداث أمنية للفترة المحددة")}</p>
         </div>
       )}
 
       {/* Security Alerts */}
       <div className="alerts-section">
-        <h2>⚠️ التنبيهات والتوصيات</h2>
+        <h2>{window.__t("⚠️ التنبيهات والتوصيات")}</h2>
         <div className="alerts-grid">
           <div className="alert-card warning">
-            <h4>نشاط متكرر</h4>
-            <p>راقب محاولات فشل الرموز المتكررة من نفس عنوان IP</p>
+            <h4>{window.__t("نشاط متكرر")}</h4>
+            <p>{window.__t("راقب محاولات فشل الرموز المتكررة من نفس عنوان IP")}</p>
           </div>
           <div className="alert-card info">
-            <h4>تحديثات منتظمة</h4>
-            <p>راجع سجلات الأمان بانتظام للكشف عن الأنماط المريبة</p>
+            <h4>{window.__t("تحديثات منتظمة")}</h4>
+            <p>{window.__t("راجع سجلات الأمان بانتظام للكشف عن الأنماط المريبة")}</p>
           </div>
           <div className="alert-card success">
-            <h4>التوثيق</h4>
-            <p>احتفظ بنسخة احتياطية من سجلات الأمان لأغراض المراجعة</p>
+            <h4>{window.__t("التوثيق")}</h4>
+            <p>{window.__t("احتفظ بنسخة احتياطية من سجلات الأمان لأغراض المراجعة")}</p>
           </div>
         </div>
       </div>

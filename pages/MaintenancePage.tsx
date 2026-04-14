@@ -1,7 +1,7 @@
 import React from 'react';
 
 export const MaintenancePage = (
-  { onNavigate, appName = 'المحامي', onLogout }: 
+  { onNavigate, appName = window.__t("المحامي"), onLogout }: 
   { onNavigate: (page: string) => void; appName?: string; onLogout?: () => void }
 ) => (
   <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-center">
@@ -12,14 +12,14 @@ export const MaintenancePage = (
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       </div>
-      <h1 className="text-2xl font-bold text-white mb-3">وضع الصيانة</h1>
-      <p className="text-slate-400 mb-8">المنصة متوقفة مؤقتاً للصيانة. سنعود قريباً.</p>
+      <h1 className="text-2xl font-bold text-white mb-3">{window.__t("وضع الصيانة")}</h1>
+      <p className="text-slate-400 mb-8">{window.__t("المنصة متوقفة مؤقتاً للصيانة. سنعود قريباً.")}</p>
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         <button
           onClick={() => onLogout ? onLogout() : onNavigate('login')}
           className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold rounded-lg transition"
         >
-          {onLogout ? 'تسجيل الخروج والدخول كإدارة' : 'تسجيل دخول الإدارة'}
+          {onLogout ? window.__t("تسجيل الخروج والدخول كإدارة") : window.__t("تسجيل دخول الإدارة")}
         </button>
       </div>
     </div>

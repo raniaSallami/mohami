@@ -20,26 +20,26 @@ export const ProfilePage = ({
   const getAccountTypeLabel = (type?: string) => {
     switch (type?.toLowerCase()) {
       case 'lawyer':
-        return { label: 'محامي', icon: <Scale className="w-5 h-5" />, color: 'bg-blue-100 text-blue-700' };
+        return { label: window.__t("محامي"), icon: <Scale className="w-5 h-5" />, color: 'bg-blue-100 text-blue-700' };
       case 'student':
-        return { label: 'طالب', icon: <GraduationCap className="w-5 h-5" />, color: 'bg-purple-100 text-purple-700' };
+        return { label: window.__t("طالب"), icon: <GraduationCap className="w-5 h-5" />, color: 'bg-purple-100 text-purple-700' };
       case 'cabinet':
-        return { label: 'مكتب قانوني', icon: <Building2 className="w-5 h-5" />, color: 'bg-amber-100 text-amber-700' };
+        return { label: window.__t("مكتب قانوني"), icon: <Building2 className="w-5 h-5" />, color: 'bg-amber-100 text-amber-700' };
       default:
-        return { label: 'مستخدم', icon: <FileText className="w-5 h-5" />, color: 'bg-gray-100 text-gray-700' };
+        return { label: window.__t("مستخدم"), icon: <FileText className="w-5 h-5" />, color: 'bg-gray-100 text-gray-700' };
     }
   };
 
   const getPlanLabel = (plan?: string) => {
     switch (plan?.toLowerCase()) {
       case 'basic':
-        return { label: 'البداية', color: 'text-blue-600', bgColor: 'bg-blue-50' };
+        return { label: window.__t("البداية"), color: 'text-blue-600', bgColor: 'bg-blue-50' };
       case 'pro':
-        return { label: 'المحترف', color: 'text-amber-600', bgColor: 'bg-amber-50' };
+        return { label: window.__t("المحترف"), color: 'text-amber-600', bgColor: 'bg-amber-50' };
       case 'enterprise':
-        return { label: 'المكتب', color: 'text-purple-600', bgColor: 'bg-purple-50' };
+        return { label: window.__t("المكتب"), color: 'text-purple-600', bgColor: 'bg-purple-50' };
       default:
-        return { label: 'غير محدد', color: 'text-gray-600', bgColor: 'bg-gray-50' };
+        return { label: window.__t("غير محدد"), color: 'text-gray-600', bgColor: 'bg-gray-50' };
     }
   };
 
@@ -49,13 +49,13 @@ export const ProfilePage = ({
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('حجم الصورة كبير جداً (الحد الأقصى 5 MB)');
+      toast.error(window.__t("حجم الصورة كبير جداً (الحد الأقصى 5 MB)"));
       return;
     }
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast.error('يرجى تحميل صورة صحيحة');
+      toast.error(window.__t("يرجى تحميل صورة صحيحة"));
       return;
     }
 
@@ -64,9 +64,9 @@ export const ProfilePage = ({
     try {
       const updatedUser = await apiService.updateProfile({ avatar: file } as any);
       if (onUpdateUser) onUpdateUser(updatedUser);
-      toast.success('تم تحديث صورة الملف بنجاح!');
+      toast.success(window.__t("تم تحديث صورة الملف بنجاح!"));
     } catch (error) {
-      toast.error('فشل تحميل الصورة. حاول مرة أخرى');
+      toast.error(window.__t("فشل تحميل الصورة. حاول مرة أخرى"));
     } finally {
       setIsUploadingPhoto(false);
       if (fileInputRef.current) {
@@ -81,9 +81,9 @@ export const ProfilePage = ({
     try {
       const updatedUser = await apiService.updateProfile({ deleteAvatar: true } as any);
       if (onUpdateUser) onUpdateUser(updatedUser);
-      toast.success('تم حذف الصورة بنجاح');
+      toast.success(window.__t("تم حذف الصورة بنجاح"));
     } catch (error) {
-      toast.error('فشل حذف الصورة');
+      toast.error(window.__t("فشل حذف الصورة"));
     } finally {
       setIsUploadingPhoto(false);
     }
@@ -99,8 +99,8 @@ export const ProfilePage = ({
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">ملف المستخدم</h1>
-          <p className="text-slate-600 dark:text-slate-400">معلومات حسابك الشخصية</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">{window.__t("ملف المستخدم")}</h1>
+          <p className="text-slate-600 dark:text-slate-400">{window.__t("معلومات حسابك الشخصية")}</p>
         </div>
 
         {/* Main Profile Card */}
@@ -125,7 +125,7 @@ export const ProfilePage = ({
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isUploadingPhoto}
                       className="bg-white/90 backdrop-blur-sm text-slate-700 p-2.5 rounded-xl shadow-lg hover:bg-white hover:text-amber-600 transition-all duration-200 border border-white/50 group-hover:translate-y-[-2px]"
-                      title="تغيير الصورة"
+                      title={window.__t("تغيير الصورة")}
                     >
                       {isUploadingPhoto ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -138,7 +138,7 @@ export const ProfilePage = ({
                         onClick={() => setShowDeleteConfirm(true)}
                         disabled={isUploadingPhoto}
                         className="bg-white/90 backdrop-blur-sm text-slate-700 p-2.5 rounded-xl shadow-lg hover:bg-white hover:text-red-500 transition-all duration-200 border border-white/50 group-hover:translate-y-[-2px]"
-                        title="حذف الصورة"
+                        title={window.__t("حذف الصورة")}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -166,7 +166,7 @@ export const ProfilePage = ({
                 onClick={() => onNavigate('settings')}
                 className="bg-white text-amber-600 px-4 py-2 rounded-lg font-semibold hover:bg-amber-50 transition-colors"
               >
-                تعديل الملف
+                {window.__t("تعديل الملف")}
               </button>
             </div>
           </div>
@@ -179,7 +179,7 @@ export const ProfilePage = ({
               <div className={`rounded-xl p-6 ${accountType.color} flex items-center gap-4`}>
                 {accountType.icon}
                 <div>
-                  <p className="text-sm opacity-75">نوع الحساب</p>
+                  <p className="text-sm opacity-75">{window.__t("نوع الحساب")}</p>
                   <p className="text-xl font-bold">{accountType.label}</p>
                 </div>
               </div>
@@ -188,7 +188,7 @@ export const ProfilePage = ({
               <div className={`rounded-xl p-6 ${planInfo.bgColor} flex items-center gap-4`}>
                 <Shield className={`w-5 h-5 ${planInfo.color}`} />
                 <div>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">الخطة الحالية</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">{window.__t("الخطة الحالية")}</p>
                   <p className={`text-xl font-bold ${planInfo.color}`}>{planInfo.label}</p>
                 </div>
               </div>
@@ -202,10 +202,10 @@ export const ProfilePage = ({
                   user.subscriptionStatus === 'pending_approval' ? 'text-yellow-500' : 'text-red-500'
                 }`} />
                 <div>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">حالة الاشتراك</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">{window.__t("حالة الاشتراك")}</p>
                   <p className="font-semibold text-slate-900 dark:text-white">
-                    {user.subscriptionStatus === 'active' ? 'نشط' :
-                     user.subscriptionStatus === 'pending_approval' ? 'في انتظار الموافقة' : 'منتهي الصلاحية'}
+                    {user.subscriptionStatus === 'active' ? window.__t("نشط") :
+                     user.subscriptionStatus === 'pending_approval' ? window.__t("في انتظار الموافقة") : window.__t("منتهي الصلاحية")}
                   </p>
                 </div>
               </div>
@@ -213,18 +213,18 @@ export const ProfilePage = ({
 
             {/* Contact Information */}
             <div className="mb-8">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">المعلومات الشخصية</h3>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">{window.__t("المعلومات الشخصية")}</h3>
               <div className="space-y-4">
                 <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
                   <Mail className="w-5 h-5 text-amber-600 flex-shrink-0" />
                   <div className="flex-1">
-                    <p className="text-sm text-slate-600 dark:text-slate-400">البريد الإلكتروني</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">{window.__t("البريد الإلكتروني")}</p>
                     <p className="font-medium text-slate-900 dark:text-white">{user.email}</p>
                   </div>
                   {user.email_verified && (
                     <div className="flex items-center gap-1.5 text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full text-xs font-semibold">
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>مفعل</span>
+                      <span>{window.__t("مفعل")}</span>
                     </div>
                   )}
                 </div>
@@ -233,7 +233,7 @@ export const ProfilePage = ({
                   <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
                     <Phone className="w-5 h-5 text-amber-600 flex-shrink-0" />
                     <div>
-                      <p className="text-sm text-slate-600 dark:text-slate-400">رقم الهاتف</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">{window.__t("رقم الهاتف")}</p>
                       <p className="font-medium text-slate-900 dark:text-white">{user.phone}</p>
                     </div>
                   </div>
@@ -244,39 +244,39 @@ export const ProfilePage = ({
             {/* Professional Information */}
             {(isLawyer || isCabinet) && (
               <div className="mb-8">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">المعلومات المهنية</h3>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">{window.__t("المعلومات المهنية")}</h3>
                 <div className="space-y-4">
                   {user.bar_number && (
                     <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
-                      <p className="text-sm text-slate-600 dark:text-slate-400">رقم بطاقة المحامي</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">{window.__t("رقم بطاقة المحامي")}</p>
                       <p className="font-medium text-slate-900 dark:text-white">{user.bar_number}</p>
                     </div>
                   )}
 
                   {user.cabinet_name && (
                     <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
-                      <p className="text-sm text-slate-600 dark:text-slate-400">اسم المكتب</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">{window.__t("اسم المكتب")}</p>
                       <p className="font-medium text-slate-900 dark:text-white">{user.cabinet_name}</p>
                     </div>
                   )}
 
                   {user.bar_registration_number && (
                     <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
-                      <p className="text-sm text-slate-600 dark:text-slate-400">رقم التسجيل بنقابة المحامين</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">{window.__t("رقم التسجيل بنقابة المحامين")}</p>
                       <p className="font-medium text-slate-900 dark:text-white">{user.bar_registration_number}</p>
                     </div>
                   )}
 
                   {user.office_address && (
                     <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
-                      <p className="text-sm text-slate-600 dark:text-slate-400">عنوان المكتب</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">{window.__t("عنوان المكتب")}</p>
                       <p className="font-medium text-slate-900 dark:text-white">{user.office_address}</p>
                     </div>
                   )}
 
                   {user.number_of_lawyers && (
                     <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
-                      <p className="text-sm text-slate-600 dark:text-slate-400">عدد المحامين</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">{window.__t("عدد المحامين")}</p>
                       <p className="font-medium text-slate-900 dark:text-white">{user.number_of_lawyers}</p>
                     </div>
                   )}
@@ -287,9 +287,9 @@ export const ProfilePage = ({
             {/* Academic Information */}
             {user.university && (
               <div className="mb-8">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">المعلومات الأكاديمية</h3>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">{window.__t("المعلومات الأكاديمية")}</h3>
                 <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
-                  <p className="text-sm text-slate-600 dark:text-slate-400">الجامعة</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">{window.__t("الجامعة")}</p>
                   <p className="font-medium text-slate-900 dark:text-white">{user.university}</p>
                 </div>
               </div>
@@ -297,15 +297,15 @@ export const ProfilePage = ({
 
             {/* Account Information */}
             <div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">معلومات الحساب</h3>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">{window.__t("معلومات الحساب")}</h3>
               <div className="space-y-4">
                 {user.created_at && (
                   <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-lg flex items-center gap-3">
                     <Calendar className="w-5 h-5 text-amber-600 flex-shrink-0" />
                     <div>
-                      <p className="text-sm text-slate-600 dark:text-slate-400">تاريخ الإنشاء</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">{window.__t("تاريخ الإنشاء")}</p>
                       <p className="font-medium text-slate-900 dark:text-white">
-                        {new Date(user.created_at).toLocaleDateString('ar-TN', { 
+                        {new Date(user.created_at).toLocaleDateString((document.documentElement.lang === 'ar' ? 'ar-TN' : 'fr-FR'), { 
                           year: 'numeric', 
                           month: 'long', 
                           day: 'numeric' 
@@ -332,9 +332,9 @@ export const ProfilePage = ({
               <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100">
                 <Trash2 className="w-8 h-8 text-red-500" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">حذف الصورة الشخصية</h3>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">{window.__t("حذف الصورة الشخصية")}</h3>
               <p className="text-slate-600 mb-6 leading-relaxed">
-                هل أنت متأكد من رغبتك في حذف صورة ملفك الشخصي؟ لا يمكن التراجع عن هذا الإجراء.
+                {window.__t("هل أنت متأكد من رغبتك في حذف صورة ملفك الشخصي؟ لا يمكن التراجع عن هذا الإجراء.")}
               </p>
               
               <div className="flex flex-row-reverse gap-3">
@@ -342,13 +342,13 @@ export const ProfilePage = ({
                   onClick={handleDeletePhoto}
                   className="flex-1 bg-red-500 text-white font-semibold py-2.5 rounded-xl hover:bg-red-600 transition-colors shadow-lg shadow-red-200"
                 >
-                  نعم، احذف
+                  {window.__t("نعم، احذف")}
                 </button>
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
                   className="flex-1 bg-slate-100 text-slate-700 font-semibold py-2.5 rounded-xl hover:bg-slate-200 transition-colors border border-slate-200"
                 >
-                  إلغاء
+                  {window.__t("إلغاء")}
                 </button>
               </div>
             </div>

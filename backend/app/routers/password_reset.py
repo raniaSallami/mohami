@@ -19,6 +19,7 @@ from app.utils.security import get_password_hash
 from app.utils.device_security import parse_device_name, get_location_from_ip, get_client_ip
 from app.utils.rate_limiter import check_rate_limit, record_failed_attempt, reset_failed_attempts
 from app.utils.password_validator import validate_password
+from app.utils.email_localization import get_user_lang
 
 router = APIRouter(prefix="/auth", tags=["Password Reset"])
 
@@ -91,7 +92,39 @@ async def _send_reset_otp_email(
             location = await get_location_from_ip(ip)
             now = datetime.utcnow().strftime("%d/%m/%Y - %H:%M UTC")
 
-            html_content = f"""<!DOCTYPE html>
+            lang = get_user_lang(request)
+            if lang == "fr":
+                subject = "Réinitialisation de mot de passe — Code de vérification"
+                body_txt = f"Votre code de réinitialisation est : {otp_code}. Il est valide 15 minutes."
+                html_content = f"""<!DOCTYPE html>
+<html dir="ltr" lang="fr">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:40px 20px;background:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.12);">
+<tr><td style="background:linear-gradient(135deg,#1e40af,#1e3a8a);padding:40px;text-align:center;">
+<p style="color:#93c5fd;font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin:0 0 10px 0;">MOUHAMI AI</p>
+<h1 style="color:#fff;font-size:22px;font-weight:700;margin:0;">Réinitialisation de mot de passe</h1>
+</td></tr>
+<tr><td style="padding:40px;">
+<p style="color:#1e293b;font-size:15px;font-weight:600;margin:0 0 8px 0;">Bonjour {user_name},</p>
+<p style="color:#475569;font-size:14px;line-height:1.8;margin:0 0 28px 0;">
+Nous avons reçu une demande de réinitialisation de votre mot de passe. Utilisez le code ci-dessous pour terminer l'opération.
+</p>
+<div style="background:#f0fdf4;border:2px solid #16a34a;border-radius:12px;padding:28px;text-align:center;margin-bottom:28px;">
+<p style="color:#15803d;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin:0 0 14px 0;">CODE DE RÉINITIALISATION</p>
+<div style="background:#fff;border:2px dashed #16a34a;border-radius:8px;padding:16px;margin-bottom:14px;">
+<span style="font-size:44px;font-weight:800;letter-spacing:10px;color:#1e293b;font-family:'Courier New',monospace;">{otp_code}</span>
+</div>
+<p style="color:#15803d;font-size:13px;margin:0;font-weight:600;">Ce code est valide pendant 15 minutes</p>
+</div>
+</td></tr>
+</table></td></tr></table>
+</body></html>"""
+            else:
+                subject = "إعادة تعيين كلمة المرور — رمز التحقق"
+                body_txt = f"رمز إعادة تعيين كلمة المرور: {otp_code} — صالح 15 دقيقة."
+                html_content = f"""<!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:40px 20px;background:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;">
@@ -113,22 +146,11 @@ async def _send_reset_otp_email(
 </div>
 <p style="color:#15803d;font-size:13px;margin:0;font-weight:600;">هذا الرمز صالح لمدة 15 دقيقة فقط</p>
 </div>
-<div style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:24px;">
-<table width="100%" cellpadding="6">
-<tr><td style="color:#64748b;font-size:13px;width:130px;">التاريخ والوقت</td><td style="color:#1e293b;font-size:13px;font-weight:600;">{now}</td></tr>
-<tr style="background:#f8fafc;"><td style="color:#64748b;font-size:13px;">الجهاز</td><td style="color:#1e293b;font-size:13px;font-weight:600;">{device_name}</td></tr>
-<tr><td style="color:#64748b;font-size:13px;">الموقع</td><td style="color:#1e293b;font-size:13px;font-weight:600;">{location.get('country', 'غير معروف')} — {location.get('city', 'غير معروف')}</td></tr>
-<tr style="background:#f8fafc;"><td style="color:#64748b;font-size:13px;">عنوان IP</td><td style="color:#1e293b;font-size:13px;font-weight:600;font-family:monospace;">{ip}</td></tr>
-</table>
-</div>
 <div style="background:#fef9ec;border-right:4px solid #d97706;border-radius:8px;padding:16px 20px;">
 <p style="color:#92400e;font-size:13px;margin:0;font-weight:600;">
 إذا لم تكن أنت من طلب إعادة التعيين، يرجى تجاهل هذا البريد وتأمين حسابك فوراً.
 </p>
 </div>
-</td></tr>
-<tr><td style="background:#1e293b;padding:20px 40px;text-align:center;">
-<p style="color:#94a3b8;font-size:11px;margin:0;">منصة المحامي الذكية &copy; 2024 &middot; <a href="https://mouhami-ai.tn" style="color:#d97706;text-decoration:none;">mouhami-ai.tn</a></p>
 </td></tr>
 </table></td></tr></table>
 </body></html>"""
@@ -141,9 +163,9 @@ async def _send_reset_otp_email(
                 {
                     "id": f"resetpwd_{uuid.uuid4()}",
                     "to_email": user_email,
-                    "subject": "إعادة تعيين كلمة المرور — رمز التحقق",
+                    "subject": subject,
                     "html_content": html_content,
-                    "text_content": f"رمز إعادة تعيين كلمة المرور: {otp_code} — صالح 15 دقيقة.",
+                    "text_content": body_txt,
                     "status": "pending",
                     "created_at": datetime.utcnow(),
                 },

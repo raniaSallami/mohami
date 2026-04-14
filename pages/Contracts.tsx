@@ -13,7 +13,7 @@ export const Contracts = () => {
 
   // Wizard State
   const [step, setStep] = useState(1);
-  const [contractType, setContractType] = useState('عقد كراء سكني');
+  const [contractType, setContractType] = useState(window.__t("عقد كراء سكني"));
   const [parties, setParties] = useState('');
   const [details, setDetails] = useState('');
   const [generatedContent, setGeneratedContent] = useState('');
@@ -35,7 +35,7 @@ export const Contracts = () => {
     const hasLimit = await storageService.checkUsageLimit('contracts');
     if (!hasLimit) {
         setLoading(false);
-        alert('لقد تجاوزت حد العقود المسموح به في باقتك الحالية. يرجى الترقية.');
+        alert(window.__t("لقد تجاوزت حد العقود المسموح به في باقتك الحالية. يرجى الترقية."));
         return;
     }
 
@@ -54,7 +54,7 @@ export const Contracts = () => {
     
     const newContract: Contract = {
       id: Date.now().toString(),
-      title: `${contractType} - ${new Date().toLocaleDateString('ar-TN')}`,
+      title: `${contractType} - ${new Date().toLocaleDateString((document.documentElement.lang === 'ar' ? 'ar-TN' : 'fr-FR'))}`,
       type: contractType,
       parties: parties,
       content: contentToSave,
@@ -135,8 +135,8 @@ export const Contracts = () => {
       if (lines.length === 1) {
         const line = lines[0];
         if ((line.length < 60 && !line.includes('.')) || 
-            line.startsWith('الفصل') || 
-            line.startsWith('عقد') ||
+            line.startsWith(window.__t("الفصل")) || 
+            line.startsWith(window.__t("عقد")) ||
             line.match(/^الفصل\s+[الأولالثانيالثالثالرابعالخامس]/)) {
           return `<h3>${line}</h3>`;
         }
@@ -228,15 +228,15 @@ export const Contracts = () => {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-slate-800">العقود المحفوظة</h2>
+          <h2 className="text-2xl font-bold text-slate-800">{window.__t("العقود المحفوظة")}</h2>
           <button onClick={() => setView('create')} className="bg-slate-900 text-white px-6 py-2 rounded-lg hover:bg-slate-800 transition">
-            + إنشاء عقد ذكي
+            {window.__t("+ إنشاء عقد ذكي")}
           </button>
         </div>
 
         {contracts.length === 0 ? (
           <div className="text-center py-20 bg-white border border-dashed rounded-xl">
-             <p className="text-gray-500">لم تقم بإنشاء أي عقود بعد.</p>
+             <p className="text-gray-500">{window.__t("لم تقم بإنشاء أي عقود بعد.")}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -257,8 +257,8 @@ export const Contracts = () => {
                      setStep(3); 
                      setView('create');
                      setIsEditing(false);
-                   }} className="text-sm text-primary-600 font-bold hover:underline">عرض وطباعة</button>
-                   <span className="text-xs text-gray-400">{new Date(c.dateCreated).toLocaleDateString('ar-TN')}</span>
+                   }} className="text-sm text-primary-600 font-bold hover:underline">{window.__t("عرض وطباعة")}</button>
+                   <span className="text-xs text-gray-400">{new Date(c.dateCreated).toLocaleDateString((document.documentElement.lang === 'ar' ? 'ar-TN' : 'fr-FR'))}</span>
                 </div>
               </div>
             ))}
@@ -273,7 +273,7 @@ export const Contracts = () => {
     <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden flex flex-col" style={{ minHeight: 'calc(100vh - 200px)', maxHeight: 'calc(100vh - 100px)' }}>
       {/* Wizard Header */}
       <div className="bg-slate-50 p-6 border-b border-slate-100 flex justify-between items-center">
-         <h2 className="text-xl font-bold text-slate-800">مولد العقود الذكي</h2>
+         <h2 className="text-xl font-bold text-slate-800">{window.__t("مولد العقود الذكي")}</h2>
          <div className="flex space-x-2 space-x-reverse">
             <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step === 1 ? 'bg-gold-500 text-white' : 'bg-gray-200 text-gray-500'}`}>1</span>
             <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step === 2 ? 'bg-gold-500 text-white' : 'bg-gray-200 text-gray-500'}`}>2</span>
@@ -284,9 +284,9 @@ export const Contracts = () => {
       <div className="p-8 flex-1 overflow-y-auto min-h-0">
         {step === 1 && (
           <div className="space-y-6 animate-fadeIn">
-            <h3 className="text-lg font-bold mb-4">اختر نوع العقد</h3>
+            <h3 className="text-lg font-bold mb-4">{window.__t("اختر نوع العقد")}</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {['عقد كراء سكني', 'عقد كراء تجاري', 'عقد بيع سيارة', 'عقد شغل', 'عقد شراكة', 'عقد قرض', 'توكيل عام', 'عقد صيانة'].map(type => (
+              {[window.__t("عقد كراء سكني"), window.__t("عقد كراء تجاري"), window.__t("عقد بيع سيارة"), window.__t("عقد شغل"), window.__t("عقد شراكة"), window.__t("عقد قرض"), window.__t("توكيل عام"), window.__t("عقد صيانة")].map(type => (
                 <div 
                   key={type}
                   onClick={() => setContractType(type)}
@@ -297,37 +297,37 @@ export const Contracts = () => {
               ))}
             </div>
             <div className="mt-8 flex justify-end">
-               <button onClick={() => setStep(2)} className="bg-slate-900 text-white px-8 py-3 rounded-lg hover:bg-slate-800 transition">التالي</button>
+               <button onClick={() => setStep(2)} className="bg-slate-900 text-white px-8 py-3 rounded-lg hover:bg-slate-800 transition">{window.__t("التالي")}</button>
             </div>
           </div>
         )}
 
         {step === 2 && (
           <div className="space-y-6 animate-fadeIn">
-             <h3 className="text-lg font-bold mb-4">بيانات العقد ({contractType})</h3>
+             <h3 className="text-lg font-bold mb-4">{window.__t("بيانات العقد (")}{contractType})</h3>
              <div>
-               <label className="block text-sm font-medium text-gray-700 mb-2">أطراف العقد (الطرف الأول والثاني)</label>
+               <label className="block text-sm font-medium text-gray-700 mb-2">{window.__t("أطراف العقد (الطرف الأول والثاني)")}</label>
                <textarea 
                  value={parties}
                  onChange={(e) => setParties(e.target.value)}
                  className="w-full px-4 py-3 border border-gray-300 rounded-lg h-24 focus:ring-gold-500 focus:border-gold-500"
-                 placeholder="مثال: السيد محمد بن صالح (ص.ب ...) بصفته المكري، والسيد علي بن عمر بصفته المكتري..."
+                 placeholder={window.__t("مثال: السيد محمد بن صالح (ص.ب ...) بصفته المكري، والسيد علي بن عمر بصفته المكتري...")}
                />
              </div>
              <div>
-               <label className="block text-sm font-medium text-gray-700 mb-2">شروط وتفاصيل خاصة</label>
+               <label className="block text-sm font-medium text-gray-700 mb-2">{window.__t("شروط وتفاصيل خاصة")}</label>
                <textarea 
                  value={details}
                  onChange={(e) => setDetails(e.target.value)}
                  className="w-full px-4 py-3 border border-gray-300 rounded-lg h-32 focus:ring-gold-500 focus:border-gold-500"
-                 placeholder="اذكر الثمن، المدة، طريقة الدفع، وأي شروط إضافية ترغب في إدراجها..."
+                 placeholder={window.__t("اذكر الثمن، المدة، طريقة الدفع، وأي شروط إضافية ترغب في إدراجها...")}
                />
              </div>
              <div className="mt-8 flex justify-between">
-               <button onClick={() => setStep(1)} className="text-gray-500 font-medium hover:text-gray-700">السابق</button>
+               <button onClick={() => setStep(1)} className="text-gray-500 font-medium hover:text-gray-700">{window.__t("السابق")}</button>
                <button onClick={handleGenerate} disabled={loading} className="bg-slate-900 text-white px-8 py-3 rounded-lg hover:bg-slate-800 transition flex items-center">
                  {loading && <Spinner />}
-                 <span className="mr-2">{loading ? 'جاري الصياغة...' : 'توليد العقد بالذكاء الاصطناعي'}</span>
+                 <span className="me-2">{loading ? window.__t("جاري الصياغة...") : window.__t("توليد العقد بالذكاء الاصطناعي")}</span>
                </button>
              </div>
           </div>
@@ -336,10 +336,10 @@ export const Contracts = () => {
         {step === 3 && (
           <div className="space-y-6 animate-fadeIn h-full flex flex-col min-h-0">
              <h3 className="text-lg font-bold mb-4 flex justify-between items-center flex-shrink-0">
-               <span>{isEditing ? 'تعديل نص العقد' : 'معاينة العقد'}</span>
+               <span>{isEditing ? window.__t("تعديل نص العقد") : window.__t("معاينة العقد")}</span>
                <div className="space-x-2 space-x-reverse">
                  {!isEditing && (
-                   <button onClick={printContract} className="text-sm bg-gray-100 px-3 py-1 rounded hover:bg-gray-200">طباعة / PDF</button>
+                   <button onClick={printContract} className="text-sm bg-gray-100 px-3 py-1 rounded hover:bg-gray-200">{window.__t("طباعة / PDF")}</button>
                  )}
                </div>
              </h3>
@@ -349,7 +349,7 @@ export const Contracts = () => {
                <div className="flex-1 flex flex-col min-h-0">
                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex-shrink-0">
                    <p className="text-sm text-blue-800">
-                     يمكنك تعديل نص العقد مباشرة. يمكنك تعديل النص كـ HTML أو كنص عادي (سيتم تنسيقه تلقائياً عند الحفظ).
+                     {window.__t("يمكنك تعديل نص العقد مباشرة. يمكنك تعديل النص كـ HTML أو كنص عادي (سيتم تنسيقه تلقائياً عند الحفظ).")}
                    </p>
                  </div>
                  <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
@@ -357,7 +357,7 @@ export const Contracts = () => {
                      value={editableContent}
                      onChange={(e) => setEditableContent(e.target.value)}
                      className="w-full px-4 py-3 border border-gray-300 rounded-lg font-serif text-base leading-relaxed focus:ring-2 focus:ring-gold-500 focus:border-gold-500 resize-none"
-                     placeholder="نص العقد..."
+                     placeholder={window.__t("نص العقد...")}
                      style={{ 
                        height: '100%',
                        minHeight: '400px',
@@ -370,13 +370,13 @@ export const Contracts = () => {
                      onClick={handleCancelEdit} 
                      className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
                    >
-                     إلغاء التعديل
+                     {window.__t("إلغاء التعديل")}
                    </button>
                    <button 
                      onClick={handleSaveEdit} 
                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                    >
-                     حفظ التعديلات
+                     {window.__t("حفظ التعديلات")}
                    </button>
                  </div>
                </div>
@@ -392,13 +392,13 @@ export const Contracts = () => {
                        onClick={() => setStep(2)} 
                        className="text-gray-500 font-medium hover:text-gray-700"
                      >
-                       تعديل البيانات الأساسية
+                       {window.__t("تعديل البيانات الأساسية")}
                      </button>
                      <button 
                        onClick={handleEdit} 
                        className="text-blue-600 font-medium hover:text-blue-800"
                      >
-                       تعديل البيانات
+                       {window.__t("تعديل البيانات")}
                      </button>
                    </div>
                    <div className="space-x-3 space-x-reverse">
@@ -410,7 +410,7 @@ export const Contracts = () => {
                        }} 
                        className="text-gray-600 px-4 hover:text-gray-800"
                      >
-                       إلغاء
+                       {window.__t("إلغاء")}
                      </button>
                      <button 
                        onClick={handleSave} 
@@ -418,7 +418,7 @@ export const Contracts = () => {
                        className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition disabled:opacity-50 flex items-center space-x-2 space-x-reverse"
                      >
                        {loading && <Spinner />}
-                       <span>حفظ في الأرشيف</span>
+                       <span>{window.__t("حفظ في الأرشيف")}</span>
                      </button>
                    </div>
                  </div>
@@ -433,10 +433,10 @@ export const Contracts = () => {
         isOpen={deleteModal.isOpen}
         onClose={() => setDeleteModal({ isOpen: false, contractId: null })}
         onConfirm={confirmDelete}
-        title="حذف العقد"
-        message="هل أنت متأكد من حذف هذا العقد؟ لا يمكن التراجع عن هذه العملية."
-        confirmText="حذف"
-        cancelText="إلغاء"
+        title={window.__t("حذف العقد")}
+        message={window.__t("هل أنت متأكد من حذف هذا العقد؟ لا يمكن التراجع عن هذه العملية.")}
+        confirmText={window.__t("حذف")}
+        cancelText={window.__t("إلغاء")}
         type="danger"
       />
     </div>

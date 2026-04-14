@@ -33,7 +33,7 @@ export const Marketing: React.FC = () => {
 
   const handleSend = async () => {
     if (!subject.trim() || !htmlContent.trim() || selectedUsers.length === 0) {
-      alert('يرجى ملء جميع الحقول واختيار مستخدم واحد على الأقل');
+      alert(window.__t("يرجى ملء جميع الحقول واختيار مستخدم واحد على الأقل"));
       return;
     }
 
@@ -55,7 +55,7 @@ export const Marketing: React.FC = () => {
       setSelectedUsers([]);
     } catch (error) {
       console.error('Error sending marketing emails:', error);
-      alert('حدث خطأ أثناء إرسال البريد الإلكتروني');
+      alert(window.__t("حدث خطأ أثناء إرسال البريد الإلكتروني"));
     } finally {
       setSending(false);
     }
@@ -64,13 +64,13 @@ export const Marketing: React.FC = () => {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-slate-800">البريد التسويقي</h2>
+        <h2 className="text-2xl font-bold text-slate-800">{window.__t("البريد التسويقي")}</h2>
         <button
           onClick={() => setShowPreview(true)}
           disabled={!htmlContent.trim()}
           className="px-4 py-2 bg-slate-200 hover:bg-slate-300 rounded-lg transition disabled:opacity-50"
         >
-          معاينة
+          {window.__t("معاينة")}
         </button>
       </div>
 
@@ -78,18 +78,18 @@ export const Marketing: React.FC = () => {
         {/* Email Editor */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">عنوان البريد الإلكتروني</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{window.__t("عنوان البريد الإلكتروني")}</label>
             <input
               type="text"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              placeholder="مثال: عروض خاصة على باقات المحترف"
+              placeholder={window.__t("مثال: عروض خاصة على باقات المحترف")}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500"
             />
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">محتوى البريد الإلكتروني (HTML)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{window.__t("محتوى البريد الإلكتروني (HTML)")}</label>
             <div className="mb-2 flex space-x-2 space-x-reverse">
               <button
                 type="button"
@@ -154,11 +154,11 @@ export const Marketing: React.FC = () => {
               id="html-editor"
               value={htmlContent}
               onChange={(e) => setHtmlContent(e.target.value)}
-              placeholder="اكتب محتوى البريد الإلكتروني هنا... يمكنك استخدام HTML"
+              placeholder={window.__t("اكتب محتوى البريد الإلكتروني هنا... يمكنك استخدام HTML")}
               className="w-full h-96 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500 font-mono text-sm"
             />
             <p className="text-xs text-gray-500 mt-2">
-              💡 نصيحة: يمكنك استخدام HTML لتصميم البريد الإلكتروني. استخدم &lt;strong&gt; للنص العريض، &lt;em&gt; للمائل، &lt;a&gt; للروابط، إلخ.
+              {window.__t("💡 نصيحة: يمكنك استخدام HTML لتصميم البريد الإلكتروني. استخدم &lt;strong&gt; للنص العريض، &lt;em&gt; للمائل، &lt;a&gt; للروابط، إلخ.")}
             </p>
           </div>
 
@@ -180,19 +180,19 @@ export const Marketing: React.FC = () => {
             disabled={sending || !subject.trim() || !htmlContent.trim() || selectedUsers.length === 0}
             className="w-full bg-gold-500 hover:bg-gold-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-900 font-bold py-3 rounded-lg transition"
           >
-            {sending ? 'جاري الإرسال...' : `إرسال إلى ${selectedUsers.length} مستخدم`}
+            {sending ? window.__t("جاري الإرسال...") : `إرسال إلى ${selectedUsers.length} مستخدم`}
           </button>
         </div>
 
         {/* User Selection */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold text-slate-800">اختر المستخدمين</h3>
+            <h3 className="font-bold text-slate-800">{window.__t("اختر المستخدمين")}</h3>
             <button
               onClick={handleSelectAll}
               className="text-sm text-blue-600 hover:text-blue-800"
             >
-              {selectedUsers.length === users.length ? 'إلغاء الكل' : 'تحديد الكل'}
+              {selectedUsers.length === users.length ? window.__t("إلغاء الكل") : window.__t("تحديد الكل")}
             </button>
           </div>
           <div className="space-y-2 max-h-[600px] overflow-y-auto">
@@ -218,24 +218,24 @@ export const Marketing: React.FC = () => {
             ))}
           </div>
           <div className="mt-4 pt-4 border-t text-sm text-slate-600">
-            <p>المحدد: <strong>{selectedUsers.length}</strong> من <strong>{users.length}</strong></p>
+            <p>{window.__t("المحدد:")} <strong>{selectedUsers.length}</strong> {window.__t("من")} <strong>{users.length}</strong></p>
           </div>
         </div>
       </div>
 
       {/* Preview Modal */}
-      <Modal isOpen={showPreview} onClose={() => setShowPreview(false)} title="معاينة البريد الإلكتروني">
+      <Modal isOpen={showPreview} onClose={() => setShowPreview(false)} title={window.__t("معاينة البريد الإلكتروني")}>
         <div className="max-w-2xl mx-auto">
           <div className="border border-gray-300 rounded-lg p-4 bg-white">
             <div className="mb-4 pb-4 border-b">
-              <p className="text-sm text-gray-500">إلى:</p>
-              <p className="font-bold">{selectedUsers.length > 0 ? `${selectedUsers.length} مستخدم` : 'مستخدمين محددين'}</p>
-              <p className="text-sm text-gray-500 mt-2">الموضوع:</p>
-              <p className="font-bold">{subject || '(بدون موضوع)'}</p>
+              <p className="text-sm text-gray-500">{window.__t("إلى:")}</p>
+              <p className="font-bold">{selectedUsers.length > 0 ? `${selectedUsers.length} مستخدم` : window.__t("مستخدمين محددين")}</p>
+              <p className="text-sm text-gray-500 mt-2">{window.__t("الموضوع:")}</p>
+              <p className="font-bold">{subject || window.__t("(بدون موضوع)")}</p>
             </div>
             <div 
               className="prose max-w-none"
-              dangerouslySetInnerHTML={{ __html: htmlContent || '<p class="text-gray-400">لا يوجد محتوى</p>' }}
+              dangerouslySetInnerHTML={{ __html: htmlContent || window.__t("<p class=\"text-gray-400\">لا يوجد محتوى</p>") }}
             />
           </div>
         </div>

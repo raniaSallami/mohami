@@ -45,8 +45,8 @@ export const Chatbot: React.FC = () => {
             conversation.id,
             'admin',
             undefined,
-            'مركز المساعدة',
-            'مرحباً بك! 👋\n\nنحن هنا لمساعدتك في أي استفسار لديك حول منصة المحامي. لا تتردد في طرح أي سؤال أو إرسال أي ملف تحتاج إلى مراجعته.\n\nكيف يمكننا مساعدتك اليوم؟',
+            window.__t("مركز المساعدة"),
+            window.__t("مرحباً بك! 👋\n\nنحن هنا لمساعدتك في أي استفسار لديك حول منصة المحامي. لا تتردد في طرح أي سؤال أو إرسال أي ملف تحتاج إلى مراجعته.\n\nكيف يمكننا مساعدتك اليوم؟"),
             []
           );
           setMessages([welcomeMessage]);
@@ -136,7 +136,7 @@ export const Chatbot: React.FC = () => {
     e.preventDefault();
     if ((!input.trim() && attachments.length === 0) || !conversationId) return;
 
-    const messageText = input.trim() || '📎 ملف مرفق';
+    const messageText = input.trim() || window.__t("📎 ملف مرفق");
     setInput('');
     setAttachments([]);
 
@@ -168,7 +168,7 @@ export const Chatbot: React.FC = () => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 left-6 z-50 w-14 h-14 bg-yellow-400 hover:bg-yellow-300 text-slate-900 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110"
+          className="fixed bottom-6 start-6 z-50 w-14 h-14 bg-yellow-400 hover:bg-yellow-300 text-slate-900 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110"
           aria-label="Open chat"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -179,17 +179,17 @@ export const Chatbot: React.FC = () => {
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-6 left-6 z-50 w-96 h-[600px] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl flex flex-col border border-slate-200 dark:border-slate-700">
+        <div className="fixed bottom-6 start-6 z-50 w-96 h-[600px] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl flex flex-col border border-slate-200 dark:border-slate-700">
           {/* Header */}
           <div className="bg-yellow-400 text-slate-900 px-6 py-4 rounded-t-2xl flex items-center justify-between">
             <div className="flex items-center space-x-3 space-x-reverse">
               <div className="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center">
-                <span className="text-yellow-400 font-bold text-lg">م</span>
+                <span className="text-yellow-400 font-bold text-lg">{window.__t("م")}</span>
               </div>
               <div>
-                <h3 className="font-bold text-lg">مركز المساعدة</h3>
+                <h3 className="font-bold text-lg">{window.__t("مركز المساعدة")}</h3>
                 <p className="text-xs text-slate-700">
-                  {isConnecting ? 'جاري الاتصال...' : 'دعم المنصة — نحن هنا لمساعدتك'}
+                  {isConnecting ? window.__t("جاري الاتصال...") : window.__t("دعم المنصة — نحن هنا لمساعدتك")}
                 </p>
               </div>
             </div>
@@ -208,7 +208,7 @@ export const Chatbot: React.FC = () => {
           <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 dark:bg-slate-950">
             {messages.length === 0 && !isConnecting && (
               <div className="text-center text-slate-500 dark:text-slate-400 py-8">
-                <p>مرحباً! كيف يمكننا مساعدتك اليوم؟</p>
+                <p>{window.__t("مرحباً! كيف يمكننا مساعدتك اليوم؟")}</p>
               </div>
             )}
 
@@ -250,7 +250,7 @@ export const Chatbot: React.FC = () => {
                                 download={att.name}
                                 className="text-xs bg-yellow-400 hover:bg-yellow-300 px-2 py-1 rounded transition"
                               >
-                                تحميل
+                                {window.__t("تحميل")}
                               </a>
                             </div>
                           )}
@@ -314,7 +314,7 @@ export const Chatbot: React.FC = () => {
               <label
                 htmlFor="chat-file-input"
                 className="bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-900 dark:text-white px-3 py-2 rounded-lg transition cursor-pointer flex items-center"
-                title="إرفاق ملف"
+                title={window.__t("إرفاق ملف")}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
@@ -324,7 +324,7 @@ export const Chatbot: React.FC = () => {
                 type="text"
                 value={input}
                 onChange={handleInputChange}
-                placeholder="اكتب رسالتك..."
+                placeholder={window.__t("اكتب رسالتك...")}
                 className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                 disabled={isConnecting}
               />

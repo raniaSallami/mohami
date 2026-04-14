@@ -159,22 +159,22 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNotificati
           />
         </svg>
         {unreadCount > 0 && (
-          <span className="absolute top-0 right-0 block h-4 w-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+          <span className="absolute top-0 end-0 block h-4 w-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 mt-2 w-80 bg-white rounded-lg shadow-xl z-50 border border-gray-200">
+        <div className="absolute start-0 mt-2 w-80 bg-white rounded-lg shadow-xl z-50 border border-gray-200">
           <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-            <h3 className="font-bold text-gray-800">الإشعارات</h3>
+            <h3 className="font-bold text-gray-800">{window.__t("الإشعارات")}</h3>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllAsRead}
                 className="text-sm text-blue-600 hover:text-blue-800"
               >
-                تحديد الكل كمقروء
+                {window.__t("تحديد الكل كمقروء")}
               </button>
             )}
           </div>
@@ -182,7 +182,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNotificati
           <div className="max-h-96 overflow-y-auto">
             {notifications.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
-                <p>لا توجد إشعارات</p>
+                <p>{window.__t("لا توجد إشعارات")}</p>
               </div>
             ) : (
               notifications.map((notification) => (
@@ -216,7 +216,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNotificati
                                 handleNotificationClick(notification);
                               }}
                               className="opacity-0 group-hover:opacity-100 p-1 hover:bg-amber-100 rounded text-amber-600 transition-opacity"
-                              title="مقروء"
+                              title={window.__t("مقروء")}
                             >
                               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -240,7 +240,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNotificati
                           })}
                         </p>
                         {notification.link && (
-                          <span className="text-[10px] text-amber-600 font-bold">عرض التفاصيل ←</span>
+                          <span className="text-[10px] text-amber-600 font-bold">{window.__t("عرض التفاصيل ←")}</span>
                         )}
                       </div>
                     </div>
@@ -259,7 +259,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNotificati
                 }}
                 className="text-sm text-blue-600 hover:text-blue-800"
               >
-                عرض الكل
+                {window.__t("عرض الكل")}
               </button>
             </div>
           )}

@@ -42,7 +42,7 @@ async def list_cases(
     if tenant_id:
         query = query.where(
             or_(
-                Case.tenant_id == tenant_id,
+                Case.tenant_id == str(tenant_id),
                 Case.user_id == str(current_user.id)
             )
         )
@@ -100,7 +100,7 @@ async def get_case(
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
     
-    if current_user.role == "CLIENT" and case.user_id != current_user.id:
+    if current_user.role == "CLIENT" and case.user_id != str(current_user.id):
         raise HTTPException(status_code=403, detail="Not authorized")
     
     return CaseResponse.model_validate(case)
@@ -123,16 +123,16 @@ async def create_case(
         type=case_data.type,
         status=case_data.status or "pending",
         description=case_data.description,
-        user_id=current_user.id,
-        created_by_user_id=current_user.id,
-        tenant_id=tenant_id
+        user_id=str(current_user.id),
+        created_by_user_id=str(current_user.id),
+        tenant_id=str(tenant_id) if tenant_id else None
     )
     
     db.add(case)
     
     # Create notification
     notification = Notification(
-        user_id=current_user.id,
+        user_id=str(current_user.id),
         type="case",
         title="قضية جديدة",
         message=f"تم إنشاء ملف قضية جديد بنجاح: {case.title}",
@@ -162,7 +162,7 @@ async def update_case(
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
     
-    if current_user.role == "CLIENT" and case.user_id != current_user.id:
+    if current_user.role == "CLIENT" and case.user_id != str(current_user.id):
         raise HTTPException(status_code=403, detail="Not authorized")
     
     old_status = case.status
@@ -207,7 +207,7 @@ async def delete_case(
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
     
-    if current_user.role not in ["ADMIN", "LAWYER"] and case.created_by_user_id != current_user.id:
+    if current_user.role not in ["ADMIN", "LAWYER"] and case.created_by_user_id != str(current_user.id):
         raise HTTPException(status_code=403, detail="Not authorized")
     
     await db.delete(case)

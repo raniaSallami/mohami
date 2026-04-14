@@ -6,6 +6,8 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models import Faculty
+from app.utils.email_localization import get_user_lang
+from fastapi import Request
 
 router = APIRouter(prefix="/api/faculties", tags=["faculties"])
 
@@ -19,6 +21,7 @@ async def list_faculties(
     sort_by: str = Query("public_name", pattern="^(public_name|name|city|type)$"),
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
+    request: Request = None,
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -40,7 +43,8 @@ async def list_faculties(
         if search:
             search_term = f"%{search}%"
             query = query.where(
-                (Faculty.name.ilike(search_term)) |
+                (Faculty.name_ar.ilike(search_term)) |
+                (Faculty.name_fr.ilike(search_term)) |
                 (Faculty.university.ilike(search_term)) |
                 (Faculty.city.ilike(search_term))
             )
@@ -59,20 +63,21 @@ async def list_faculties(
         
         # Add sorting - public first, then by name
         if sort_by == "public_name":
-            query = query.order_by(Faculty.public.desc(), Faculty.name)
+            query = query.order_by(Faculty.public.desc(), Faculty.name_ar)
         elif sort_by == "name":
-            query = query.order_by(Faculty.name)
+            query = query.order_by(Faculty.name_ar)
         elif sort_by == "city":
-            query = query.order_by(Faculty.city, Faculty.name)
+            query = query.order_by(Faculty.city, Faculty.name_ar)
         elif sort_by == "type":
-            query = query.order_by(Faculty.type, Faculty.name)
+            query = query.order_by(Faculty.type, Faculty.name_ar)
         
         # Get total count
         count_query = select(Faculty)
         if search:
             search_term = f"%{search}%"
             count_query = count_query.where(
-                (Faculty.name.ilike(search_term)) |
+                (Faculty.name_ar.ilike(search_term)) |
+                (Faculty.name_fr.ilike(search_term)) |
                 (Faculty.university.ilike(search_term)) |
                 (Faculty.city.ilike(search_term))
             )
@@ -88,15 +93,17 @@ async def list_faculties(
         # Apply pagination
         query = query.limit(limit).offset(offset)
         
-        result = await db.execute(query)
-        faculties = result.scalars().all()
+        # Detect language
+        lang = get_user_lang(request)
         
         return {
             "status": "success",
             "data": [
                 {
                     "id": f.id,
-                    "name": f.name,
+                    "name": f.name_fr if lang == "fr" else f.name_ar,
+                    "name_ar": f.name_ar,
+                    "name_fr": f.name_fr,
                     "slug": f.slug,
                     "type": f.type,
                     "domain": f.domain,
@@ -124,6 +131,7 @@ async def list_faculties(
 @router.get("/{faculty_id}", name="get_faculty")
 async def get_faculty(
     faculty_id: int,
+    request: Request = None,
     db: AsyncSession = Depends(get_db),
 ):
     """Get a single faculty by ID"""
@@ -134,11 +142,16 @@ async def get_faculty(
         if not faculty:
             raise HTTPException(status_code=404, detail="Faculty not found")
         
+        # Detect language
+        lang = get_user_lang(request)
+        
         return {
             "status": "success",
             "data": {
                 "id": faculty.id,
-                "name": faculty.name,
+                "name": faculty.name_fr if lang == "fr" else faculty.name_ar,
+                "name_ar": faculty.name_ar,
+                "name_fr": faculty.name_fr,
                 "slug": faculty.slug,
                 "type": faculty.type,
                 "domain": faculty.domain,
@@ -163,6 +176,7 @@ async def get_faculty(
 @router.get("/search/by-slug/{slug}", name="get_faculty_by_slug")
 async def get_faculty_by_slug(
     slug: str,
+    request: Request = None,
     db: AsyncSession = Depends(get_db),
 ):
     """Get a faculty by its slug"""
@@ -173,11 +187,16 @@ async def get_faculty_by_slug(
         if not faculty:
             raise HTTPException(status_code=404, detail="Faculty not found")
         
+        # Detect language
+        lang = get_user_lang(request)
+        
         return {
             "status": "success",
             "data": {
                 "id": faculty.id,
-                "name": faculty.name,
+                "name": faculty.name_fr if lang == "fr" else faculty.name_ar,
+                "name_ar": faculty.name_ar,
+                "name_fr": faculty.name_fr,
                 "slug": faculty.slug,
                 "type": faculty.type,
                 "domain": faculty.domain,
@@ -203,6 +222,7 @@ async def get_faculty_by_slug(
 async def list_by_type(
     faculty_type: str,
     public: bool = Query(None),
+    request: Request = None,
     db: AsyncSession = Depends(get_db),
 ):
     """Get faculties filtered by type (faculte, institut, ecole)"""
@@ -214,15 +234,17 @@ async def list_by_type(
         
         query = query.order_by(Faculty.public.desc(), Faculty.name)
         
-        result = await db.execute(query)
-        faculties = result.scalars().all()
+        # Detect language
+        lang = get_user_lang(request)
         
         return {
             "status": "success",
             "data": [
                 {
                     "id": f.id,
-                    "name": f.name,
+                    "name": f.name_fr if lang == "fr" else f.name_ar,
+                    "name_ar": f.name_ar,
+                    "name_fr": f.name_fr,
                     "slug": f.slug,
                     "type": f.type,
                     "specialities": f.specialities,
