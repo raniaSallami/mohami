@@ -44,6 +44,14 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     recaptcha_secret_key: str = ""
 
+    # ClicToPay
+    clictopay_user_name: str = "148E009536"
+    clictopay_password: str = "sN2WZU8d"
+    clictopay_base_url: str = "https://test.clictopay.com/payment/rest"
+    clictopay_currency: str = "788"  # TND
+
+    # Encryption
+    encryption_key: str = ""
     @property
     def cors_origins_list(self) -> List[str]:
         """Parse CORS origins from comma-separated string."""

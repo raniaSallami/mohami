@@ -2,7 +2,8 @@
 Pydantic schemas for chat operations.
 """
 from datetime import datetime
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Union
+from uuid import UUID
 from pydantic import BaseModel, Field, ConfigDict
 
 
@@ -22,8 +23,8 @@ class ConversationResponse(BaseModel):
     """Schema for conversation response."""
     model_config = ConfigDict(from_attributes=True)
     
-    id: str
-    user_id: Optional[str] = None
+    id: Union[str, UUID]
+    user_id: Optional[Union[str, UUID]] = None
     user_name: Optional[str] = None
     user_email: Optional[str] = None
     status: str
@@ -55,10 +56,10 @@ class MessageResponse(BaseModel):
     """Schema for message response."""
     model_config = ConfigDict(from_attributes=True)
     
-    id: str
-    conversation_id: str
+    id: Union[str, UUID]
+    conversation_id: Union[str, UUID]
     sender_type: str
-    sender_id: Optional[str] = None
+    sender_id: Optional[Union[str, UUID]] = None
     sender_name: Optional[str] = None
     message: str
     attachments: List[Any] = []
@@ -88,9 +89,9 @@ class TeamMessageResponse(BaseModel):
     """Schema for team message response."""
     model_config = ConfigDict(from_attributes=True)
     
-    id: str
-    owner_id: str
-    from_user_id: str
+    id: Union[str, UUID]
+    owner_id: Union[str, UUID]
+    from_user_id: Union[str, UUID]
     from_user_name: Optional[str] = None
     message: str
     created_at: datetime

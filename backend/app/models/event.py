@@ -30,12 +30,12 @@ class Event(Base):
     # Reminder
     reminder_sent: Mapped[bool] = mapped_column(Boolean, default=False)
     
-    # Foreign keys - use native UUID Support
-    user_id: Mapped[Optional[str]] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    # Foreign keys
+    user_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     case_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("cases.id", ondelete="SET NULL"), nullable=True)
     
     # Tenant (organization)
-    tenant_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+    tenant_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
     
     # Relationships
     user: Mapped[Optional["User"]] = relationship("User", back_populates="events")

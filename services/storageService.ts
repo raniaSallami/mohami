@@ -400,16 +400,125 @@ class StorageService {
     return this.getCurrentUser();
   }
 
-  // Submit payment receipt for paid plans
-  async submitPayment(plan: 'pro' | 'enterprise', receiptBase64: string): Promise<void> {
-    // For now, store locally — payment verification is manual
-    const paymentData = {
-      plan,
-      receipt: receiptBase64,
-      timestamp: new Date().toISOString(),
-      status: 'pending',
+  // ClicToPay Subscriptions
+  async checkoutSubscription(planName: string): Promise<{ orderId: string | null, formUrl: string | null, orderNumber: string, free?: boolean }> {
+    const token = this.getAccessToken();
+    if (!token) throw new Error('Not authenticated');
+
+    const requestBody = { plan_name: planName, redirect_base_url: window.location.origin };
+    console.log('DEBUG: Checkout request body:', requestBody);
+
+    const response = await fetch(`${API_BASE}/subscriptions/checkout`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('DEBUG: Checkout error:', error);
+      throw new Error(error.detail || 'Failed to initiate checkout');
+    }
+
+    const data = await response.json();
+    
+    // Ensure response matches expected structure
+    return {
+      orderId: data.orderId || null,
+      formUrl: data.formUrl || null,
+      orderNumber: data.orderNumber || '',
+      free: data.free || false
     };
-    localStorage.setItem('mouhami_payment_pending', JSON.stringify(paymentData));
+  }
+
+  async verifySubscription(orderId?: string, invoiceId?: string): Promise<any> {
+    const token = this.getAccessToken();
+    if (!token) throw new Error('Not authenticated');
+
+    const params = new URLSearchParams();
+    if (orderId) params.set('orderId', orderId);
+    if (invoiceId) params.set('invoiceId', invoiceId);
+    if (!orderId && !invoiceId) throw new Error('Missing order or invoice identifier');
+
+    const response = await fetch(`${API_BASE}/subscriptions/verify?${params.toString()}`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to verify subscription');
+    }
+
+    return response.json();
+  }
+
+  getInvoicePdfUrl(invoiceId: string): string {
+    return `${API_BASE}/invoices/${invoiceId}/pdf`;
+  }
+
+  async downloadInvoicePdf(invoiceId: string): Promise<void> {
+    const token = this.getAccessToken();
+    if (!token) throw new Error('Not authenticated');
+
+    const response = await fetch(this.getInvoicePdfUrl(invoiceId), {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to download invoice PDF');
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `invoice-${invoiceId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  }
+
+  async getSubscriptionActivities(page = 1, pageSize = 20, days = 30): Promise<any[]> {
+    try {
+      const params = new URLSearchParams({
+        page: String(page),
+        page_size: String(pageSize),
+        days: String(days),
+      });
+      const response = await fetch(`${API_BASE}/admin/subscription-activities?${params.toString()}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(this.getAccessToken() && { Authorization: `Bearer ${this.getAccessToken()}` }),
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        return data.activities || [];
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  }
+
+  async deleteSubscriptionActivity(activityId: string): Promise<boolean> {
+    const response = await fetch(`${API_BASE}/admin/subscription-activities/${activityId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(this.getAccessToken() && { Authorization: `Bearer ${this.getAccessToken()}` }),
+      },
+    });
+    return response.ok;
   }
 
   // ════════════════════════════════════════════════════════
@@ -469,6 +578,25 @@ class StorageService {
       return null;
     } catch {
       return null;
+    }
+  }
+
+  async getAllUsers(page = 1, pageSize = 100): Promise<any[]> {
+    try {
+      const params = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
+      const response = await fetch(`${API_BASE}/admin/users?${params.toString()}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(this.getAccessToken() && { Authorization: `Bearer ${this.getAccessToken()}` }),
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        return data.users || [];
+      }
+      return [];
+    } catch {
+      return [];
     }
   }
 
@@ -712,6 +840,110 @@ class StorageService {
       return [];
     } catch {
       return [];
+    }
+  }
+
+  async getAllPendingInvoices(): Promise<any[]> {
+    try {
+      const response = await fetch(`${API_BASE}/invoices/pending`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(this.getAccessToken() && { Authorization: `Bearer ${this.getAccessToken()}` }),
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        return (data.invoices || []).map((inv: any) => ({
+          ...inv,
+          userName: inv.user_name || inv.userName || 'N/A',
+          userEmail: inv.user_email || inv.userEmail || '',
+          planName: inv.plan_name || inv.planName || '',
+          receiptData: inv.receipt_data || inv.receiptData || null,
+        }));
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  }
+
+  async approveInvoice(invoiceId: string): Promise<any> {
+    const response = await fetch(`${API_BASE}/invoices/${invoiceId}/approve`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(this.getAccessToken() && { Authorization: `Bearer ${this.getAccessToken()}` }),
+      },
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to approve invoice');
+    }
+    return response.json();
+  }
+
+  async rejectInvoice(invoiceId: string): Promise<any> {
+    const response = await fetch(`${API_BASE}/invoices/${invoiceId}/reject`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(this.getAccessToken() && { Authorization: `Bearer ${this.getAccessToken()}` }),
+      },
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to reject invoice');
+    }
+    return response.json();
+  }
+
+  async deleteInvoice(invoiceId: string): Promise<{ ok: boolean, message?: string }> {
+    const token = this.getAccessToken();
+    if (!token) return { ok: false, message: 'Not authenticated' };
+    
+    try {
+      const response = await fetch(`${API_BASE}/invoices/${invoiceId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return { ok: true, message: data.message };
+      } else {
+        const error = await response.json();
+        return { ok: false, message: error.detail || 'Failed to delete invoice' };
+      }
+    } catch (error) {
+      return { ok: false, message: 'Network error' };
+    }
+  }
+
+  async deleteAllInvoices(): Promise<{ ok: boolean, message?: string }> {
+    const token = this.getAccessToken();
+    if (!token) return { ok: false, message: 'Not authenticated' };
+    
+    try {
+      const response = await fetch(`${API_BASE}/invoices`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return { ok: true, message: data.message };
+      } else {
+        const error = await response.json();
+        return { ok: false, message: error.detail || 'Failed to delete all invoices' };
+      }
+    } catch (error) {
+      return { ok: false, message: 'Network error' };
     }
   }
 }

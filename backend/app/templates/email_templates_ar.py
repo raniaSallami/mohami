@@ -375,3 +375,94 @@ def security_alert_response(
 """
     
     return subject, html_content
+
+
+def subscription_success_email(
+    user_name: str,
+    plan_name: str,
+    invoice_id: str,
+) -> tuple[str, str]:
+    """
+    Generate professional Arabic email for successful subscription upgrade.
+    """
+    subject = f"تأكيد الاشتراك في باقة {plan_name.capitalize()} — Mouhami AI"
+    
+    html_content = f"""
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f8fafc; color: #1e293b; }}
+        .container {{ max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border-radius: 12px; overflow: hidden; margin-top: 40px; margin-bottom: 40px; }}
+        .header {{ background-color: #1e293b; color: #f8fafc; padding: 40px 20px; text-align: center; border-bottom: 4px solid #d97706; }}
+        .header h1 {{ margin: 0; font-size: 26px; font-weight: 700; }}
+        .header p {{ margin: 10px 0 0 0; font-size: 14px; opacity: 0.8; text-transform: uppercase; letter-spacing: 2px; }}
+        .content {{ padding: 40px 30px; line-height: 1.7; }}
+        .greeting {{ font-size: 18px; font-weight: 600; margin-bottom: 20px; color: #0f172a; }}
+        .success-card {{ background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 25px; border-radius: 8px; margin-bottom: 30px; text-align: center; }}
+        .success-card h2 {{ color: #16a34a; margin: 0 0 10px 0; font-size: 20px; }}
+        .plan-badge {{ display: inline-block; background-color: #d97706; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; margin-top: 10px; }}
+        .details-box {{ background-color: #f1f5f9; padding: 20px; border-radius: 8px; margin-bottom: 30px; }}
+        .details-row {{ display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e2e8f0; }}
+        .details-row:last-child {{ border-bottom: none; }}
+        .details-label {{ color: #64748b; font-size: 14px; }}
+        .details-value {{ font-weight: 600; font-size: 14px; }}
+        .btn {{ display: block; background-color: #1e293b; color: #f8fafc !important; text-decoration: none; padding: 16px 24px; border-radius: 8px; text-align: center; font-weight: 600; margin-top: 20px; transition: background-color 0.3s; }}
+        .btn:hover {{ background-color: #334155; }}
+        .footer {{ background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 30px 20px; text-align: center; font-size: 12px; color: #94a3b8; }}
+        .footer p {{ margin: 5px 0; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <p>Mouhami AI</p>
+            <h1>تأكيد الاشتراك</h1>
+        </div>
+        
+        <div class="content">
+            <p class="greeting">مرحباً {user_name}،</p>
+            
+            <p>
+                يسعدنا تأكيد إتمام عملية الدفع بنجاح وتحديث اشتراككم في المنصة.
+            </p>
+            
+            <div class="success-card">
+                <h2>تم الدفع بنجاح</h2>
+                <p style="margin: 0; color: #15803d;">حسابكم الآن مفعل بالباقة الجديدة.</p>
+                <div class="plan-badge">{plan_name}</div>
+            </div>
+            
+            <div class="details-box">
+                <div class="details-row">
+                    <span class="details-label">العميل:</span>
+                    <span class="details-value">{user_name}</span>
+                </div>
+                <div class="details-row">
+                    <span class="details-label">الباقة:</span>
+                    <span class="details-value">{plan_name.capitalize()}</span>
+                </div>
+                <div class="details-row">
+                    <span class="details-label">رقم الفاتورة:</span>
+                    <span class="details-value">{invoice_id}</span>
+                </div>
+            </div>
+            
+            <p>
+                يمكنكم الاطلاع على فاتورتكم وتحميلها في أي وقت من خلال الإعدادات في قسم "الفواتير".
+            </p>
+            
+            <a href="https://mouhami-ai.tn/#settings/invoices" class="btn">الاطلاع على الفاتورة</a>
+        </div>
+        
+        <div class="footer">
+            <p>جميع الحقوق محفوظة © 2026 Mouhami AI</p>
+            <p>منصة الذكاء الاصطناعي القانوني للمحترفين.</p>
+        </div>
+    </div>
+</body>
+</html>
+"""
+    return subject, html_content

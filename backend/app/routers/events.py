@@ -41,7 +41,7 @@ async def list_events(
     if tenant_id:
         query = query.where(
             or_(
-                Event.tenant_id == tenant_id,
+                Event.tenant_id == str(tenant_id),
                 Event.user_id == str(current_user.id)
             )
         )
@@ -105,8 +105,8 @@ async def create_event(
         type=event_data.type,
         description=event_data.description,
         case_id=event_data.case_id,
-        user_id=current_user.id,
-        tenant_id=tenant_id
+        user_id=str(current_user.id),
+        tenant_id=str(tenant_id) if tenant_id else None
     )
     
     db.add(event)

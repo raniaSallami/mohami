@@ -128,7 +128,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, curren
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="bg-white shadow-sm border-b px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+        <header className="bg-white shadow-sm border-b px-6 py-4 flex items-center justify-between sticky top-0 z-[100]">
            <div className="flex items-center gap-2">
              {/* Back Arrow for sub-pages */}
              {!['dashboard', 'admin-dashboard'].includes(currentPage) && (

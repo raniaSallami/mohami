@@ -2,7 +2,8 @@
 Pydantic schemas for case operations.
 """
 from datetime import datetime
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Union
+from uuid import UUID
 from pydantic import BaseModel, Field, ConfigDict
 
 
@@ -37,7 +38,7 @@ class CaseResponse(BaseModel):
     """Schema for case response."""
     model_config = ConfigDict(from_attributes=True)
     
-    id: str
+    id: Union[str, UUID]
     title: str
     client_name: str
     type: str
@@ -48,9 +49,9 @@ class CaseResponse(BaseModel):
     chat_history: List[Any] = []
     date_created: datetime
     date_updated: Optional[datetime] = None
-    user_id: Optional[str] = None
-    created_by_user_id: Optional[str] = None
-    assigned_to_user_id: Optional[str] = None
+    user_id: Optional[Union[str, UUID]] = None
+    created_by_user_id: Optional[Union[str, UUID]] = None
+    assigned_to_user_id: Optional[Union[str, UUID]] = None
     tenant_id: Optional[str] = None
 
 

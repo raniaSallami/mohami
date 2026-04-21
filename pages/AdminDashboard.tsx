@@ -1,10 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { storageService } from '../services/storageService';
-import { User, UserRole, Invoice } from '../types';
-import { Modal, Spinner, Toast } from '../components/UI';
-import { notificationService } from '../services/notificationService';
-import { emailService } from '../services/emailService';
+import { User, UserRole } from '../types';
+import { Modal, Spinner } from '../components/UI';
 import { visitorService, VisitorStats, VisitorChartPoint, RegistrationChartPoint } from '../services/visitorService';
 import { ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 
@@ -202,9 +200,6 @@ const UserRow: React.FC<{ user: User; onUpdate: () => void; onDelete: () => void
 
 export const AdminDashboard = ({ view = 'overview' }: { view?: 'overview' | 'users' }) => {
   const [users, setUsers] = useState<User[]>([]);
-  const [pendingInvoices, setPendingInvoices] = useState<Invoice[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [selectedReceipt, setSelectedReceipt] = useState<string | null>(null);
   const [visitorStats, setVisitorStats] = useState<VisitorStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
   const [visitsChartData, setVisitsChartData] = useState<VisitorChartPoint[]>([]);
@@ -216,23 +211,60 @@ export const AdminDashboard = ({ view = 'overview' }: { view?: 'overview' | 'use
     totalContracts: number;
     planBreakdown: { basic: number; pro: number; enterprise: number };
   } | null>(null);
+  const [subscriptionActivities, setSubscriptionActivities] = useState<any[]>([]);
+  const [showActivityDeleteConfirm, setShowActivityDeleteConfirm] = useState(false);
+  const [activityToDelete, setActivityToDelete] = useState<string | null>(null);
+  const [isDeletingActivity, setIsDeletingActivity] = useState(false);
 
   useEffect(() => {
     loadData();
     loadVisitorStats();
     loadAdvancedStats();
+    loadSubscriptionActivities();
     const interval = setInterval(() => {
       loadVisitorStats();
       loadAdvancedStats();
+      loadSubscriptionActivities();
     }, 30000);
     return () => clearInterval(interval);
   }, []);
 
   const loadData = async () => {
-    const usersData = await storageService.getAllUsers();
-    setUsers(usersData);
-    const invoicesData = await storageService.getAllPendingInvoices();
-    setPendingInvoices(invoicesData);
+    try {
+      const usersData = await storageService.getAllUsers();
+      setUsers(usersData);
+    } catch (error) {
+      console.error('Error loading admin users:', error);
+      setUsers([]);
+    }
+
+  };
+
+  const loadSubscriptionActivities = async () => {
+    try {
+      const activities = await storageService.getSubscriptionActivities(1, 10, 30);
+      setSubscriptionActivities(activities);
+    } catch (error) {
+      console.error('Error loading subscription activities:', error);
+      setSubscriptionActivities([]);
+    }
+  };
+
+  const handleDeleteActivity = async (id: string) => {
+    setIsDeletingActivity(true);
+    try {
+      const success = await storageService.deleteSubscriptionActivity(id);
+      if (success) {
+        await loadSubscriptionActivities();
+        setShowActivityDeleteConfirm(false);
+      } else {
+        alert(window.__t("حدث خطأ أثناء حذف العملية"));
+      }
+    } catch (error) {
+      console.error('Error deleting activity:', error);
+    } finally {
+      setIsDeletingActivity(false);
+    }
   };
 
   const loadVisitorStats = async () => {
@@ -279,72 +311,6 @@ export const AdminDashboard = ({ view = 'overview' }: { view?: 'overview' | 'use
     }
   };
 
-  const handleApprove = async (id: string) => {
-      if(!confirm(window.__t("تأكيد تفعيل الباقة لهذا المستخدم؟"))) return;
-      setLoading(true);
-      try {
-      await storageService.approveInvoice(id);
-        // Send notification to admin about the action
-        const { notificationService } = await import('../services/notificationService');
-        const invoice = pendingInvoices.find(inv => inv.id === id);
-        if (invoice) {
-          await notificationService.createNotification(
-            'admin-1', // Admin user ID
-            'admin',
-            window.__t("تم تفعيل اشتراك"),
-            `تم تفعيل باقة ${invoice.planName} للمستخدم ${invoice.userName}`,
-            '/admin-dashboard',
-            { invoiceId: id, userId: invoice.userEmail }
-          );
-          
-          // Send upgrade email to user
-          try {
-            const planNames: Record<string, string> = {
-              basic: window.__t("البداية"),
-              pro: window.__t("المحترف"),
-              enterprise: window.__t("المكتب")
-            };
-            const planName = planNames[invoice.planName] || invoice.planName;
-            await emailService.sendPlanUpgradeEmail(invoice.userEmail || '', invoice.userName || '', planName);
-          } catch (emailError) {
-            console.error('Failed to send upgrade email:', emailError);
-          }
-        }
-      await loadData();
-      } catch (error) {
-        console.error('Error approving invoice:', error);
-      } finally {
-      setLoading(false);
-      setSelectedReceipt(null);
-      }
-  };
-
-  const handleReject = async (id: string) => {
-      if(!confirm(window.__t("رفض هذا الطلب؟"))) return;
-      setLoading(true);
-      try {
-      await storageService.rejectInvoice(id);
-        // Send notification to admin about the action
-        const { notificationService } = await import('../services/notificationService');
-        const invoice = pendingInvoices.find(inv => inv.id === id);
-        if (invoice) {
-          await notificationService.createNotification(
-            'admin-1', // Admin user ID
-            'admin',
-            window.__t("تم رفض طلب تفعيل"),
-            `تم رفض طلب تفعيل باقة ${invoice.planName} للمستخدم ${invoice.userName}`,
-            '/admin-dashboard',
-            { invoiceId: id, userId: invoice.userEmail }
-          );
-        }
-      await loadData();
-      } catch (error) {
-        console.error('Error rejecting invoice:', error);
-      } finally {
-      setLoading(false);
-      }
-  };
-
   const lawyers = users.filter(u => u.role === UserRole.LAWYER);
 
   return (
@@ -362,8 +328,8 @@ export const AdminDashboard = ({ view = 'overview' }: { view?: 'overview' | 'use
           <h3 className="text-4xl font-bold text-slate-800">{lawyers.length}</h3>
         </div>
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-          <p className="text-gray-500 text-sm mb-1">{window.__t("طلبات التفعيل")}</p>
-          <h3 className={`text-4xl font-bold ${pendingInvoices.length > 0 ? 'text-orange-500' : 'text-slate-800'}`}>{pendingInvoices.length}</h3>
+          <p className="text-gray-500 text-sm mb-1">{window.__t("عمليات الترقية الحديثة")}</p>
+          <h3 className="text-4xl font-bold text-slate-800">{subscriptionActivities.length}</h3>
         </div>
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-xl shadow-lg">
           <p className="text-blue-100 text-sm mb-1">{window.__t("زوار المنصة (اليوم)")}</p>
@@ -480,52 +446,52 @@ export const AdminDashboard = ({ view = 'overview' }: { view?: 'overview' | 'use
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
-          {/* Financial Requests Panel */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden lg:col-span-2">
-            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-orange-50">
-                <h3 className="font-bold text-orange-800">{window.__t("طلبات تفعيل الاشتراك (تحويل بنكي)")}</h3>
+            <div className="px-6 py-4 border-b border-slate-100 bg-emerald-50 flex justify-between items-center">
+              <h3 className="font-bold text-emerald-800">{window.__t("آخر عمليات ترقية الاشتراك بعد الدفع")}</h3>
             </div>
             <div className="overflow-x-auto">
-                <table className="w-full text-sm text-end">
-                    <thead className="bg-slate-50 text-slate-500">
-                        <tr>
-                            <th className="px-6 py-3">{window.__t("المحامي")}</th>
-                            <th className="px-6 py-3">{window.__t("الباقة المطلوبة")}</th>
-                            <th className="px-6 py-3">{window.__t("المبلغ")}</th>
-                            <th className="px-6 py-3">{window.__t("التاريخ")}</th>
-                            <th className="px-6 py-3">{window.__t("الوصل")}</th>
-                            <th className="px-6 py-3">{window.__t("إجراءات")}</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                        {pendingInvoices.map(inv => (
-                            <tr key={inv.id} className="hover:bg-gray-50">
-                                <td className="px-6 py-4">
-                                    <div className="font-bold">{inv.userName}</div>
-                                    <div className="text-xs text-gray-500">{inv.userEmail}</div>
-                                </td>
-                                <td className="px-6 py-4 font-bold text-slate-800">{inv.planName}</td>
-                                <td className="px-6 py-4">{inv.amount} TND</td>
-                                <td className="px-6 py-4">{new Date(inv.date).toLocaleDateString((document.documentElement.lang === 'ar' ? 'ar-TN' : 'fr-FR'))}</td>
-                                <td className="px-6 py-4">
-                                    <button 
-                                      onClick={() => setSelectedReceipt(inv.receiptData || null)}
-                                      className="text-blue-600 hover:underline text-xs"
-                                    >
-                                        {window.__t("معاينة الصورة")}
-                                    </button>
-                                </td>
-                                <td className="px-6 py-4 flex space-x-2 space-x-reverse">
-                                    <button onClick={() => handleApprove(inv.id)} className="bg-green-100 text-green-700 px-3 py-1 rounded hover:bg-green-200 transition">{window.__t("تفعيل")}</button>
-                                    <button onClick={() => handleReject(inv.id)} className="bg-red-100 text-red-700 px-3 py-1 rounded hover:bg-red-200 transition">{window.__t("رفض")}</button>
-                                </td>
-                            </tr>
-                        ))}
-                        {pendingInvoices.length === 0 && (
-                            <tr><td colSpan={6} className="text-center py-8 text-gray-400">{window.__t("لا توجد طلبات معلقة")}</td></tr>
-                        )}
-                    </tbody>
-                </table>
+              <table className="w-full text-sm text-end">
+                <thead className="bg-slate-50 text-slate-500">
+                  <tr>
+                    <th className="px-6 py-3">{window.__t("المستخدم")}</th>
+                    <th className="px-6 py-3">{window.__t("البريد")}</th>
+                    <th className="px-6 py-3">{window.__t("الباقة")}</th>
+                    <th className="px-6 py-3">{window.__t("المبلغ")}</th>
+                    <th className="px-6 py-3">{window.__t("العملية")}</th>
+                    <th className="px-6 py-3">{window.__t("التاريخ")}</th>
+                    <th className="px-6 py-3">{window.__t("إجراءات")}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {subscriptionActivities.map((activity) => (
+                    <tr key={activity.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 font-bold text-slate-800">{activity.user_name || '-'}</td>
+                      <td className="px-6 py-4 text-slate-500">{activity.user_email || '-'}</td>
+                      <td className="px-6 py-4">{activity.plan_name || '-'}</td>
+                      <td className="px-6 py-4">{activity.amount ? `${activity.amount} TND` : '-'}</td>
+                      <td className="px-6 py-4">{activity.event_type}</td>
+                      <td className="px-6 py-4">
+                        {activity.timestamp ? new Date(activity.timestamp).toLocaleString((document.documentElement.lang === 'ar' ? 'ar-TN' : 'fr-FR')) : '-'}
+                      </td>
+                      <td className="px-6 py-4">
+                        <button 
+                          onClick={() => {
+                            setActivityToDelete(activity.id);
+                            setShowActivityDeleteConfirm(true);
+                          }}
+                          className="text-red-500 hover:text-red-700 text-xs font-bold"
+                        >
+                          {window.__t("حذف")}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {subscriptionActivities.length === 0 && (
+                    <tr><td colSpan={6} className="text-center py-8 text-gray-400">{window.__t("لا توجد ترقيات حديثة")}</td></tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
 
@@ -560,14 +526,28 @@ export const AdminDashboard = ({ view = 'overview' }: { view?: 'overview' | 'use
           </div>
       </div>
 
-      {/* Receipt Modal */}
-      <Modal isOpen={!!selectedReceipt} onClose={() => setSelectedReceipt(null)} title={window.__t("صورة وصل التحويل")}>
-          <div className="flex justify-center bg-gray-100 p-4 rounded">
-              {selectedReceipt && (
-                  <img src={`data:image/png;base64,${selectedReceipt}`} alt="Receipt" className="max-w-full max-h-[60vh] object-contain" />
-              )}
+      {/* Delete Activity Confirmation Modal */}
+      <Modal isOpen={showActivityDeleteConfirm} onClose={() => setShowActivityDeleteConfirm(false)} title={window.__t("تأكيد حذف العملية")}>
+        <div className="space-y-4">
+          <p className="text-red-600">{window.__t("هل أنت متأكد من حذف هذه العملية من السجل؟")}</p>
+          <div className="flex space-x-3 space-x-reverse">
+            <button
+              onClick={() => activityToDelete && handleDeleteActivity(activityToDelete)}
+              disabled={isDeletingActivity}
+              className="flex-1 bg-red-600 text-white py-2 rounded hover:bg-red-700 disabled:opacity-50"
+            >
+              {isDeletingActivity ? window.__t("جاري الحذف...") : window.__t("حذف")}
+            </button>
+            <button
+              onClick={() => setShowActivityDeleteConfirm(false)}
+              className="flex-1 bg-gray-200 text-gray-700 py-2 rounded hover:bg-gray-300"
+            >
+              {window.__t("إلغاء")}
+            </button>
           </div>
+        </div>
       </Modal>
+
     </div>
   );
 };

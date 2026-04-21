@@ -31,9 +31,12 @@ class Invoice(Base):
     
     # Invoice details
     date: Mapped[str] = mapped_column(String(20), nullable=False)  # ISO date string
-    amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    amount: Mapped[float] = mapped_column(Numeric(10, 3), nullable=False)
     status: Mapped[str] = mapped_column(String(50), default=InvoiceStatus.PENDING.value)
     plan_name: Mapped[str] = mapped_column(String(50), nullable=False)  # basic, pro, enterprise
+    
+    # ClicToPay tracking
+    clictopay_order_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     
     # Receipt data (could be base64 encoded or URL)
     receipt_data: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
@@ -42,8 +45,10 @@ class Invoice(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Foreign keys - use String(36) to store UUID as string
-    user_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    # Foreign keys - use UUID type to match User.id
+    from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+
+    user_id: Mapped[Optional[uuid.UUID]] = mapped_column(PG_UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     
     # Tenant (organization)
     tenant_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)

@@ -34,4 +34,9 @@ applyLangAttributes(i18n.language || 'ar');
 
 (window as any).__i18n = i18n;
 
+// Add window.__t function for backward compatibility
+(window as any).__t = (key: string, options?: any) => {
+  return i18n.t(key, options);
+};
+
 export default i18n;

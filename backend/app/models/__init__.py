@@ -4,6 +4,7 @@ Exports all SQLAlchemy models for the application.
 """
 from app.models.user import User, UserRole, SubscriptionPlan, SubscriptionStatus
 from app.models.user_profile import UserProfile
+from app.models.payment_audit import PaymentAuditLog
 from app.models.faculty import Faculty
 from app.models.case import Case, CaseStatus, CaseType
 from app.models.contract import Contract
@@ -34,6 +35,7 @@ __all__ = [
     "SubscriptionPlan",
     "SubscriptionStatus",
     "UserProfile",
+    "PaymentAuditLog",
     
     # Faculty
     "Faculty",

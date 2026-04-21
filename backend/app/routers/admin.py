@@ -12,6 +12,7 @@ from app.models.case import Case
 from app.models.contract import Contract
 from app.models.invoice import Invoice
 from app.models.tenant import PlatformVisitor
+from app.models.payment_audit import PaymentAuditLog
 from app.utils.security import require_role
 
 
@@ -230,7 +231,9 @@ async def get_all_users(
     current_user: User = Depends(require_role("ADMIN"))
 ):
     """Get all users (admin only)."""
-    query = select(User).where(User.role != UserRole.ADMIN.value)
+    from sqlalchemy.orm import selectinload
+
+    query = select(User).where(User.role != UserRole.ADMIN.value).options(selectinload(User.profile))
     
     count_query = select(func.count()).select_from(query.subquery())
     total_result = await db.execute(count_query)
@@ -296,6 +299,124 @@ async def delete_user_by_admin(
         return {"error": "Cannot delete admin users"}, 400
     
     await db.delete(user)
+    await db.commit()
+    
+    return {"ok": True}
+
+
+@router.get("/subscription-activities", response_model=dict)
+async def get_subscription_activities(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    days: int = Query(30, ge=1, le=365),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("ADMIN"))
+):
+    """
+    Get recent subscription activities (activations, updates, payments) for admin dashboard.
+    
+    Returns:
+        - activities: List of subscription activities
+        - total: Total number of activities
+        - page: Current page
+        - page_size: Items per page
+    """
+    from datetime import datetime, timedelta
+    from sqlalchemy import text, desc
+    
+    # Calculate date range
+    end_date = datetime.utcnow()
+    start_date = end_date - timedelta(days=days)
+    
+    # Query payment audit logs for subscription events
+    query = text("""
+        SELECT 
+            pal.id,
+            pal.event_type,
+            pal.user_id,
+            pal.order_id,
+            pal.details,
+            pal.timestamp,
+            u.name as user_name,
+            u.email as user_email,
+            i.amount,
+            i.plan_name,
+            i.id as invoice_id
+        FROM payment_audit_log pal
+        LEFT JOIN users u ON pal.user_id = u.id
+        LEFT JOIN invoices i ON pal.order_id = i.clictopay_order_id
+        WHERE pal.event_type IN ('subscription_activated', 'subscription_updated', 'payment_success')
+        AND pal.timestamp >= :start_date
+        ORDER BY pal.timestamp DESC
+        LIMIT :limit OFFSET :offset
+    """)
+    
+    # Get total count
+    count_query = text("""
+        SELECT COUNT(*) 
+        FROM payment_audit_log pal
+        WHERE pal.event_type IN ('subscription_activated', 'subscription_updated', 'payment_success')
+        AND pal.timestamp >= :start_date
+    """)
+    
+    offset = (page - 1) * page_size
+    
+    # Execute queries
+    count_result = await db.execute(count_query, {"start_date": start_date})
+    total = count_result.scalar()
+    
+    result = await db.execute(query, {
+        "start_date": start_date,
+        "limit": page_size,
+        "offset": offset
+    })
+    
+    activities = []
+    for row in result.fetchall():
+        details = row.details if isinstance(row.details, dict) else {}
+        
+        # Try to get plan and amount from joined invoice or fallback to log details
+        plan_name = row.plan_name or details.get("plan_name") or details.get("event")
+        amount = row.amount or details.get("amount")
+        
+        activity = {
+            "id": row.id,
+            "event_type": row.event_type,
+            "user_id": row.user_id,
+            "user_name": row.user_name,
+            "user_email": row.user_email,
+            "order_id": row.order_id,
+            "plan_name": plan_name,
+            "amount": float(amount) if amount else None,
+            "invoice_id": row.invoice_id,
+            "timestamp": row.timestamp,
+            "details": details
+        }
+        activities.append(activity)
+    
+    return {
+        "activities": activities,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "days": days
+    }
+
+
+@router.delete("/subscription-activities/{activity_id}")
+async def delete_subscription_activity(
+    activity_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("ADMIN"))
+):
+    """Delete a specific subscription activity log (admin only)."""
+    result = await db.execute(select(PaymentAuditLog).where(PaymentAuditLog.id == activity_id))
+    activity = result.scalar_one_or_none()
+    
+    if not activity:
+        return {"error": "Activity not found"}, 404
+    
+    await db.delete(activity)
     await db.commit()
     
     return {"ok": True}

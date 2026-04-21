@@ -43,7 +43,8 @@ logging.getLogger("sqlalchemy.pool").setLevel(logging.WARNING)
 logging.getLogger("sqlalchemy.dialects").setLevel(logging.WARNING)
 from app.database import init_db, close_db, AsyncSessionLocal
 from app.routers import auth, users, cases, contracts, events, invoices, notifications, chat, admin
-from app.routers import password_reset, device_security, admin_security
+from app.routers import password_reset, device_security, admin_security, subscriptions
+from app.routers import automated_subscription
 from app.routers import settings as settings_router
 
 
@@ -486,6 +487,8 @@ app.include_router(notifications.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(settings_router.router, prefix="/api")
+app.include_router(subscriptions.router, prefix="/api")
+app.include_router(automated_subscription.router)
 app.include_router(gemini.router, prefix="/api")
 
 

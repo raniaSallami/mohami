@@ -27,6 +27,7 @@ import { InviteAcceptPage } from './pages/InviteAcceptPage';
 import { MaintenancePage } from './pages/MaintenancePage';
 import { Marketing } from './pages/Marketing';
 import { SecurityAlertPage } from './pages/SecurityAlertPage';
+import { PaymentResult } from './pages/PaymentResult';
 import { Chatbot } from './components/Chatbot';
 import { Toast } from './components/UI';
 import { TermsAcceptanceModal } from './components/TermsAcceptanceModal';
@@ -81,6 +82,13 @@ export default function App() {
         }
       }
 
+      // Handle payment return even when already authenticated
+      if (hashPage === 'payment') {
+        setCurrentPage('payment');
+        setLoading(false);
+        return;
+      }
+
       let currentUser = storageService.getCurrentUser();
       if (currentUser) {
         const fresh = await storageService.getCurrentUserFresh();
@@ -118,6 +126,11 @@ export default function App() {
           if (hashCaseId) setSelectedCaseId(hashCaseId);
           window.history.replaceState({ page }, '', `/#${page}${hashCaseId ? '/' + hashCaseId : ''}`);
         }
+      } else if (hashPage === 'payment') {
+        // Handle payment return even if not logged in (verify logic will handle auth)
+        setCurrentPage('payment');
+        setLoading(false);
+        return;
       } else {
         if (hashPage === 'invite' && hashToken && hashToken.length > 10) {
           setCurrentPage('invite');
@@ -304,6 +317,16 @@ export default function App() {
         />
       );
     }
+    if (currentPage === 'payment') {
+      const status = window.location.hash.includes('success') ? 'success' : 'fail';
+      return (
+        <PaymentResult
+          status={status as 'success' | 'fail'}
+          onNavigate={handleNavigate}
+          onRefreshUser={(u) => setUser(u)}
+        />
+      );
+    }
     if (currentPage === 'login') return <LoginPage onLogin={handleLogin} onNavigate={handleNavigate} allowRegistrations={systemSettings.allowRegistrations} />;
     if (currentPage === 'register') {
       if (!systemSettings.allowRegistrations) {
@@ -372,6 +395,10 @@ export default function App() {
         case 'team': return <TeamPage user={user} onNavigate={handleNavigate} onRefreshUser={(u) => setUser(u)} />;
         case 'pending-cases': return <PendingCasesPage user={user} onNavigate={handleNavigate} onNotification={showNotification} />;
         case 'notifications': return <NotificationsPage onNavigate={handleNavigate} />;
+        case 'payment': {
+          const status = window.location.hash.includes('success') ? 'success' : 'fail';
+          return <PaymentResult status={status as 'success' | 'fail'} onNavigate={handleNavigate} onRefreshUser={setUser} />;
+        }
         default: return <Dashboard onNavigate={handleNavigate} user={user} />;
       }
     }

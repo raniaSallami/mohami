@@ -2,7 +2,8 @@
 Pydantic schemas for notification operations.
 """
 from datetime import datetime
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Union
+from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -29,8 +30,8 @@ class NotificationResponse(BaseModel):
     """Schema for notification response."""
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
     
-    id: str
-    user_id: str
+    id: Union[str, UUID]
+    user_id: Union[str, UUID]
     type: str
     title: str
     message: str

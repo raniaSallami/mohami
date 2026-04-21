@@ -159,9 +159,12 @@ async def check_ip_known(
     """
     from app.models.user import KnownDevice
 
+    # Convert UUID to string for comparison if necessary (DB uses String(100))
+    u_id = str(user_id)
+    
     result = await db.execute(
         select(KnownDevice).where(
-            KnownDevice.user_id == user_id,
+            KnownDevice.user_id == u_id,
             KnownDevice.ip_address == ip_address
         )
     )
@@ -193,7 +196,7 @@ async def save_known_device(
     location = await get_location_from_ip(ip)
 
     device = KnownDevice(
-        user_id=user_id,
+        user_id=str(user_id),
         fingerprint=fingerprint,
         device_name=parse_device_name(ua),
         ip_address=ip,

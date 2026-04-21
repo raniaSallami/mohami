@@ -139,6 +139,32 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNotificati
     }
   };
 
+  const translateNotification = (text: string) => {
+    if (document.documentElement.lang !== 'fr') return text;
+
+    const translations: Record<string, string> = {
+      "موعد جديد": "Nouveau rendez-vous",
+      "قضية جديدة": "Nouvelle affaire",
+      "تحديث حالة القضة": "Statut mis à jour",
+      "نشطة": "active",
+      "بانتظار الإجراء": "en attente",
+      "منتهية": "terminée",
+      "لا توجد إشعارات": "Aucune notification"
+    };
+
+    if (translations[text]) return translations[text];
+
+    let result = text;
+    result = result.replace("تمت إضافة موعد جديد في التقويم: ", "Nouveau rendez-vous ajouté : ");
+    result = result.replace("تم إنشاء ملف قضية جديد بنجاح: ", "Nouveau dossier créé : ");
+    result = result.replace("تمت تحديث حالة القضية", "Le statut de l'affaire");
+    result = result.replace("إلى نشطة", "en active");
+    result = result.replace("إلى بانتظار الإجراء", "en attente");
+    result = result.replace("إلى منتهية", "en terminée");
+    
+    return result;
+  };
+
   return (
     <div className="relative" ref={dropdownRef}>
       <button
@@ -166,13 +192,18 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNotificati
       </button>
 
       {isOpen && (
-        <div className="absolute start-0 mt-2 w-80 bg-white rounded-lg shadow-xl z-50 border border-gray-200">
-          <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-            <h3 className="font-bold text-gray-800">{window.__t("الإشعارات")}</h3>
+        <div 
+          data-dropdown-container
+          className="absolute end-0 mt-2 w-80 bg-white dark:bg-slate-900 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[99999] border border-slate-200 dark:border-slate-800 overflow-hidden !opacity-100 backdrop-blur-none"
+          style={{ backgroundColor: 'white', opacity: 1 }}
+        >
+          <div className="relative bg-white dark:bg-slate-900 w-full h-full z-10 flex flex-col">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 flex justify-between items-center">
+            <h3 className="font-bold text-slate-800 dark:text-slate-100">{window.__t("الإشعارات")}</h3>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllAsRead}
-                className="text-sm text-blue-600 hover:text-blue-800"
+                className="text-xs font-bold text-amber-600 hover:text-amber-700"
               >
                 {window.__t("تحديد الكل كمقروء")}
               </button>
@@ -188,8 +219,8 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNotificati
               notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors group relative ${
-                    !notification.read ? 'bg-amber-50/50' : ''
+                  className={`p-4 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group relative ${
+                    !notification.read ? 'bg-amber-50 dark:bg-amber-900/30' : 'bg-white dark:bg-slate-900'
                   }`}
                 >
                   <div className="flex items-start space-x-3 space-x-reverse">
@@ -205,7 +236,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNotificati
                           onClick={() => handleNotificationClick(notification)}
                           className={`text-sm font-bold truncate cursor-pointer ${!notification.read ? 'text-slate-900' : 'text-slate-500'}`}
                         >
-                          {notification.title}
+                          {translateNotification(notification.title)}
                         </p>
                         {!notification.read && (
                           <div className="flex items-center gap-2">
@@ -230,7 +261,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNotificati
                         onClick={() => handleNotificationClick(notification)}
                         className="text-xs text-slate-600 line-clamp-2 cursor-pointer leading-relaxed"
                       >
-                        {notification.message}
+                        {translateNotification(notification.message)}
                       </p>
                       <div className="mt-2 flex items-center justify-between">
                         <p className="text-[10px] font-medium text-slate-400">
@@ -240,7 +271,10 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNotificati
                           })}
                         </p>
                         {notification.link && (
-                          <span className="text-[10px] text-amber-600 font-bold">{window.__t("عرض التفاصيل ←")}</span>
+                          <span className="text-[10px] text-amber-600 font-bold flex items-center gap-1">
+                            {window.__t("عرض التفاصيل")}
+                            <span className="rtl:rotate-0 ltr:rotate-180">←</span>
+                          </span>
                         )}
                       </div>
                     </div>
@@ -251,20 +285,21 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNotificati
           </div>
 
           {notifications.length > 0 && (
-            <div className="p-3 border-t border-gray-200 text-center">
+            <div className="p-3 border-t border-slate-200 dark:border-slate-800 text-center bg-slate-50 dark:bg-slate-800">
               <button
                 onClick={() => {
                   setIsOpen(false);
                   onNavigate?.('notifications');
                 }}
-                className="text-sm text-blue-600 hover:text-blue-800"
+                className="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-amber-600 transition-colors"
               >
                 {window.__t("عرض الكل")}
               </button>
             </div>
           )}
         </div>
-      )}
+      </div>
+    )}
     </div>
   );
 };

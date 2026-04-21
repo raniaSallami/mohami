@@ -2,7 +2,8 @@
 Pydantic schemas for event operations.
 """
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Union
+from uuid import UUID
 from pydantic import BaseModel, Field, ConfigDict
 
 
@@ -34,15 +35,15 @@ class EventResponse(BaseModel):
     """Schema for event response."""
     model_config = ConfigDict(from_attributes=True)
     
-    id: str
+    id: Union[str, UUID]
     title: str
     date: str
     time: Optional[str] = None
     type: str
     description: Optional[str] = None
     reminder_sent: bool = False
-    user_id: Optional[str] = None
-    case_id: Optional[str] = None
+    user_id: Optional[Union[str, UUID]] = None
+    case_id: Optional[Union[str, UUID]] = None
     tenant_id: Optional[str] = None
 
 

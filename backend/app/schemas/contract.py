@@ -2,7 +2,8 @@
 Pydantic schemas for contract operations.
 """
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Union
+from uuid import UUID
 from pydantic import BaseModel, Field, ConfigDict
 
 
@@ -32,7 +33,7 @@ class ContractResponse(BaseModel):
     """Schema for contract response."""
     model_config = ConfigDict(from_attributes=True)
     
-    id: str
+    id: Union[str, UUID]
     title: str
     type: str
     parties: str
@@ -40,7 +41,7 @@ class ContractResponse(BaseModel):
     status: str
     date_created: datetime
     date_updated: Optional[datetime] = None
-    user_id: Optional[str] = None
+    user_id: Optional[Union[str, UUID]] = None
     tenant_id: Optional[str] = None
 
 

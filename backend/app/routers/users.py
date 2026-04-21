@@ -43,7 +43,9 @@ async def list_users(
     """
     List all users (admin only).
     """
-    query = select(User)
+    from sqlalchemy.orm import selectinload
+
+    query = select(User).options(selectinload(User.profile))
     
     # Apply filters
     if role:
@@ -88,9 +90,11 @@ async def list_team_members(
     """
     List team members for the current user's organization.
     """
+    from sqlalchemy.orm import selectinload
+
     if current_user.role == "ADMIN":
         # Admins see all users in their org
-        query = select(User).where(
+        query = select(User).options(selectinload(User.profile)).where(
             or_(
                 User.id == current_user.id,
                 User.organization_owner_id == current_user.id
@@ -98,7 +102,7 @@ async def list_team_members(
         )
     else:
         # Team members see org members
-        query = select(User).where(
+        query = select(User).options(selectinload(User.profile)).where(
             or_(
                 User.id == current_user.id,
                 User.organization_owner_id == current_user.organization_owner_id
@@ -137,7 +141,8 @@ async def get_user(
             detail="Not authorized to view this user"
         )
     
-    result = await db.execute(select(User).where(User.id == user_id))
+    from sqlalchemy.orm import selectinload
+    result = await db.execute(select(User).options(selectinload(User.profile)).where(User.id == user_id))
     user = result.scalar_one_or_none()
     
     if not user:
@@ -207,7 +212,8 @@ async def update_user(
             detail="Not authorized to update this user"
         )
     
-    result = await db.execute(select(User).where(User.id == user_id))
+    from sqlalchemy.orm import selectinload
+    result = await db.execute(select(User).options(selectinload(User.profile)).where(User.id == user_id))
     user = result.scalar_one_or_none()
     
     if not user:
@@ -267,7 +273,8 @@ async def update_user_plan(
     """
     Update user's subscription plan (admin only).
     """
-    result = await db.execute(select(User).where(User.id == user_id))
+    from sqlalchemy.orm import selectinload
+    result = await db.execute(select(User).options(selectinload(User.profile)).where(User.id == user_id))
     user = result.scalar_one_or_none()
     
     if not user:

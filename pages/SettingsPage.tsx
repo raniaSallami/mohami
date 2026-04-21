@@ -7,17 +7,19 @@ import { validatePassword, type PasswordValidation } from '../utils/passwordVali
 
 export const SettingsPage = ({ user, onUpdateUser }: { user: User, onUpdateUser: (u: User) => void }) => {
   const [showPlanModal, setShowPlanModal] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   
   const [selectedPlan, setSelectedPlan] = useState<'pro' | 'enterprise' | null>(null);
-  const [receiptFile, setReceiptFile] = useState<File | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [notification, setNotification] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
   const [pricing, setPricing] = useState({ pro: 59, enterprise: 199 });
   const [planLimits, setPlanLimits] = useState(PLAN_LIMITS);
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; invoiceId: string | null }>({
+    isOpen: false,
+    invoiceId: null
+  });
   
   // Profile state
   const [name, setName] = useState(user.name);
@@ -99,35 +101,62 @@ export const SettingsPage = ({ user, onUpdateUser }: { user: User, onUpdateUser:
     }
   };
 
-  const handleSelectPlan = (plan: 'pro' | 'enterprise') => {
-      setSelectedPlan(plan);
-      setShowPlanModal(false);
-      setShowPaymentModal(true);
+  const handleSelectPlan = async (plan: 'basic' | 'pro' | 'enterprise') => {
+      setLoading(true);
+      try {
+          const result = await storageService.checkoutSubscription(plan);
+          
+          if (result.free) {
+              // Free plan activated immediately
+              setNotification({ msg: window.__t("Plan gratuit activé avec succès"), type: 'success' });
+              // Refresh user data
+              const freshUser = await storageService.getCurrentUserFresh();
+              if (freshUser) onUpdateUser(freshUser);
+              setLoading(false);
+          } else {
+              // Redirect to payment for paid plans
+              window.location.href = result.formUrl;
+          }
+      } catch (error: any) {
+          setNotification({ msg: error.message || window.__t("Failed to start payment"), type: 'error' });
+          setLoading(false);
+      }
   };
 
-  const handleSubmitPayment = async () => {
-      if (!selectedPlan || !receiptFile) {
-          setNotification({ msg: window.__t("يرجى تحميل صورة الوصل"), type: 'error' });
-          return;
+  const handleDeleteInvoice = async (invoiceId: string) => {
+    setLoading(true);
+    try {
+      const result = await storageService.deleteInvoice(invoiceId);
+      if (result.ok) {
+        setNotification({ msg: result.message || window.__t("Facture supprimée avec succès"), type: 'success' });
+        // Refresh invoices list
+        const freshInvoices = await storageService.getInvoices();
+        setInvoices(freshInvoices);
+      } else {
+        setNotification({ msg: result.message || window.__t("Échec de la suppression de la facture"), type: 'error' });
       }
+    } catch (error: any) {
+      setNotification({ msg: error.message || window.__t("Erreur réseau"), type: 'error' });
+    }
+    setLoading(false);
+    setDeleteModal({ isOpen: false, invoiceId: null });
+  };
 
-      setLoading(true);
-      
-      const reader = new FileReader();
-      reader.readAsDataURL(receiptFile);
-      reader.onload = async () => {
-          const base64 = (reader.result as string).split(',')[1];
-          await storageService.submitPayment(selectedPlan, base64);
-          
-          const fresh = await storageService.getCurrentUserFresh();
-          if (fresh) onUpdateUser(fresh);
-          
-          setLoading(false);
-          setShowPaymentModal(false);
-          setNotification({ msg: window.__t("تم إرسال طلبك. سيتم تفعيل الباقة بعد مراجعة الإدارة."), type: 'success' });
-          
-          storageService.getInvoices().then(setInvoices);
-      };
+  const handleDeleteAllInvoices = async () => {
+    setLoading(true);
+    try {
+      const result = await storageService.deleteAllInvoices();
+      if (result.ok) {
+        setNotification({ msg: result.message || window.__t("Toutes les factures ont été supprimées avec succès"), type: 'success' });
+        setInvoices([]);
+      } else {
+        setNotification({ msg: result.message || window.__t("Échec de la suppression des factures"), type: 'error' });
+      }
+    } catch (error: any) {
+      setNotification({ msg: error.message || window.__t("Erreur réseau"), type: 'error' });
+    }
+    setLoading(false);
+    setDeleteModal({ isOpen: false, invoiceId: null });
   };
 
   const planDetails = PLAN_LIMITS[user.subscriptionPlan || 'basic'];
@@ -272,7 +301,17 @@ export const SettingsPage = ({ user, onUpdateUser }: { user: User, onUpdateUser:
       {/* Invoices History */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
          <div className="p-6">
-            <h3 className="text-lg font-bold text-slate-800 mb-4">{window.__t("سجل الفواتير والطلبات")}</h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-slate-800">{window.__t("سجل الفواتير والطلبات")}</h3>
+              {invoices.length > 0 && (
+                <button 
+                  onClick={() => setDeleteModal({ isOpen: true, invoiceId: 'all' })}
+                  className="text-red-600 text-sm font-medium hover:text-red-700 hover:underline"
+                >
+                  {window.__t("حذف الكل")}
+                </button>
+              )}
+            </div>
             {invoices.length === 0 ? (
               <p className="text-gray-500 text-sm">{window.__t("لا توجد فواتير سابقة.")}</p>
             ) : (
@@ -284,6 +323,7 @@ export const SettingsPage = ({ user, onUpdateUser }: { user: User, onUpdateUser:
                     <th className="px-4 py-2">{window.__t("المبلغ")}</th>
                     <th className="px-4 py-2">{window.__t("الحالة")}</th>
                     <th className="px-4 py-2">{window.__t("الوصل")}</th>
+                    <th className="px-4 py-2">{window.__t("الإجراءات")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -291,14 +331,27 @@ export const SettingsPage = ({ user, onUpdateUser }: { user: User, onUpdateUser:
                     <tr key={inv.id}>
                       <td className="px-4 py-3">{new Date(inv.date).toLocaleDateString((document.documentElement.lang === 'ar' ? 'ar-TN' : 'fr-FR'))}</td>
                       <td className="px-4 py-3 font-medium">{inv.planName}</td>
-                      <td className="px-4 py-3">{inv.amount} TND</td>
+                      <td className="px-4 py-3">{typeof inv.amount === 'number' ? inv.amount.toFixed(3) : inv.amount} TND</td>
                       <td className="px-4 py-3">
                           {inv.status === 'paid' && <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">{window.__t("مدفوع")}</span>}
                           {inv.status === 'pending' && <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-xs">{window.__t("قيد المراجعة")}</span>}
                           {inv.status === 'rejected' && <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs">{window.__t("مرفوض")}</span>}
                       </td>
                       <td className="px-4 py-3">
-                         {inv.receiptData && <span className="text-xs text-blue-600 cursor-pointer hover:underline">{window.__t("عرض")}</span>}
+                         <button 
+                           onClick={() => storageService.downloadInvoicePdf(inv.id)}
+                           className="text-xs text-blue-600 hover:underline"
+                         >
+                           {window.__t("تحميل PDF")}
+                         </button>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button 
+                          onClick={() => setDeleteModal({ isOpen: true, invoiceId: inv.id })}
+                          className="text-red-600 text-sm hover:text-red-700 hover:underline"
+                        >
+                          {window.__t("حذف")}
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -417,45 +470,38 @@ export const SettingsPage = ({ user, onUpdateUser }: { user: User, onUpdateUser:
         </div>
       </Modal>
 
-      <Modal isOpen={showPaymentModal} onClose={() => setShowPaymentModal(false)} title={window.__t("تفاصيل الدفع (تحويل بنكي)")}>
-         <div className="space-y-6">
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-sm space-y-2">
-                <p className="font-bold text-slate-800 border-b border-gray-200 pb-2 mb-2">{window.__t("بيانات التحويل البنكي:")}</p>
-                <div className="grid grid-cols-3 gap-2">
-                    <span className="text-gray-500">{window.__t("الشركة:")}</span>
-                    <span className="col-span-2 font-medium">STE NOVALABS WEB DESIGN</span>
-                    
-                    <span className="text-gray-500">RIB:</span>
-                    <span className="col-span-2 font-mono bg-white px-2 py-0.5 rounded border">TN 59 03 122 118 0115 004676 17</span>
-                    
-                    <span className="text-gray-500">SWIFT:</span>
-                    <span className="col-span-2 font-mono">BNTETNTT</span>
-                    
-                    <span className="text-gray-500">Email:</span>
-                    <span className="col-span-2">contact@novalabs.tn</span>
-                </div>
-            </div>
-
-            <div className="space-y-2">
-                <label className="block text-sm font-medium text-slate-700">{window.__t("ارفع صورة وصل التحويل")}</label>
-                <input 
-                  type="file" 
-                  accept="image/*,.pdf" 
-                  onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
-                  className="w-full text-sm text-gray-500 file:me-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
-                />
-                <p className="text-xs text-gray-400">{window.__t("يرجى التأكد من أن المبلغ مطابق لسعر الباقة (")}{selectedPlan === 'pro' ? pricing.pro : pricing.enterprise} {window.__t("د.ت)")}</p>
-            </div>
-
+      <Modal isOpen={deleteModal.isOpen} onClose={() => setDeleteModal({ isOpen: false, invoiceId: null })} title={window.__t("Confirmer la suppression")}>
+        <div className="space-y-4">
+          <p className="text-gray-700">
+            {deleteModal.invoiceId === 'all' 
+              ? window.__t("Êtes-vous sûr de vouloir supprimer toutes les factures ? Cette action ne peut pas être annulée.")
+              : window.__t("Êtes-vous sûr de vouloir supprimer cette facture ? Cette action ne peut pas être annulée.")
+            }
+          </p>
+          <div className="flex justify-end space-x-3 space-x-reverse">
             <button 
-                onClick={handleSubmitPayment}
-                disabled={loading || !receiptFile}
-                className="w-full bg-slate-900 text-white py-3 rounded-lg font-bold hover:bg-slate-800 disabled:bg-gray-400 flex justify-center items-center"
+              onClick={() => setDeleteModal({ isOpen: false, invoiceId: null })}
+              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
             >
-                {loading ? <Spinner /> : window.__t("إرسال طلب التفعيل")}
+              {window.__t("Annuler")}
             </button>
-         </div>
+            <button 
+              onClick={() => {
+                if (deleteModal.invoiceId === 'all') {
+                  handleDeleteAllInvoices();
+                } else if (deleteModal.invoiceId) {
+                  handleDeleteInvoice(deleteModal.invoiceId);
+                }
+              }}
+              disabled={loading}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              {loading ? <Spinner /> : window.__t("Supprimer")}
+            </button>
+          </div>
+        </div>
       </Modal>
+
     </div>
   );
 };

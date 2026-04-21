@@ -2,13 +2,14 @@
 Pydantic schemas for invoice operations.
 """
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Union
+from uuid import UUID
 from pydantic import BaseModel, Field, ConfigDict
 
 
 class InvoiceBase(BaseModel):
     """Base invoice schema."""
-    date: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$")
+    date: Optional[str] = None
     amount: float = Field(..., gt=0)
     plan_name: str = Field(..., pattern="^(basic|pro|enterprise)$")
 
@@ -34,7 +35,10 @@ class InvoiceResponse(BaseModel):
     status: str
     plan_name: str
     receipt_data: Optional[str] = None
-    user_id: Optional[str] = None
+    clictopay_order_id: Optional[str] = None
+    user_id: Optional[Union[str, UUID]] = None
+    user_name: Optional[str] = None
+    user_email: Optional[str] = None
     tenant_id: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
