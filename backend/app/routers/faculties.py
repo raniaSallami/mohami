@@ -72,7 +72,7 @@ async def list_faculties(
             query = query.order_by(Faculty.type, Faculty.name_ar)
         
         # Get total count
-        count_query = select(Faculty)
+        count_query = select(func.count(Faculty.id))
         if search:
             search_term = f"%{search}%"
             count_query = count_query.where(
@@ -88,10 +88,12 @@ async def list_faculties(
         if city:
             count_query = count_query.where(Faculty.city == city)
         
-        total = await db.scalar(select(func.count(Faculty.id)).select_from(count_query.alias()))
+        total = await db.scalar(count_query)
         
         # Apply pagination
         query = query.limit(limit).offset(offset)
+        result = await db.execute(query)
+        faculties_list = result.scalars().all()
         
         # Detect language
         lang = get_user_lang(request)
@@ -118,7 +120,7 @@ async def list_faculties(
                     "phone": f.phone,
                     "email": f.email,
                 }
-                for f in faculties
+                for f in faculties_list
             ],
             "total": total,
             "limit": limit,
@@ -232,7 +234,9 @@ async def list_by_type(
         if public is not None:
             query = query.where(Faculty.public == public)
         
-        query = query.order_by(Faculty.public.desc(), Faculty.name)
+        query = query.order_by(Faculty.public.desc(), Faculty.name_ar)
+        result = await db.execute(query)
+        faculties_list = result.scalars().all()
         
         # Detect language
         lang = get_user_lang(request)
@@ -252,9 +256,9 @@ async def list_by_type(
                     "city": f.city,
                     "public": f.public,
                 }
-                for f in faculties
+                for f in faculties_list
             ],
-            "total": len(faculties),
+            "total": len(faculties_list),
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching faculties: {str(e)}")

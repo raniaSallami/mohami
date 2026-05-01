@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User } from '../types';
-import { Mail, Phone, Building2, Scale, GraduationCap, FileText, Calendar, Shield, CheckCircle2, Camera, Loader2, Trash2 } from 'lucide-react';
+import { Mail, Phone, Building2, Scale, GraduationCap, FileText, Calendar, Shield, CheckCircle2, Camera, Loader2, Trash2, User as UserIcon } from 'lucide-react';
 import { apiService } from '../services/apiService';
 import { toast } from 'sonner';
 
@@ -114,8 +114,8 @@ export const ProfilePage = ({
                     {user.avatar ? (
                       <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center">
-                        <span className="text-4xl font-bold text-white uppercase">{user.name.charAt(0)}</span>
+                      <div className="w-full h-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500">
+                        <UserIcon className="w-12 h-12" />
                       </div>
                     )}
                   </div>

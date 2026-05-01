@@ -25,6 +25,11 @@ async def get_admin_stats(
     current_user: User = Depends(require_role("ADMIN"))
 ):
     """Get overall platform statistics (admin only)."""
+    from datetime import datetime
+    
+    now = datetime.utcnow()
+    month_start = now.strftime("%Y-%m-01")
+    
     # User counts
     users_result = await db.execute(
         select(func.count(User.id)).where(User.role != UserRole.ADMIN.value)
@@ -42,11 +47,20 @@ async def get_admin_stats(
     )
     pending_invoices = pending_result.scalar() or 0
     
-    # Revenue
+    # Revenue - total
     revenue_result = await db.execute(
         select(func.sum(Invoice.amount)).where(Invoice.status == "paid")
     )
     total_revenue = float(revenue_result.scalar() or 0)
+    
+    # Revenue - this month
+    month_revenue_result = await db.execute(
+        select(func.sum(Invoice.amount)).where(
+            Invoice.status == "paid",
+            Invoice.date >= month_start
+        )
+    )
+    month_revenue = float(month_revenue_result.scalar() or 0)
     
     # Visitor stats
     visitors_result = await db.execute(select(func.count(PlatformVisitor.id)))
@@ -61,6 +75,12 @@ async def get_admin_stats(
     cases_result = await db.execute(select(func.count(Case.id)))
     total_cases = cases_result.scalar() or 0
     
+    # New cases this month
+    month_cases_result = await db.execute(
+        select(func.count(Case.id)).where(Case.date_created >= month_start)
+    )
+    new_cases_this_month = month_cases_result.scalar() or 0
+    
     # Contract counts
     contracts_result = await db.execute(select(func.count(Contract.id)))
     total_contracts = contracts_result.scalar() or 0
@@ -71,7 +91,7 @@ async def get_admin_stats(
         .where(User.role != UserRole.ADMIN.value)
         .group_by(User.subscription_plan)
     )
-    plan_breakdown = {row[0]: row[1] for row in plan_result.fetchall()}
+    plan_breakdown = {row[0] or "basic": row[1] for row in plan_result.fetchall()}
     
     return {
         "users": {
@@ -85,6 +105,8 @@ async def get_admin_stats(
         },
         "advancedStats": {
             "revenueTotal": total_revenue,
+            "revenueThisMonth": month_revenue,
+            "newCasesThisMonth": new_cases_this_month,
             "totalCases": total_cases,
             "totalContracts": total_contracts,
             "planBreakdown": plan_breakdown
@@ -206,7 +228,12 @@ async def get_registrations_chart(
     
     # Initialize months
     for i in range(months):
-        d = datetime(now.year, now.month - i, 1)
+        target_month = now.month - i
+        target_year = now.year
+        while target_month <= 0:
+            target_month += 12
+            target_year -= 1
+        d = datetime(target_year, target_month, 1)
         key = d.strftime("%Y-%m")
         month_counts[key] = 0
     

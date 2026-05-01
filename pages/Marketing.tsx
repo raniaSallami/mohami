@@ -37,7 +37,7 @@ export const Marketing: React.FC = () => {
       return;
     }
 
-    if (!confirm(`هل أنت متأكد من إرسال البريد الإلكتروني إلى ${selectedUsers.length} مستخدم؟`)) {
+    if (!confirm(`${window.__t("هل أنت متأكد من إرسال البريد الإلكتروني إلى")} ${selectedUsers.length} ${window.__t("مستخدم؟")}`)) {
       return;
     }
 
@@ -47,7 +47,7 @@ export const Marketing: React.FC = () => {
     try {
       const result = await emailService.sendBulkMarketingEmails(selectedUsers, subject, htmlContent);
       setSendResult(result);
-      alert(`تم الإرسال: ${result.success} نجح، ${result.failed} فشل`);
+      alert(`${window.__t("تم الإرسال:")} ${result.success} ${window.__t("نجح،")} ${result.failed} ${window.__t("فشل")}`);
       
       // Reset form
       setSubject('');
@@ -180,7 +180,7 @@ export const Marketing: React.FC = () => {
             disabled={sending || !subject.trim() || !htmlContent.trim() || selectedUsers.length === 0}
             className="w-full bg-gold-500 hover:bg-gold-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-900 font-bold py-3 rounded-lg transition"
           >
-            {sending ? window.__t("جاري الإرسال...") : `إرسال إلى ${selectedUsers.length} مستخدم`}
+            {sending ? window.__t("جاري الإرسال...") : `${window.__t("إرسال إلى")} ${selectedUsers.length} ${window.__t("مستخدم")}`}
           </button>
         </div>
 

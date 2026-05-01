@@ -36,6 +36,34 @@ import { DeviceVerificationPage } from './components/DeviceVerificationPage';
 import { visitorService } from './services/visitorService';
 import { ipService } from './services/ipService';
 
+// Error Boundary Component to prevent white screens
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(error: any, errorInfo: any) { console.error("UI Crash caught by boundary:", error, errorInfo); }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[400px] p-8 text-center bg-white rounded-2xl border border-slate-100 shadow-sm m-4">
+          <div className="text-4xl mb-4">⚠️</div>
+          <h2 className="text-xl font-bold text-slate-800 mb-2">{window.__t("عذراً، حدث خطأ غير متوقع")}</h2>
+          <p className="text-slate-500 mb-6">{window.__t("لقد واجهنا مشكلة في تحميل هذه الصفحة. يرجى المحاولة مرة أخرى.")}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-6 py-2 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition"
+          >
+            {window.__t("إعادة تحميل")}
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState<string>('landing');
@@ -68,7 +96,6 @@ export default function App() {
       const parts = hash ? hash.split('/') : [];
       const hashPage = parts[0] || null;
       const hashCaseId = parts[1] || null;
-      const hashToken = parts[1] || null;
 
       // Check for security-alert routes
       if (hashPage === 'security-alert' && parts[1]) {
@@ -107,7 +134,7 @@ export default function App() {
           } catch (e) {
             storageService.logout();
             setPendingIpVerificationUser(null);
-            setNotification({ msg: 'فشل إرسال رمز التحقق. تم تسجيل الخروج.', type: 'error' });
+            setNotification({ msg: window.__t("فشل إرسال رمز التحقق. تم تسجيل الخروج."), type: 'error' });
           }
         } else if (!valid) {
           setUser(currentUser); // Can't get IP - allow to avoid blocking
@@ -132,6 +159,7 @@ export default function App() {
         setLoading(false);
         return;
       } else {
+        const hashToken = parts[1] || null;
         if (hashPage === 'invite' && hashToken && hashToken.length > 10) {
           setCurrentPage('invite');
           setInviteToken(hashToken);
@@ -158,7 +186,7 @@ export default function App() {
       setShowTermsModal(true);
     } else {
       setCurrentPage(user.role === UserRole.ADMIN ? 'admin-dashboard' : 'dashboard');
-      setNotification({ msg: `مرحباً بك ${user.name}`, type: 'success' });
+      setNotification({ msg: `${window.__t("مرحباً بك")} ${user.name}`, type: 'success' });
     }
   };
 
@@ -170,9 +198,9 @@ export default function App() {
       localStorage.setItem(`termsAccepted_${user.id}`, 'true');
       localStorage.setItem(`termsAcceptedDate_${user.id}`, new Date().toISOString());
       setCurrentPage(user.role === UserRole.ADMIN ? 'admin-dashboard' : 'dashboard');
-      setNotification({ msg: `مرحباً بك ${user.name}`, type: 'success' });
+      setNotification({ msg: `${window.__t("مرحباً بك")} ${user.name}`, type: 'success' });
     } else {
-      setNotification({ msg: 'شكراً لقبولك الشروط. يمكنك المتابعة.', type: 'success' });
+      setNotification({ msg: window.__t("شكراً لقبولك الشروط. يمكنك المتابعة."), type: 'success' });
     }
   };
 
@@ -180,7 +208,7 @@ export default function App() {
     storageService.logout();
     setUser(null);
     setCurrentPage('landing');
-    setNotification({ msg: 'تم تسجيل الخروج بنجاح', type: 'info' });
+    setNotification({ msg: window.__t("تم تسجيل الخروج بنجاح"), type: 'info' });
   };
 
   const handleNavigate = (page: string, params?: string) => {
@@ -221,7 +249,14 @@ export default function App() {
     }
   }, []);
 
-  // Show terms modal when guest tries to access login/register - MUST be before any early returns (Rules of Hooks)
+  // Track page views
+  useEffect(() => {
+    if (currentPage && !loading) {
+      visitorService.trackPageView(currentPage).catch(() => {});
+    }
+  }, [currentPage, loading]);
+
+  // Show terms modal when guest tries to access login/register
   useEffect(() => {
     if (!user && (currentPage === 'login' || currentPage === 'register')) {
       const termsAccepted = localStorage.getItem('termsAccepted');
@@ -303,8 +338,6 @@ export default function App() {
       return (
         <DeviceVerificationPage
           onSuccess={() => {
-            // After successful OTP verification, the backend returns tokens
-            // Fetch fresh user data
             storageService.getCurrentUserFresh().then(u => {
               if (u) {
                 setUser(u);
@@ -374,19 +407,26 @@ export default function App() {
   const renderPage = () => {
     if (user.role === UserRole.ADMIN) {
       switch (currentPage) {
-        case 'admin-dashboard': return <AdminDashboard />;
+        case 'admin-dashboard': return <AdminDashboard onNavigate={handleNavigate} />;
         case 'admin-users': return <AdminUsersPage />;
         case 'admin-settings': return <AdminSettings />;
         case 'admin-chat': return <AdminChat />;
         case 'admin-marketing': return <Marketing />;
-        default: return <AdminDashboard />;
+        default: return <AdminDashboard onNavigate={handleNavigate} />;
       }
     } else {
       switch (currentPage) {
         case 'dashboard': return <Dashboard onNavigate={handleNavigate} user={user} />;
         case 'cases': return <CaseList onNavigate={handleNavigate} initialFilter={caseFilter || undefined} />;
         case 'new-case': return <NewCase onNavigate={handleNavigate} />;
-        case 'case-detail': return <CaseDetail caseId={selectedCaseId!} onBack={() => handleNavigate('cases')} />;
+        case 'case-detail': {
+          if (!selectedCaseId) {
+             console.warn("CaseDetail accessed without selectedCaseId, redirecting to Cases");
+             setTimeout(() => handleNavigate('cases'), 0);
+             return <CaseList onNavigate={handleNavigate} />;
+          }
+          return <CaseDetail caseId={selectedCaseId} onBack={() => handleNavigate('cases')} />;
+        }
         case 'settings': return <SettingsPage user={user} onUpdateUser={(u) => { setUser(u); showNotification('تم تحديث البيانات', 'success'); }} />;
         case 'profile': return <ProfilePage user={user} onNavigate={handleNavigate} onUpdateUser={(u) => setUser(u)} />;
         case 'courses': return <Courses />;
@@ -408,12 +448,13 @@ export default function App() {
     <>
       <Layout user={user} onLogout={handleLogout} currentPage={currentPage} onNavigate={handleNavigate}>
         {notification && <Toast message={notification.msg} type={notification.type} onClose={() => setNotification(null)} />}
-        {renderPage()}
+        <ErrorBoundary key={currentPage}>
+          {renderPage()}
+        </ErrorBoundary>
       </Layout>
       {currentPage !== 'admin-chat' && <Chatbot />}
       <Toaster position="top-center" />
       
-      {/* Terms Acceptance Modal - for logged-in users + guests (login/register) */}
       {(user || showTermsModal) && (
         <TermsAcceptanceModal
           isOpen={showTermsModal}

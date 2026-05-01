@@ -22,7 +22,7 @@ export const AdminUsersPage: React.FC = () => {
 
   useEffect(() => {
     if (selectedUser) {
-      setSelectedPlan(selectedUser.subscriptionPlan || 'basic');
+      setSelectedPlan(selectedUser.subscriptionPlan || (selectedUser as any).subscription_plan || 'basic');
       loadUserStats(selectedUser.id);
     } else {
       setUserStats(null);
@@ -70,8 +70,10 @@ export const AdminUsersPage: React.FC = () => {
   };
 
   const filtered = users.filter((u) => {
-    const matchPlan = filterPlan === 'all' || (u.subscriptionPlan || 'basic') === filterPlan;
-    const matchStatus = filterStatus === 'all' || (u.subscriptionStatus || 'active') === filterStatus;
+    const uPlan = u.subscriptionPlan || (u as any).subscription_plan || 'basic';
+    const uStatus = u.subscriptionStatus || (u as any).subscription_status || 'active';
+    const matchPlan = filterPlan === 'all' || uPlan === filterPlan;
+    const matchStatus = filterStatus === 'all' || uStatus === filterStatus;
     const matchSearch = !search || 
       u.name.toLowerCase().includes(search.toLowerCase()) || 
       u.email.toLowerCase().includes(search.toLowerCase());
@@ -122,7 +124,10 @@ export const AdminUsersPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filtered.map((u) => (
+                {filtered.map((u) => {
+                  const uPlan = u.subscriptionPlan || (u as any).subscription_plan || 'basic';
+                  const uStatus = u.subscriptionStatus || (u as any).subscription_status || 'active';
+                  return (
                   <tr
                     key={u.id}
                     onClick={() => setSelectedUser(u)}
@@ -132,20 +137,20 @@ export const AdminUsersPage: React.FC = () => {
                     <td className="px-6 py-4 text-slate-500">{u.email}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded text-xs ${
-                        u.subscriptionPlan === 'basic' ? 'bg-gray-100' :
-                        u.subscriptionPlan === 'pro' ? 'bg-purple-100 text-purple-700' : 'bg-gold-100 text-gold-800'
+                        uPlan === 'basic' ? 'bg-gray-100' :
+                        uPlan === 'pro' ? 'bg-purple-100 text-purple-700' : 'bg-gold-100 text-gold-800'
                       }`}>
-                        {planLabel(u.subscriptionPlan)}
+                        {planLabel(uPlan)}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={u.subscriptionStatus === 'pending_approval' ? 'text-orange-600' : 'text-green-600'}>
-                        {statusLabel(u.subscriptionStatus)}
+                      <span className={uStatus === 'pending_approval' ? 'text-orange-600' : 'text-green-600'}>
+                        {statusLabel(uStatus)}
                       </span>
                     </td>
                     <td className="px-6 py-4">{u.role === UserRole.ADMIN ? window.__t("مدير") : window.__t("محامي")}</td>
                   </tr>
-                ))}
+                )})}
               </tbody>
             </table>
           </div>
@@ -169,11 +174,11 @@ export const AdminUsersPage: React.FC = () => {
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">{window.__t("الباقة")}</label>
-                <p>{planLabel(selectedUser.subscriptionPlan)}</p>
+                <p>{planLabel(selectedUser.subscriptionPlan || (selectedUser as any).subscription_plan || 'basic')}</p>
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">{window.__t("الحالة")}</label>
-                <p>{statusLabel(selectedUser.subscriptionStatus)}</p>
+                <p>{statusLabel(selectedUser.subscriptionStatus || (selectedUser as any).subscription_status || 'active')}</p>
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">ID</label>
@@ -246,7 +251,7 @@ export const AdminUsersPage: React.FC = () => {
                   </select>
                   <button
                     onClick={handleUpgrade}
-                    disabled={upgradeLoading || selectedPlan === (selectedUser.subscriptionPlan || 'basic')}
+                    disabled={upgradeLoading || selectedPlan === (selectedUser.subscriptionPlan || (selectedUser as any).subscription_plan || 'basic')}
                     className="px-4 py-2 bg-gold-500 text-slate-900 rounded-lg font-bold hover:bg-gold-400 disabled:opacity-50"
                   >
                     {upgradeLoading ? <Spinner /> : window.__t("ترقية")}

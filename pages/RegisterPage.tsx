@@ -145,6 +145,15 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
     return phoneRegex.test(phone.replace(/\s/g, ''));
   };
 
+  const isValidStep2 = formData.fullName.trim().length >= 10 &&
+    validateEmail(formData.email) &&
+    validateTunisianPhone(formData.phone) &&
+    formData.password.length >= 8 &&
+    formData.password === formData.confirmPassword &&
+    (userType === 'student' ? !!formData.university.trim() : true) &&
+    (userType === 'lawyer' ? !!formData.barNumber.trim() : true) &&
+    (userType === 'cabinet' ? (!!formData.cabinetName.trim() && !!formData.barRegistrationNumber.trim() && !!formData.officeAddress.trim() && !!formData.numberOfLawyers.trim()) : true);
+
   const validateStep2 = (): boolean => {
     const newErrors: FormErrors = {};
     let isValid = true;
@@ -394,42 +403,57 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-amber-50 dark:from-slate-700 dark:via-slate-700 dark:to-slate-600 flex items-center justify-center p-4 relative"
+      className={`min-h-screen ${theme === 'dark' ? 'bg-[#0B1121]' : 'bg-gradient-to-br from-white via-gray-50 to-orange-50'} flex items-center justify-center p-4 relative`}
       style={{ fontFamily: "var(--font-sans)" }}
     >
       {/* Decorative Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-10 end-10 w-96 h-96 bg-amber-100/20 dark:bg-slate-700/15 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-10 start-10 w-96 h-96 bg-amber-100/20 dark:bg-slate-700/15 rounded-full blur-3xl"></div>
+        <div className="absolute top-10 end-10 w-96 h-96 bg-orange-100/20 dark:bg-slate-700/15 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-10 start-10 w-96 h-96 bg-orange-100/20 dark:bg-slate-700/15 rounded-full blur-3xl"></div>
       </div>
 
-      {/* Theme Toggle */}
-      <button
-        onClick={toggleTheme}
-        className="absolute top-6 start-6 w-11 h-11 rounded-xl bg-white dark:bg-slate-800 border-2 border-amber-200 dark:border-amber-900/50 flex items-center justify-center hover:bg-amber-50 dark:hover:bg-slate-700 transition-all shadow-sm hover:shadow-md z-20"
-        aria-label={window.__t("تبديل الوضع")}
-      >
-        {theme === 'dark' ? (
-          <Sun className="w-5 h-5 text-amber-500" />
-        ) : (
-          <Moon className="w-5 h-5 text-amber-600" />
-        )}
-      </button>
+      {/* Floating Controls Overlay */}
+      <div className="absolute top-6 start-6 flex items-center gap-3 z-30">
+        {/* Theme Toggle */}
+        <button
+          onClick={toggleTheme}
+          className={`w-11 h-11 rounded-full ${theme === 'dark' ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-white/70 border-slate-200 hover:bg-white'} backdrop-blur-md border flex items-center justify-center transition-all shadow-sm group`}
+          aria-label={window.__t("تبديل الوضع")}
+        >
+          {theme === 'dark' ? (
+            <Sun className="w-4 h-4 text-white/70 group-hover:text-white transition-colors" />
+          ) : (
+            <Moon className="w-4 h-4 text-slate-500 group-hover:text-orange-500 transition-colors" />
+          )}
+        </button>
+
+        {/* Language Toggle */}
+        <button 
+          onClick={() => { 
+            const lang = window.__i18n?.language === 'ar' ? 'fr' : 'ar';
+            window.__i18n?.changeLanguage(lang); 
+            window.location.reload(); 
+          }} 
+          className={`w-11 h-11 rounded-full ${theme === 'dark' ? 'bg-white/5 border-white/10 hover:bg-white/10 text-white/70 hover:text-white' : 'bg-white/70 border-slate-200 hover:bg-white text-slate-500 hover:text-orange-500'} backdrop-blur-md border flex items-center justify-center font-bold text-[10px] transition-all shadow-sm`}
+        >
+          {window.__i18n?.language === 'ar' ? 'FR' : 'AR'}
+        </button>
+      </div>
 
       {/* Back to Home Button */}
       <button
         onClick={() => onNavigate('landing')}
-        className="absolute top-6 end-6 px-4 h-11 rounded-xl bg-white dark:bg-slate-800 border-2 border-amber-200 dark:border-amber-900/50 flex items-center justify-center gap-2 hover:bg-amber-50 dark:hover:bg-slate-700 transition-all shadow-sm hover:shadow-md z-20 text-amber-900 dark:text-amber-200 font-medium"
+        className={`absolute top-6 end-6 px-5 h-11 rounded-full flex items-center justify-center gap-2 transition-all shadow-sm z-20 group backdrop-blur-md border ${theme === 'dark' ? 'bg-white/5 border-white/10 hover:bg-white/10 text-white/70 hover:text-white' : 'bg-white/70 border-slate-200 hover:bg-white text-slate-600 hover:text-orange-600'} font-bold text-sm tracking-wide`}
       >
-        <Home className="w-5 h-5" />
+        <Home className={`w-4 h-4 transition-colors ${theme === 'dark' ? 'text-white/50 group-hover:text-white' : 'text-slate-400 group-hover:text-orange-500'}`} />
         <span className="hidden sm:inline-block">{window.__t("العودة للرئيسية")}</span>
       </button>
 
-      <div className="w-full max-w-4xl relative z-10">
+      <div className="w-full max-w-3xl relative z-10">
         {/* Logo */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center mb-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 flex items-center justify-center shadow-lg shadow-amber-400/30">
+        <div className="text-center mb-4">
+          <div className="inline-flex items-center justify-center mb-3">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 flex items-center justify-center shadow-lg shadow-orange-400/30">
               <svg
                 className="w-9 h-9 text-white"
                 viewBox="0 0 24 24"
@@ -443,34 +467,36 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
               </svg>
             </div>
           </div>
-          <h1 className="text-3xl text-amber-900 dark:text-amber-200 font-bold" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>
+          <h1 className="text-3xl text-orange-900 dark:text-orange-200 font-bold" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>
             {window.__t("إنشاء حساب جديد")}
           </h1>
-          <p className="text-amber-700 dark:text-amber-400 text-sm mt-1" style={{ fontFamily: "'Tajawal', sans-serif" }}>
+          <p className="text-orange-700 dark:text-orange-400 text-sm mt-1" style={{ fontFamily: "'Tajawal', sans-serif" }}>
             {window.__t("انضم إلى المحامي اليوم")}
           </p>
         </div>
 
         {/* Main Card */}
-        <div className="bg-white dark:bg-slate-800 border border-amber-100 dark:border-amber-900/30 rounded-2xl p-6 md:p-8 shadow-xl" style={{ fontFamily: "'Tajawal', sans-serif" }}>
+        <div className={`relative rounded-3xl overflow-hidden shadow-2xl p-6 md:p-8 border transition-all duration-700 ${theme === 'dark' ? 'bg-[#131B2E]/80 border-white/10' : 'bg-white/40 border-white/60'} backdrop-blur-[40px]`} style={{ fontFamily: "'Tajawal', sans-serif" }}>
+          <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/10 to-transparent pointer-events-none -z-10"></div>
+          
           {/* Progress Steps - Updated to 4 steps */}
-          <div className="flex items-center justify-center mb-8 gap-1 md:gap-2">
+          <div className="flex items-center justify-center mb-6 gap-1 md:gap-2">
             {[1, 2, 3, 4].map((s, idx) => (
               <div key={s} className="flex items-center">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
                     step >= s
-                      ? 'bg-gradient-to-br from-amber-500 to-amber-600 text-white'
-                      : 'bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-slate-400'
+                      ? 'bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-md shadow-orange-500/20'
+                      : 'bg-gray-100 dark:bg-slate-700 text-gray-400 dark:text-slate-500 border border-gray-200 dark:border-slate-600'
                   }`}
                   style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}
                 >
-                  {step > s ? <Check className="w-5 h-5" /> : s}
+                  {step > s ? <Check className="w-4 h-4" /> : s}
                 </div>
                 {idx < 3 && (
                   <div
                     className={`w-8 md:w-12 h-1 rounded-full mx-1 md:mx-2 transition-all ${
-                      step > s ? 'bg-gradient-to-l from-amber-500 to-amber-600' : 'bg-gray-200 dark:bg-slate-700'
+                      step > s ? 'bg-gradient-to-l from-orange-500 to-orange-600' : 'bg-gray-200 dark:bg-slate-700'
                     }`}
                   ></div>
                 )}
@@ -483,133 +509,76 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
             {step === 1 && (
               <div className="space-y-5">
                 <div className="text-center mb-6">
-                  <h2 className="text-2xl text-amber-900 dark:text-amber-200 font-bold" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>
+                  <h2 className="text-2xl text-orange-900 dark:text-orange-200 font-bold" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>
                     {window.__t("اختر نوع الحساب")}
                   </h2>
-                  <p className="text-amber-700 dark:text-amber-400 text-sm mt-1" style={{ fontFamily: "'Tajawal', sans-serif" }}>
+                  <p className="text-orange-700 dark:text-orange-400 text-sm mt-1" style={{ fontFamily: "'Tajawal', sans-serif" }}>
                     {window.__t("حدد الخيار المناسب لاحتياجاتك")}
                   </p>
                 </div>
 
-                <div className="grid gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Lawyer */}
                   <button
                     type="button"
                     onClick={() => setUserType('lawyer')}
-                    className={`p-5 rounded-xl border-2 transition-all text-start ${
+                    className={`flex flex-col items-center justify-center p-6 rounded-[1.5rem] border transition-all text-center bg-white dark:bg-slate-800 group ${
                       userType === 'lawyer'
-                        ? 'border-amber-500 bg-gradient-to-br from-amber-50 to-transparent'
-                        : 'border-gray-200 hover:border-amber-300'
+                        ? 'border-orange-500 shadow-xl shadow-orange-500/10 scale-[1.02]'
+                        : 'border-slate-100 dark:border-slate-700 hover:border-orange-200 dark:hover:border-orange-800 hover:shadow-md'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4 flex-1">
-                        <div
-                          className={`w-14 h-14 rounded-xl flex items-center justify-center ${
-                            userType === 'lawyer'
-                              ? 'bg-gradient-to-br from-amber-500 to-amber-600'
-                              : 'bg-gray-200'
-                          }`}
-                        >
-                          <Scale className={`w-7 h-7 ${userType === 'lawyer' ? 'text-white' : 'text-gray-500'}`} />
-                        </div>
-                        <div className="text-start flex-1">
-                          <h3 className="text-lg text-amber-900 dark:text-amber-200 font-bold" style={{ fontFamily: "var(--font-sans)", fontWeight: 700 }}>
-                            {window.__t("محامي")}
-                          </h3>
-                          <p className="text-sm text-amber-700 dark:text-amber-400" style={{ fontFamily: "var(--font-sans)" }}>
-                            {window.__t("للمحامين المرخصين")}
-                          </p>
-                        </div>
-                      </div>
-                      <div
-                        className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center ${
-                          userType === 'lawyer' ? 'border-amber-500 bg-amber-500' : 'border-gray-300'
-                        }`}
-                      >
-                        {userType === 'lawyer' && <Check className="w-4 h-4 text-white" />}
-                      </div>
+                    <div className={`w-16 h-16 rounded-[1.25rem] flex items-center justify-center mb-4 transition-colors ${userType === 'lawyer' ? 'bg-orange-500 text-white' : 'bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400'} border border-slate-100/50 dark:border-slate-800 shadow-sm`}>
+                      <Scale className="w-7 h-7" />
                     </div>
+                    <h3 className="text-lg text-slate-900 dark:text-white font-bold mb-1" style={{ fontFamily: "var(--font-sans)", fontWeight: 700 }}>
+                      {window.__t("محامي")}
+                    </h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400" style={{ fontFamily: "var(--font-sans)" }}>
+                      {window.__t("للمحامين المرخصين والممارسين")}
+                    </p>
                   </button>
 
                   {/* Cabinet */}
                   <button
                     type="button"
                     onClick={() => setUserType('cabinet')}
-                    className={`p-5 rounded-xl border-2 transition-all text-start ${
+                    className={`flex flex-col items-center justify-center p-6 rounded-[1.5rem] border transition-all text-center bg-white dark:bg-slate-800 group ${
                       userType === 'cabinet'
-                        ? 'border-amber-500 bg-gradient-to-br from-amber-50 to-transparent'
-                        : 'border-gray-200 hover:border-amber-300'
+                        ? 'border-orange-500 shadow-xl shadow-orange-500/10 scale-[1.02]'
+                        : 'border-slate-100 dark:border-slate-700 hover:border-orange-200 dark:hover:border-orange-800 hover:shadow-md'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4 flex-1">
-                        <div
-                          className={`w-14 h-14 rounded-xl flex items-center justify-center ${
-                            userType === 'cabinet'
-                              ? 'bg-gradient-to-br from-amber-500 to-amber-600'
-                              : 'bg-gray-200'
-                          }`}
-                        >
-                          <Building2 className={`w-7 h-7 ${userType === 'cabinet' ? 'text-white' : 'text-gray-500'}`} />
-                        </div>
-                        <div className="text-start flex-1">
-                          <h3 className="text-lg text-amber-900 dark:text-amber-200 font-bold" style={{ fontFamily: "var(--font-sans)", fontWeight: 700 }}>
-                            {window.__t("مكتب محاماة")}
-                          </h3>
-                          <p className="text-sm text-amber-700 dark:text-amber-400" style={{ fontFamily: "var(--font-sans)" }}>
-                            {window.__t("للمكاتب القانونية")}
-                          </p>
-                        </div>
-                      </div>
-                      <div
-                        className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center ${
-                          userType === 'cabinet' ? 'border-amber-500 bg-amber-500' : 'border-gray-300'
-                        }`}
-                      >
-                        {userType === 'cabinet' && <Check className="w-4 h-4 text-white" />}
-                      </div>
+                    <div className={`w-16 h-16 rounded-[1.25rem] flex items-center justify-center mb-4 transition-colors ${userType === 'cabinet' ? 'bg-orange-500 text-white' : 'bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400'} border border-slate-100/50 dark:border-slate-800 shadow-sm`}>
+                      <Building2 className="w-7 h-7" />
                     </div>
+                    <h3 className="text-lg text-slate-900 dark:text-white font-bold mb-1" style={{ fontFamily: "var(--font-sans)", fontWeight: 700 }}>
+                      {window.__t("مكتب محاماة")}
+                    </h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400" style={{ fontFamily: "var(--font-sans)" }}>
+                      {window.__t("لإدارة فريق عمل متكامل")}
+                    </p>
                   </button>
 
                   {/* Student */}
                   <button
                     type="button"
                     onClick={() => setUserType('student')}
-                    className={`p-5 rounded-xl border-2 transition-all text-start ${
+                    className={`flex flex-col items-center justify-center p-6 rounded-[1.5rem] border transition-all text-center bg-white dark:bg-slate-800 group ${
                       userType === 'student'
-                        ? 'border-amber-500 bg-gradient-to-br from-amber-50 to-transparent'
-                        : 'border-gray-200 hover:border-amber-300'
+                        ? 'border-orange-500 shadow-xl shadow-orange-500/10 scale-[1.02]'
+                        : 'border-slate-100 dark:border-slate-700 hover:border-orange-200 dark:hover:border-orange-800 hover:shadow-md'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4 flex-1">
-                        <div
-                          className={`w-14 h-14 rounded-xl flex items-center justify-center ${
-                            userType === 'student'
-                              ? 'bg-gradient-to-br from-amber-500 to-amber-600'
-                              : 'bg-gray-200'
-                          }`}
-                        >
-                          <GraduationCap className={`w-7 h-7 ${userType === 'student' ? 'text-white' : 'text-gray-500'}`} />
-                        </div>
-                        <div className="text-start flex-1">
-                          <h3 className="text-lg text-amber-900 dark:text-amber-200 font-bold" style={{ fontFamily: "var(--font-sans)", fontWeight: 700 }}>
-                            {window.__t("طالب قانون")}
-                          </h3>
-                          <p className="text-sm text-amber-700 dark:text-amber-400" style={{ fontFamily: "var(--font-sans)" }}>
-                            {window.__t("لطلاب كليات الحقوق")}
-                          </p>
-                        </div>
-                      </div>
-                      <div
-                        className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center ${
-                          userType === 'student' ? 'border-amber-500 bg-amber-500' : 'border-gray-300'
-                        }`}
-                      >
-                        {userType === 'student' && <Check className="w-4 h-4 text-white" />}
-                      </div>
+                    <div className={`w-16 h-16 rounded-[1.25rem] flex items-center justify-center mb-4 transition-colors ${userType === 'student' ? 'bg-orange-500 text-white' : 'bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400'} border border-slate-100/50 dark:border-slate-800 shadow-sm`}>
+                      <GraduationCap className="w-7 h-7" />
                     </div>
+                    <h3 className="text-lg text-slate-900 dark:text-white font-bold mb-1" style={{ fontFamily: "var(--font-sans)", fontWeight: 700 }}>
+                      {window.__t("طالب قانون")}
+                    </h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400" style={{ fontFamily: "var(--font-sans)" }}>
+                      {window.__t("للأغراض التعليمية والبحثية")}
+                    </p>
                   </button>
                 </div>
 
@@ -617,20 +586,24 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                   type="button"
                   onClick={handleNextStep1}
                   disabled={!userType || isLoading}
-                  className="w-full bg-gradient-to-l from-amber-500 to-amber-600 text-white h-12 rounded-xl font-bold text-base"
+                  className={`w-full h-14 rounded-xl font-bold text-base mt-2 transition-all duration-[400ms] border-2 shadow-sm ${
+                    userType 
+                      ? 'bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 text-white border-transparent shadow-orange-500/30' 
+                      : 'bg-slate-50 dark:bg-white/5 text-slate-400 dark:text-white/30 border-slate-200 dark:border-white/10 cursor-not-allowed opacity-60'
+                  }`}
                   style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}
                 >
-                  {window.__t("التالي — معلوماتك الشخصية")}
+                  {window.__t("التالي — معلومات الحساب")}
                 </Button>
 
-                <div className="text-center pt-2">
+                <div className="text-center pt-4">
                   <button
                     type="button"
                     onClick={() => onNavigate('login')}
-                    className="text-sm text-amber-700 hover:text-amber-900 transition-colors"
+                    className={`text-sm ${theme === 'dark' ? 'text-white/50' : 'text-slate-500'} hover:opacity-80 transition-colors font-medium`}
                     style={{ fontFamily: "'Tajawal', sans-serif" }}
                   >
-                    {window.__t("لديك حساب؟")} <span className="text-amber-600 font-bold">{window.__t("تسجيل الدخول")}</span>
+                    {window.__t("لديك حساب؟")} <span className="text-orange-600 font-bold">{window.__t("تسجيل الدخول")}</span>
                   </button>
                 </div>
               </div>
@@ -640,10 +613,10 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
             {step === 2 && (
               <div className="space-y-5">
                 <div className="text-center mb-6">
-                  <h2 className="text-2xl text-amber-900 dark:text-amber-200 font-bold" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>
+                  <h2 className="text-2xl text-orange-900 dark:text-orange-200 font-bold" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>
                     {window.__t("معلوماتك الشخصية")}
                   </h2>
-                  <p className="text-amber-700 dark:text-amber-400 text-sm mt-1" style={{ fontFamily: "'Tajawal', sans-serif" }}>
+                  <p className="text-orange-700 dark:text-orange-400 text-sm mt-1" style={{ fontFamily: "'Tajawal', sans-serif" }}>
                     {window.__t("أدخل بياناتك لإنشاء حسابك")}
                   </p>
                 </div>
@@ -651,7 +624,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                 <div className="space-y-4">
                   {/* Full Name */}
                   <div className="space-y-2">
-                    <label className="text-sm text-amber-900 dark:text-amber-200 block text-start font-bold" style={{ fontFamily: "var(--font-sans)", fontWeight: 700 }}>
+                    <label className="text-sm text-orange-900 dark:text-orange-200 block text-start font-bold" style={{ fontFamily: "var(--font-sans)", fontWeight: 700 }}>
                       {window.__t("الاسم الكامل")}
                       {errors.fullName && <span className="text-red-600"> {window.__t("مطلوب")}</span>}
                     </label>
@@ -674,7 +647,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                   {/* Email & Phone */}
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm text-foreground dark:text-amber-200 block text-start font-medium">
+                      <label className="text-sm text-foreground dark:text-orange-200 block text-start font-medium">
                         {window.__t("البريد الإلكتروني")}
                         {errors.email && <span className="text-red-500"> {window.__t("مطلوب")}</span>}
                       </label>
@@ -694,7 +667,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm text-foreground dark:text-amber-200 block text-start font-medium">
+                      <label className="text-sm text-foreground dark:text-orange-200 block text-start font-medium">
                         {window.__t("رقم الهاتف")}
                         {errors.phone && <span className="text-red-500"> {window.__t("مطلوب")}</span>}
                       </label>
@@ -717,7 +690,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                   {/* Conditional Fields */}
                   {userType === 'student' && (
                     <div className="space-y-2">
-                      <label className="text-sm text-foreground dark:text-amber-200 block text-start font-medium">
+                      <label className="text-sm text-foreground dark:text-orange-200 block text-start font-medium">
                         {window.__t("الكلية أو المؤسسة")}
                         {errors.university && <span className="text-red-500"> {window.__t("مطلوب")}</span>}
                       </label>
@@ -733,7 +706,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
 
                   {userType === 'lawyer' && (
                     <div className="space-y-2">
-                      <label className="text-sm text-foreground dark:text-amber-200 block text-start font-medium">
+                      <label className="text-sm text-foreground dark:text-orange-200 block text-start font-medium">
                         {window.__t("رقم بطاقة المحاماة")}
                         {errors.barNumber && <span className="text-red-500"> {window.__t("مطلوب")}</span>}
                       </label>
@@ -756,7 +729,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                   {userType === 'cabinet' && (
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <label className="text-sm text-foreground dark:text-amber-200 block text-start font-medium">
+                        <label className="text-sm text-foreground dark:text-orange-200 block text-start font-medium">
                           {window.__t("اسم المكتب")}
                           {errors.cabinetName && <span className="text-red-500"> {window.__t("مطلوب")}</span>}
                         </label>
@@ -777,7 +750,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
 
                       {/* Bar Registration Number */}
                       <div className="space-y-2">
-                        <label className="text-sm text-foreground dark:text-amber-200 block text-start font-medium">
+                        <label className="text-sm text-foreground dark:text-orange-200 block text-start font-medium">
                           {window.__t("رقم التسجيل بالهيئة")}
                           {errors.barRegistrationNumber && <span className="text-red-500"> {window.__t("مطلوب")}</span>}
                         </label>
@@ -798,7 +771,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
 
                       {/* Office Address */}
                       <div className="space-y-2">
-                        <label className="text-sm text-foreground dark:text-amber-200 block text-start font-medium">
+                        <label className="text-sm text-foreground dark:text-orange-200 block text-start font-medium">
                           {window.__t("العنوان")}
                           {errors.officeAddress && <span className="text-red-500"> {window.__t("مطلوب")}</span>}
                         </label>
@@ -819,7 +792,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
 
                       {/* Number of Lawyers */}
                       <div className="space-y-2">
-                        <label className="text-sm text-foreground dark:text-amber-200 block text-start font-medium">
+                        <label className="text-sm text-foreground dark:text-orange-200 block text-start font-medium">
                           {window.__t("عدد المحامين")}
                           {errors.numberOfLawyers && <span className="text-red-500"> {window.__t("مطلوب")}</span>}
                         </label>
@@ -843,7 +816,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
 
                   {/* Password */}
                   <div className="space-y-2">
-                    <label className="text-sm text-foreground dark:text-amber-200 block text-start font-medium">
+                    <label className="text-sm text-foreground dark:text-orange-200 block text-start font-medium">
                       {window.__t("كلمة المرور")}
                       {errors.password && <span className="text-red-500"> {window.__t("مطلوب")}</span>}
                     </label>
@@ -878,7 +851,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
 
                   {/* Confirm Password */}
                   <div className="space-y-2">
-                    <label className="text-sm text-foreground dark:text-amber-200 block text-start font-medium">
+                    <label className="text-sm text-foreground dark:text-orange-200 block text-start font-medium">
                       {window.__t("تأكيد كلمة المرور")}
                       {errors.confirmPassword && <span className="text-red-500"> {window.__t("مطلوب")}</span>}
                     </label>
@@ -912,7 +885,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                     type="button"
                     onClick={handleBack}
                     variant="outline"
-                    className="flex-1 h-12 rounded-lg text-sm"
+                    className="flex-1 h-12 rounded-lg text-sm bg-white hover:bg-slate-50 active:bg-white text-slate-600 border-slate-200 transition-all shadow-sm"
                     disabled={isLoading}
                   >
                     {window.__t("رجوع")}
@@ -920,8 +893,12 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                   <Button
                     type="button"
                     onClick={handleNextStep2}
-                    className="flex-1 bg-gradient-to-l from-primary to-[#D4941C] text-white h-12 rounded-lg font-semibold text-sm"
-                    disabled={isLoading}
+                    className={`flex-1 h-12 rounded-lg font-bold text-sm transition-all duration-300 border-2 ${
+                      isValidStep2 && !isLoading
+                        ? 'bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 text-white border-transparent shadow-lg shadow-orange-500/20'
+                        : 'bg-slate-50 dark:bg-white/5 text-slate-400 dark:text-white/30 border-slate-200 dark:border-white/10 cursor-not-allowed opacity-60'
+                    }`}
+                    disabled={!isValidStep2 || isLoading}
                   >
                     {isLoading ? (
                       <span className="flex items-center gap-2">
@@ -940,10 +917,10 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
             {step === 3 && (
               <div className="space-y-5">
                 <div className="text-center mb-6">
-                  <h2 className="text-2xl text-amber-900 dark:text-amber-200 font-bold" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>
+                  <h2 className="text-2xl text-orange-900 dark:text-orange-200 font-bold" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>
                     {window.__t("التحقق من البريد الإلكتروني")}
                   </h2>
-                  <p className="text-amber-700 dark:text-amber-400 text-sm mt-1" style={{ fontFamily: "'Tajawal', sans-serif" }}>
+                  <p className="text-orange-700 dark:text-orange-400 text-sm mt-1" style={{ fontFamily: "'Tajawal', sans-serif" }}>
                     {window.__t("أدخل رمز التحقق المرسل إلى")} <span className="font-bold">{formData.email}</span>
                   </p>
                 </div>
@@ -953,7 +930,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                     type="button"
                     onClick={handleSendOTPInternal}
                     disabled={isLoading}
-                    className="w-full bg-gradient-to-l from-amber-500 to-amber-600 text-white h-12 rounded-xl font-bold text-base"
+                    className="w-full bg-gradient-to-l from-orange-500 to-orange-600 text-white h-12 rounded-xl font-bold text-base"
                     style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}
                   >
                     {isLoading ? (
@@ -977,7 +954,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
 
                     {/* OTP Input */}
                     <div className="space-y-2">
-                      <label className="text-sm text-foreground dark:text-amber-200 block text-start font-medium">
+                      <label className="text-sm text-foreground dark:text-orange-200 block text-start font-medium">
                         {window.__t("رمز التحقق (6 أرقام)")}
                         {errors.otp && <span className="text-red-500"> {window.__t("مطلوب")}</span>}
                       </label>
@@ -1001,7 +978,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                       type="button"
                       onClick={handleVerifyOTP}
                       disabled={otpCode.length !== 6 || isLoading}
-                      className="w-full bg-gradient-to-l from-amber-500 to-amber-600 text-white h-12 rounded-xl font-bold text-base"
+                      className="w-full bg-gradient-to-l from-orange-500 to-orange-600 text-white h-12 rounded-xl font-bold text-base"
                       style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}
                     >
                       {isLoading ? (
@@ -1027,7 +1004,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                           setErrors({});
                         }}
                         disabled={isLoading}
-                        className="text-sm text-amber-600 hover:text-amber-700 transition-colors font-medium"
+                        className="text-sm text-orange-600 hover:text-orange-700 transition-colors font-medium"
                         style={{ fontFamily: "'Tajawal', sans-serif" }}
                       >
                         {window.__t("لم تتلقَ الرمز؟")} <span className="underline">{window.__t("اطلب رمزاً جديداً")}</span>
@@ -1042,7 +1019,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                     type="button"
                     onClick={handleBack}
                     variant="outline"
-                    className="flex-1 h-12 rounded-lg text-sm"
+                    className="flex-1 h-12 rounded-lg text-sm bg-white hover:bg-slate-50 active:bg-white text-slate-600 border-slate-200 transition-all shadow-sm"
                     disabled={isLoading}
                   >
                     {window.__t("رجوع")}
@@ -1055,10 +1032,10 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
             {step === 4 && (
               <div className="space-y-5">
                 <div className="text-center mb-8">
-                  <h2 className="text-2xl text-amber-900 dark:text-amber-200 font-bold" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>
+                  <h2 className="text-2xl text-orange-900 dark:text-orange-200 font-bold" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>
                     {window.__t("باقات تناسب جميع المحامين")}
                   </h2>
-                  <p className="text-amber-700 dark:text-amber-400 text-sm mt-2" style={{ fontFamily: "'Tajawal', sans-serif" }}>
+                  <p className="text-orange-700 dark:text-orange-400 text-sm mt-2" style={{ fontFamily: "'Tajawal', sans-serif" }}>
                     {window.__t("اختر الباقة المناسبة لاحتياجاتك واحصل على جميع المميزات")}
                   </p>
                 </div>
@@ -1074,14 +1051,14 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                         : 'border-border hover:border-primary/50 hover:shadow-md'
                     }`}
                   >
-                    <h3 className="text-lg font-semibold text-foreground dark:text-amber-200 mb-1">{window.__t("البداية")}</h3>
-                    <p className="text-muted-foreground dark:text-amber-400 text-xs mb-4">{window.__t("للمحامين المبتدئين والفرادى")}</p>
+                    <h3 className="text-lg font-semibold text-foreground dark:text-orange-200 mb-1">{window.__t("البداية")}</h3>
+                    <p className="text-muted-foreground dark:text-orange-400 text-xs mb-4">{window.__t("للمحامين المبتدئين والفرادى")}</p>
 
                     <div className="text-3xl font-bold text-primary mb-6">
                       0 <span className="text-sm">{window.__t("د.ت")}</span>
                     </div>
 
-                    <div className="space-y-2.5 mb-6 text-sm text-muted-foreground dark:text-amber-400">
+                    <div className="space-y-2.5 mb-6 text-sm text-muted-foreground dark:text-orange-400">
                       <p className="flex items-center gap-3">
                         <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> {window.__t("إدارة")} {planLimits.basic.cases} {window.__t("قضايا")}
                       </p>
@@ -1119,14 +1096,14 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                       {window.__t("الأفضل")}
                     </div>
 
-                    <h3 className="text-lg font-semibold text-foreground dark:text-amber-200 mb-1">{window.__t("المحترف")}</h3>
-                    <p className="text-muted-foreground dark:text-amber-400 text-xs mb-4">{window.__t("للمحامين المهنيين")}</p>
+                    <h3 className="text-lg font-semibold text-foreground dark:text-orange-200 mb-1">{window.__t("المحترف")}</h3>
+                    <p className="text-muted-foreground dark:text-orange-400 text-xs mb-4">{window.__t("للمحامين المهنيين")}</p>
 
                     <div className="text-3xl font-bold text-primary mb-6">
                       {pricing.pro} <span className="text-sm">{window.__t("د.ت/سنة")}</span>
                     </div>
 
-                    <div className="space-y-2.5 mb-6 text-sm text-muted-foreground dark:text-amber-400">
+                    <div className="space-y-2.5 mb-6 text-sm text-muted-foreground dark:text-orange-400">
                       <p className="flex items-center gap-3">
                         <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> {window.__t("إدارة")} {planLimits.pro.cases} {window.__t("قضية")}
                       </p>
@@ -1163,14 +1140,14 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                         : 'border-border hover:border-primary/50 hover:shadow-md'
                     }`}
                   >
-                    <h3 className="text-lg font-semibold text-foreground dark:text-amber-200 mb-1">{window.__t("المكتب")}</h3>
-                    <p className="text-muted-foreground dark:text-amber-400 text-xs mb-4">{window.__t("للمكاتب والشركات")}</p>
+                    <h3 className="text-lg font-semibold text-foreground dark:text-orange-200 mb-1">{window.__t("المكتب")}</h3>
+                    <p className="text-muted-foreground dark:text-orange-400 text-xs mb-4">{window.__t("للمكاتب والشركات")}</p>
 
                     <div className="text-3xl font-bold text-primary mb-6">
                       {pricing.enterprise} <span className="text-sm">{window.__t("د.ت/سنة")}</span>
                     </div>
 
-                    <div className="space-y-2.5 mb-6 text-sm text-muted-foreground dark:text-amber-400">
+                    <div className="space-y-2.5 mb-6 text-sm text-muted-foreground dark:text-orange-400">
                       <p className="flex items-center gap-3">
                         <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" /> {window.__t("قضايا غير محدودة")}
                       </p>
@@ -1201,7 +1178,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                   </button>
                 </div>
 
-                <p className="text-center text-xs text-muted-foreground dark:text-amber-400 mt-6">
+                <p className="text-center text-xs text-muted-foreground dark:text-orange-400 mt-6">
                   {window.__t("بالاشتراك، توافق على شروط الخدمة وسياسة الخصوصية")}
                 </p>
 
@@ -1211,7 +1188,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                     type="button"
                     onClick={handleBack}
                     variant="outline"
-                    className="flex-1 h-12 rounded-lg text-sm"
+                    className="flex-1 h-12 rounded-lg text-sm bg-white hover:bg-slate-50 active:bg-white text-slate-600 border-slate-200 transition-all shadow-sm"
                     disabled={isLoading}
                   >
                     {window.__t("رجوع")}
@@ -1219,7 +1196,11 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                   <Button
                     type="submit"
                     disabled={!selectedPlan || isLoading}
-                    className="flex-1 bg-gradient-to-l from-primary to-[#D4941C] text-white h-12 rounded-lg font-semibold text-sm"
+                    className={`flex-1 h-12 rounded-lg font-bold text-sm transition-all duration-300 border-2 ${
+                      selectedPlan && !isLoading
+                        ? 'bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 text-white border-transparent shadow-lg shadow-orange-500/20'
+                        : 'bg-slate-50 dark:bg-white/5 text-slate-400 dark:text-white/30 border-slate-200 dark:border-white/10 cursor-not-allowed opacity-60'
+                    }`}
                   >
                     {isLoading ? (
                       <span className="flex items-center gap-2">
@@ -1236,9 +1217,9 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
           </form>
         </div>
 
-        {/* Footer */}
-        <div className="mt-8 text-center">
-          <p className="text-muted-foreground text-xs">{window.__t("© 2026 المحامي - جميع الحقوق محفوظة")}</p>
+        {/* Copyright Footer */}
+        <div className={`mt-10 text-center text-[10px] sm:text-xs font-medium tracking-wide ${theme === 'dark' ? 'text-white/20' : 'text-slate-400'}`}>
+          {window.__t("© 2026 المحامي - جميع الحقوق محفوظة")}
         </div>
       </div>
     </div>

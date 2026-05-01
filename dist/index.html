@@ -265,6 +265,17 @@
         to { transform: translateY(0); opacity: 1; }
       }
       .animate-reveal { animation: reveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+      /* Force solid backgrounds on UI overlays */
+      [data-dropdown-container] {
+        background-color: #ffffff !important;
+        opacity: 1 !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+      }
+      html.dark [data-dropdown-container] {
+        background-color: #0f172a !important;
+      }
     </style>
 
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
@@ -294,7 +305,7 @@
   }
 }
 </script>
-  <script type="module" crossorigin src="/assets/index-DPsleX81.js"></script>
+  <script type="module" crossorigin src="/assets/index-BnW4P2g9.js"></script>
   <link rel="stylesheet" crossorigin href="/assets/index-Bs40WhXA.css">
 </head>
   <body class="bg-gray-50 text-slate-900 dark:bg-deepblack dark:text-offwhite antialiased selection:bg-gold-500 selection:text-black transition-colors duration-500">

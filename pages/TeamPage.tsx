@@ -103,13 +103,13 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
   const showMessageNotification = React.useCallback((fromName: string, text: string) => {
     if ('Notification' in window && Notification.permission === 'granted') {
       try {
-        new Notification(`المحامي - رسالة من ${fromName}`, {
+        new Notification(`${window.__t("المحامي")} - ${window.__t("رسالة من")} ${fromName}`, {
           body: text.length > 50 ? text.slice(0, 50) + '...' : text,
           icon: '/favicon.ico'
         });
       } catch (_) {}
     }
-    setNotification({ msg: `رسالة جديدة من ${fromName}`, type: 'success' });
+    setNotification({ msg: `${window.__t("رسالة جديدة من")} ${fromName}`, type: 'success' });
     setTimeout(() => setNotification(null), 3000);
   }, []);
 
@@ -227,7 +227,7 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
     if (!removeMemberModal) return;
     try {
       await storageService.removeTeamMember(removeMemberModal.id, ownerId);
-      setNotification({ msg: `تم إزالة ${removeMemberModal.name} من الفريق.`, type: 'success' });
+      setNotification({ msg: `${window.__t("تم إزالة")} ${removeMemberModal.name} ${window.__t("من الفريق.")}`, type: 'success' });
       setRemoveMemberModal(null);
       loadMembers();
     } catch (err) {
@@ -643,7 +643,7 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
         onClose={() => setRevokeModal(null)}
         onConfirm={handleRevokeAssignment}
         title={window.__t("إلغاء إسناد القضية")}
-        message={revokeModal ? `هل تريد إلغاء إسناد القضية "${revokeModal.caseTitle}"؟ لن يتمكن المحامي المعين من رؤيتها بعد ذلك.` : ''}
+        message={revokeModal ? `${window.__t("هل تريد إلغاء إسناد القضية")} "${revokeModal.caseTitle}"؟ ${window.__t("لن يتمكن المحامي المعين من رؤيتها بعد ذلك.")}` : ''}
         confirmText={window.__t("إلغاء الإسناد")}
         cancelText={window.__t("تراجع")}
         type="warning"
@@ -654,7 +654,7 @@ export const TeamPage = ({ user, onNavigate, onRefreshUser }: { user: User; onNa
         onClose={() => setRemoveMemberModal(null)}
         onConfirm={handleRemoveMember}
         title={window.__t("إزالة عضو من الفريق")}
-        message={removeMemberModal ? `هل تريد إزالة ${removeMemberModal.name} (${removeMemberModal.email}) من الفريق؟ سيفقد الوصول إلى القضايا المسندة إليه.` : ''}
+        message={removeMemberModal ? `${window.__t("هل تريد إزالة")} ${removeMemberModal.name} (${removeMemberModal.email}) ${window.__t("من الفريق؟ سيفقد الوصول إلى القضايا المسندة إليه.")}` : ''}
         confirmText={window.__t("إزالة")}
         cancelText={window.__t("تراجع")}
         type="danger"

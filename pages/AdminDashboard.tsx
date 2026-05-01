@@ -5,15 +5,20 @@ import { User, UserRole } from '../types';
 import { Modal, Spinner } from '../components/UI';
 import { visitorService, VisitorStats, VisitorChartPoint, RegistrationChartPoint } from '../services/visitorService';
 import { ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { Users as UsersIcon, Scale, ArrowUpCircle, TrendingUp, DollarSign, Edit2, Trash2, RefreshCw } from 'lucide-react';
 
 // User Row Component with Edit/Delete/Upgrade
-const UserRow: React.FC<{ user: User; onUpdate: () => void; onDelete: () => void }> = ({ user, onUpdate, onDelete }) => {
+const UserRow: React.FC<{ user: User | any; onUpdate: () => void; onDelete: () => void }> = ({ user, onUpdate, onDelete }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [editName, setEditName] = useState(user.name);
   const [editEmail, setEditEmail] = useState(user.email);
-  const [selectedPlan, setSelectedPlan] = useState(user.subscriptionPlan || 'basic');
+  
+  const currentPlan = user.subscriptionPlan || user.subscription_plan || 'basic';
+  const currentStatus = user.subscriptionStatus || user.subscription_status || 'active';
+  
+  const [selectedPlan, setSelectedPlan] = useState(currentPlan);
   const [loading, setLoading] = useState(false);
 
   const handleUpdate = async () => {
@@ -74,16 +79,16 @@ const UserRow: React.FC<{ user: User; onUpdate: () => void; onDelete: () => void
         <td className="px-6 py-4 text-slate-500">{user.email}</td>
         <td className="px-6 py-4">
           <span className={`px-2 py-1 rounded text-xs ${
-            user.subscriptionPlan === 'basic' ? 'bg-gray-100' : 
-            user.subscriptionPlan === 'pro' ? 'bg-purple-100 text-purple-700' : 
+            currentPlan === 'basic' ? 'bg-gray-100' : 
+            currentPlan === 'pro' ? 'bg-purple-100 text-purple-700' : 
             'bg-gold-100 text-gold-800'
           }`}>
-            {user.subscriptionPlan === 'basic' ? window.__t("البداية") : 
-             user.subscriptionPlan === 'pro' ? window.__t("المحترف") : window.__t("المكتب")}
+            {currentPlan === 'basic' ? window.__t("البداية") : 
+             currentPlan === 'pro' ? window.__t("المحترف") : window.__t("المكتب")}
           </span>
         </td>
         <td className="px-6 py-4">
-          {user.subscriptionStatus === 'pending_approval' ? (
+          {currentStatus === 'pending_approval' ? (
             <span className="text-orange-500 font-bold text-xs">{window.__t("قيد المراجعة")}</span>
           ) : (
             <span className="text-green-600 text-xs font-bold">{window.__t("نشط")}</span>
@@ -96,21 +101,21 @@ const UserRow: React.FC<{ user: User; onUpdate: () => void; onDelete: () => void
               className="text-blue-600 hover:text-blue-800 text-xs px-2 py-1 rounded hover:bg-blue-50 transition"
               title={window.__t("تعديل")}
             >
-              ✏️
+              <Edit2 className="w-4 h-4" />
             </button>
             <button
               onClick={() => setShowUpgradeModal(true)}
               className="text-green-600 hover:text-green-800 text-xs px-2 py-1 rounded hover:bg-green-50 transition"
               title={window.__t("ترقية الباقة")}
             >
-              ⬆️
+              <ArrowUpCircle className="w-4 h-4" />
             </button>
             <button
               onClick={() => setShowDeleteConfirm(true)}
               className="text-red-600 hover:text-red-800 text-xs px-2 py-1 rounded hover:bg-red-50 transition"
               title={window.__t("حذف")}
             >
-              🗑️
+              <Trash2 className="w-4 h-4" />
             </button>
           </div>
         </td>
@@ -164,7 +169,7 @@ const UserRow: React.FC<{ user: User; onUpdate: () => void; onDelete: () => void
           </div>
           <button
             onClick={handleUpgrade}
-            disabled={loading || selectedPlan === user.subscriptionPlan}
+            disabled={loading || selectedPlan === currentPlan}
             className="w-full bg-gold-500 text-slate-900 py-2 rounded hover:bg-gold-400 disabled:opacity-50 font-bold"
           >
             {loading ? window.__t("جاري الترقية...") : window.__t("ترقية الباقة")}
@@ -198,7 +203,7 @@ const UserRow: React.FC<{ user: User; onUpdate: () => void; onDelete: () => void
   );
 };
 
-export const AdminDashboard = ({ view = 'overview' }: { view?: 'overview' | 'users' }) => {
+export const AdminDashboard = ({ onNavigate }: { onNavigate?: (page: string) => void }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [visitorStats, setVisitorStats] = useState<VisitorStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
@@ -215,6 +220,7 @@ export const AdminDashboard = ({ view = 'overview' }: { view?: 'overview' | 'use
   const [showActivityDeleteConfirm, setShowActivityDeleteConfirm] = useState(false);
   const [activityToDelete, setActivityToDelete] = useState<string | null>(null);
   const [isDeletingActivity, setIsDeletingActivity] = useState(false);
+  const [showAdvancedMetrics, setShowAdvancedMetrics] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -287,24 +293,26 @@ export const AdminDashboard = ({ view = 'overview' }: { view?: 'overview' | 'use
 
   const loadAdvancedStats = async () => {
     try {
-      const { pool } = await import('../services/db');
-      const now = new Date();
-      const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-      const [revenueRes, monthRevRes, newCasesRes, planRes, contractsRes] = await Promise.all([
-        pool.query("SELECT COALESCE(SUM(amount), 0) as total FROM invoices WHERE status = 'paid'"),
-        pool.query("SELECT COALESCE(SUM(amount), 0) as total FROM invoices WHERE status = 'paid' AND date >= $1", [monthStart]),
-        pool.query("SELECT COUNT(*) as c FROM cases WHERE date_created >= $1", [monthStart]),
-        pool.query("SELECT subscription_plan, COUNT(*) as c FROM users WHERE role != 'ADMIN' GROUP BY subscription_plan"),
-        pool.query("SELECT COUNT(*) as c FROM contracts")
-      ]);
-      const planMap: Record<string, number> = { basic: 0, pro: 0, enterprise: 0 };
-      (planRes.rows || []).forEach((r: any) => { planMap[r.subscription_plan || 'basic'] = parseInt(r.c) || 0; });
+      const token = storageService.getAccessToken();
+      const response = await fetch('http://localhost:3001/api/admin/stats', {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      if (!response.ok) throw new Error('Failed to load admin stats');
+      const data = await response.json();
+      const stats = data.advancedStats;
       setAdvancedStats({
-        revenueTotal: parseFloat(revenueRes.rows[0]?.total || '0'),
-        revenueThisMonth: parseFloat(monthRevRes.rows[0]?.total || '0'),
-        newCasesThisMonth: parseInt(newCasesRes.rows[0]?.c || '0'),
-        totalContracts: parseInt(contractsRes.rows[0]?.c || '0'),
-        planBreakdown: planMap
+        revenueTotal: stats.revenueTotal || 0,
+        revenueThisMonth: stats.revenueThisMonth || 0,
+        newCasesThisMonth: stats.newCasesThisMonth || 0,
+        totalContracts: stats.totalContracts || 0,
+        planBreakdown: {
+          basic: stats.planBreakdown?.basic || 0,
+          pro: stats.planBreakdown?.pro || 0,
+          enterprise: stats.planBreakdown?.enterprise || 0,
+        },
       });
     } catch (e) {
       console.error('Error loading advanced stats:', e);
@@ -319,47 +327,103 @@ export const AdminDashboard = ({ view = 'overview' }: { view?: 'overview' | 'use
       
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-        <div className="bg-slate-900 text-white p-6 rounded-xl shadow-lg">
-          <p className="text-slate-400 text-sm mb-1">{window.__t("إجمالي المستخدمين")}</p>
-          <h3 className="text-4xl font-bold">{users.length}</h3>
+        {/* Total Users → Navigate to Users page */}
+        <div
+          onClick={() => onNavigate?.('admin-users')}
+          className="bg-[#1e1b4b] text-white p-6 rounded-2xl shadow-xl border border-white/5 relative overflow-hidden group cursor-pointer hover:scale-[1.04] hover:shadow-2xl active:scale-[0.97] transition-all duration-300"
+        >
+          <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/5 blur-2xl rounded-full -mr-10 -mt-10 group-hover:bg-orange-500/20 transition-all duration-500"></div>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-slate-400 text-[10px] uppercase tracking-widest font-bold">{window.__t("إجمالي المستخدمين")}</p>
+            <UsersIcon className="w-5 h-5 text-slate-500 group-hover:text-orange-400 transition-colors duration-300" />
+          </div>
+          <h3 className="text-4xl font-black tracking-tight">{users.length}</h3>
+          <p className="text-orange-400/70 text-[10px] mt-3 font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-300">{window.__t("عرض التفاصيل")} →</p>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-          <p className="text-gray-500 text-sm mb-1">{window.__t("المحامين النشطين")}</p>
-          <h3 className="text-4xl font-bold text-slate-800">{lawyers.length}</h3>
+
+        {/* Active Lawyers → Navigate to Users page */}
+        <div
+          onClick={() => onNavigate?.('admin-users')}
+          className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 group cursor-pointer hover:scale-[1.04] hover:shadow-xl hover:border-indigo-200 active:scale-[0.97] transition-all duration-300"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-slate-400 text-[10px] uppercase tracking-widest font-bold">{window.__t("المحامين النشطين")}</p>
+            <Scale className="w-5 h-5 text-slate-300 group-hover:text-indigo-500 transition-colors duration-300" />
+          </div>
+          <h3 className="text-4xl font-black text-[#1e1b4b] tracking-tight">{lawyers.length}</h3>
+          <p className="text-indigo-400 text-[10px] mt-3 font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-300">{window.__t("عرض التفاصيل")} →</p>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-          <p className="text-gray-500 text-sm mb-1">{window.__t("عمليات الترقية الحديثة")}</p>
-          <h3 className="text-4xl font-bold text-slate-800">{subscriptionActivities.length}</h3>
+
+        {/* Recent Upgrades → Scroll to subscription activities */}
+        <div
+          onClick={() => document.getElementById('subscription-activities')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 group cursor-pointer hover:scale-[1.04] hover:shadow-xl hover:border-green-200 active:scale-[0.97] transition-all duration-300"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-slate-400 text-[10px] uppercase tracking-widest font-bold">{window.__t("عمليات الترقية الحديثة")}</p>
+            <ArrowUpCircle className="w-5 h-5 text-slate-300 group-hover:text-green-500 transition-colors duration-300" />
+          </div>
+          <h3 className="text-4xl font-black text-[#1e1b4b] tracking-tight">{subscriptionActivities.length}</h3>
+          <p className="text-green-500 text-[10px] mt-3 font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-300">{window.__t("عرض السجل")} ↓</p>
         </div>
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-xl shadow-lg">
-          <p className="text-blue-100 text-sm mb-1">{window.__t("زوار المنصة (اليوم)")}</p>
-          <h3 className="text-4xl font-bold">
+
+        {/* Platform Visitors → Scroll to visitor stats */}
+        <div
+          onClick={() => document.getElementById('visitor-stats')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          className="bg-[#1e1b4b] text-white p-6 rounded-2xl shadow-xl border border-white/5 relative overflow-hidden group cursor-pointer hover:scale-[1.04] hover:shadow-2xl active:scale-[0.97] transition-all duration-300"
+        >
+          <div className="absolute bottom-0 right-0 w-20 h-20 bg-orange-500/10 blur-2xl rounded-full group-hover:bg-orange-500/25 transition-all duration-500"></div>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-slate-400 text-[10px] uppercase tracking-widest font-bold">{window.__t("زوار المنصة (اليوم)")}</p>
+            <TrendingUp className="w-5 h-5 text-slate-500 group-hover:text-orange-400 transition-colors duration-300" />
+          </div>
+          <h3 className="text-4xl font-black tracking-tight">
             {loadingStats ? <Spinner /> : visitorStats?.visitsToday || 0}
           </h3>
-          <p className="text-blue-100 text-xs mt-2">
-            {window.__t("إجمالي:")} {visitorStats?.totalVisits || 0} {window.__t("| فريد:")} {visitorStats?.uniqueVisitors || 0}
+          <p className="text-orange-400/70 text-[10px] mt-2 font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-300">
+            {window.__t("إجمالي:")} {visitorStats?.totalVisits || 0} · {window.__t("عرض التفاصيل")} ↓
           </p>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-          <p className="text-gray-500 text-sm mb-1">{window.__t("إيرادات الشهر")}</p>
-          <h3 className="text-4xl font-bold text-slate-800">{advancedStats?.revenueThisMonth?.toFixed(2) ?? '0'} TND</h3>
+
+        {/* Monthly Revenue → Toggle advanced metrics */}
+        <div
+          onClick={() => {
+            setShowAdvancedMetrics(prev => !prev);
+            if (!showAdvancedMetrics) {
+              setTimeout(() => {
+                document.getElementById('advanced-metrics')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }, 100);
+            }
+          }}
+          className={`bg-white p-6 rounded-2xl shadow-sm border ${showAdvancedMetrics ? 'border-orange-500 shadow-orange-100' : 'border-slate-100 hover:border-orange-200 hover:shadow-xl'} group cursor-pointer hover:scale-[1.04] active:scale-[0.97] transition-all duration-300`}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-slate-400 text-[10px] uppercase tracking-widest font-bold">{window.__t("إيرادات الشهر")}</p>
+            <DollarSign className={`w-5 h-5 transition-colors duration-300 ${showAdvancedMetrics ? 'text-orange-500' : 'text-slate-300 group-hover:text-orange-500'}`} />
+          </div>
+          <h3 className="text-3xl font-black text-orange-600 tracking-tight">{advancedStats?.revenueThisMonth?.toFixed(2) ?? '0'} <span className="text-sm font-bold">TND</span></h3>
+          <p className="text-orange-400 text-[10px] mt-3 font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-300">
+            {showAdvancedMetrics ? window.__t("إخفاء التفاصيل") + ' ↑' : window.__t("عرض التفاصيل") + ' ↓'}
+          </p>
         </div>
       </div>
 
       {/* Advanced Metrics */}
-      {advancedStats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
-          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white p-6 rounded-xl shadow-lg">
-            <p className="text-emerald-100 text-sm mb-1">{window.__t("إجمالي الإيرادات")}</p>
-            <h3 className="text-3xl font-bold">{advancedStats.revenueTotal.toFixed(2)} {window.__t("د.ت")}</h3>
+      {advancedStats && showAdvancedMetrics && (
+        <div id="advanced-metrics" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6 scroll-mt-6">
+          <div className="bg-[#1e1b4b] text-white p-6 rounded-2xl shadow-xl border border-white/5 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/10 blur-2xl rounded-full -mr-10 -mt-10"></div>
+            <p className="text-slate-400 text-[10px] uppercase tracking-widest font-bold mb-2">{window.__t("إجمالي الإيرادات")}</p>
+            <h3 className="text-3xl font-black tracking-tight text-orange-400">{advancedStats.revenueTotal.toFixed(2)} {window.__t("د.ت")}</h3>
           </div>
-          <div className="bg-gradient-to-br from-violet-500 to-violet-600 text-white p-6 rounded-xl shadow-lg">
-            <p className="text-violet-100 text-sm mb-1">{window.__t("قضايا هذا الشهر")}</p>
-            <h3 className="text-3xl font-bold">{advancedStats.newCasesThisMonth}</h3>
+          <div className="bg-[#1e1b4b] text-white p-6 rounded-2xl shadow-xl border border-white/5 relative overflow-hidden group">
+            <div className="absolute bottom-0 left-0 w-20 h-20 bg-blue-500/5 blur-2xl rounded-full"></div>
+            <p className="text-slate-400 text-[10px] uppercase tracking-widest font-bold mb-2">{window.__t("قضايا هذا الشهر")}</p>
+            <h3 className="text-3xl font-black tracking-tight">{advancedStats.newCasesThisMonth}</h3>
           </div>
-          <div className="bg-gradient-to-br from-cyan-500 to-cyan-600 text-white p-6 rounded-xl shadow-lg">
-            <p className="text-cyan-100 text-sm mb-1">{window.__t("إجمالي العقود")}</p>
-            <h3 className="text-3xl font-bold">{advancedStats.totalContracts}</h3>
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-lg transition-all">
+            <p className="text-slate-400 text-[10px] uppercase tracking-widest font-bold mb-2">{window.__t("إجمالي العقود")}</p>
+            <h3 className="text-3xl font-black text-[#1e1b4b] tracking-tight">{advancedStats.totalContracts}</h3>
           </div>
           <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
             <p className="text-gray-500 text-sm mb-2">{window.__t("توزيع الباقات")}</p>
@@ -374,33 +438,33 @@ export const AdminDashboard = ({ view = 'overview' }: { view?: 'overview' | 'use
 
       {/* Visitor Statistics Card */}
       {visitorStats && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 mt-6">
+        <div id="visitor-stats" className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 mt-6 scroll-mt-6">
           <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
             {window.__t("📊 إحصائيات الزوار والتسجيلات")}
             <button
               onClick={loadVisitorStats}
-              className="text-sm text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50 transition"
+              className="text-slate-400 hover:text-blue-600 p-2 rounded hover:bg-blue-50 transition"
               title={window.__t("تحديث")}
             >
-              🔄
+              <RefreshCw className="w-5 h-5" />
             </button>
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-              <p className="text-blue-600 text-sm mb-1">{window.__t("إجمالي الزيارات")}</p>
-              <p className="text-2xl font-bold text-blue-900">{visitorStats.totalVisits.toLocaleString()}</p>
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 group hover:border-orange-200 transition-colors">
+              <p className="text-slate-400 text-[10px] uppercase tracking-widest font-bold mb-1">{window.__t("إجمالي الزيارات")}</p>
+              <p className="text-2xl font-black text-[#1e1b4b] tracking-tight">{visitorStats.totalVisits.toLocaleString()}</p>
             </div>
-            <div className="bg-green-50 p-4 rounded-lg border border-green-100">
-              <p className="text-green-600 text-sm mb-1">{window.__t("زوار فريدون")}</p>
-              <p className="text-2xl font-bold text-green-900">{visitorStats.uniqueVisitors.toLocaleString()}</p>
+            <div className="bg-orange-500/5 p-4 rounded-xl border border-orange-500/10 group hover:border-orange-500/30 transition-colors">
+              <p className="text-orange-600 text-[10px] uppercase tracking-widest font-bold mb-1">{window.__t("زوار فريدون")}</p>
+              <p className="text-2xl font-black text-orange-900 tracking-tight">{visitorStats.uniqueVisitors.toLocaleString()}</p>
             </div>
-            <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
-              <p className="text-purple-600 text-sm mb-1">{window.__t("هذا الأسبوع")}</p>
-              <p className="text-2xl font-bold text-purple-900">{visitorStats.visitsThisWeek.toLocaleString()}</p>
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <p className="text-slate-400 text-[10px] uppercase tracking-widest font-bold mb-1">{window.__t("هذا الأسبوع")}</p>
+              <p className="text-2xl font-black text-[#1e1b4b] tracking-tight">{visitorStats.visitsThisWeek.toLocaleString()}</p>
             </div>
-            <div className="bg-gold-50 p-4 rounded-lg border border-gold-200">
-              <p className="text-gold-700 text-sm mb-1">{window.__t("هذا الشهر")}</p>
-              <p className="text-2xl font-bold text-gold-900">{visitorStats.visitsThisMonth.toLocaleString()}</p>
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <p className="text-slate-400 text-[10px] uppercase tracking-widest font-bold mb-1">{window.__t("هذا الشهر")}</p>
+              <p className="text-2xl font-black text-[#1e1b4b] tracking-tight">{visitorStats.visitsThisMonth.toLocaleString()}</p>
             </div>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -446,9 +510,9 @@ export const AdminDashboard = ({ view = 'overview' }: { view?: 'overview' | 'use
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
-          <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden lg:col-span-2">
-            <div className="px-6 py-4 border-b border-slate-100 bg-emerald-50 flex justify-between items-center">
-              <h3 className="font-bold text-emerald-800">{window.__t("آخر عمليات ترقية الاشتراك بعد الدفع")}</h3>
+          <div id="subscription-activities" className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden lg:col-span-2 scroll-mt-6">
+            <div className="px-6 py-5 border-b border-slate-100 bg-[#1e1b4b] flex justify-between items-center">
+              <h3 className="font-bold text-white text-sm uppercase tracking-widest">{window.__t("آخر عمليات ترقية الاشتراك")}</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-end">

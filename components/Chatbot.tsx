@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { websocketClient } from '../services/websocketClient';
 import { chatService, ChatMessage } from '../services/chatService';
 import { storageService } from '../services/storageService';
+import { Headset } from 'lucide-react';
 
 export const Chatbot: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -168,34 +169,44 @@ export const Chatbot: React.FC = () => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 start-6 z-50 w-14 h-14 bg-yellow-400 hover:bg-yellow-300 text-slate-900 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110"
+          className="fixed bottom-6 start-6 z-50 w-16 h-16 bg-gradient-to-br from-[#ea580c] via-[#fb923c] to-[#c2410c] text-white rounded-full shadow-[0_8px_32px_rgba(234,88,12,0.4)] flex items-center justify-center transition-all duration-500 hover:scale-110 hover:rotate-6 group overflow-hidden"
           aria-label="Open chat"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          {/* Internal Shine Effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-[45deg] -translate-x-[200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
+
+          <svg className="w-8 h-8 transition-transform group-hover:scale-110 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
+          <div className="absolute top-0 end-0 w-4.5 h-4.5 bg-red-500 rounded-full border-2 border-white shadow-sm animate-pulse z-20"></div>
         </button>
       )}
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-6 start-6 z-50 w-96 h-[600px] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl flex flex-col border border-slate-200 dark:border-slate-700">
+        <div className="fixed bottom-6 start-6 z-50 w-96 h-[600px] flex flex-col rounded-3xl overflow-hidden glass shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] border border-white/20">
+          <div className={`absolute inset-0 -z-10 bg-slate-900/90 backdrop-blur-2xl`}></div>
           {/* Header */}
-          <div className="bg-yellow-400 text-slate-900 px-6 py-4 rounded-t-2xl flex items-center justify-between">
+          <div className="bg-[#0f172a]/95 backdrop-blur-xl text-white px-6 py-5 rounded-t-2xl flex items-center justify-between shadow-lg border-b border-white/10">
             <div className="flex items-center space-x-3 space-x-reverse">
-              <div className="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center">
-                <span className="text-yellow-400 font-bold text-lg">{window.__t("م")}</span>
+              <div className="w-10 h-10 bg-orange-500/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-orange-500/20 shadow-inner">
+                <svg className="w-5 h-5 text-orange-400 drop-shadow-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M12 3v18" />
+                  <path d="M5 8l-2 5h8l-2-5" />
+                  <path d="M19 8l-2 5h8l-2-5" />
+                </svg>
               </div>
               <div>
-                <h3 className="font-bold text-lg">{window.__t("مركز المساعدة")}</h3>
-                <p className="text-xs text-slate-700">
-                  {isConnecting ? window.__t("جاري الاتصال...") : window.__t("دعم المنصة — نحن هنا لمساعدتك")}
+                <h3 className="font-bold text-lg tracking-tight">{window.__t("مركز المساعدة")}</h3>
+                <p className="text-[10px] text-white/60 uppercase tracking-widest font-semibold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
+                  {isConnecting ? window.__t("جاري الاتصال...") : window.__t("دعم المنصة")}
                 </p>
               </div>
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="text-slate-900 hover:text-slate-700 transition"
+              className="text-white/60 hover:text-white transition"
               aria-label="Close chat"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -220,7 +231,7 @@ export const Chatbot: React.FC = () => {
                 <div
                   className={`max-w-[75%] rounded-2xl px-4 py-2 ${
                     msg.senderType === 'user'
-                      ? 'bg-yellow-400 text-slate-900'
+                      ? 'bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-md'
                       : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700'
                   }`}
                 >
@@ -259,7 +270,7 @@ export const Chatbot: React.FC = () => {
                     </div>
                   )}
 
-                  <p className={`text-xs mt-1 ${msg.senderType === 'user' ? 'text-slate-700' : 'text-slate-500'}`}>
+                  <p className={`text-xs mt-1 ${msg.senderType === 'user' ? 'text-amber-400' : 'text-slate-500'}`}>
                     {new Date(msg.createdAt).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
@@ -268,7 +279,7 @@ export const Chatbot: React.FC = () => {
 
             {isTyping && (
               <div className="flex justify-start">
-                <div className="bg-white dark:bg-slate-800 rounded-2xl px-4 py-2 border border-slate-200 dark:border-slate-700">
+                <div className="bg-white dark:bg-amber-500 rounded-2xl px-4 py-2 border border-slate-200 dark:border-amber-400">
                   <div className="flex space-x-1 space-x-reverse">
                     <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                     <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -283,10 +294,10 @@ export const Chatbot: React.FC = () => {
 
           {/* Attachments Preview */}
           {attachments.length > 0 && (
-            <div className="px-4 pt-2 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+            <div className="px-4 pt-2 border-t border-slate-200 dark:border-amber-400 bg-slate-50 dark:bg-amber-500">
               <div className="flex flex-wrap gap-2">
                 {attachments.map((att) => (
-                  <div key={att.id} className="flex items-center space-x-2 space-x-reverse bg-white dark:bg-slate-700 rounded-lg p-2 text-xs">
+                  <div key={att.id} className="flex items-center space-x-2 space-x-reverse bg-white dark:bg-amber-400 rounded-lg p-2 text-xs">
                     <span className="truncate max-w-[150px]">{att.name}</span>
                     <button onClick={() => removeAttachment(att.id)} className="text-red-500 hover:text-red-600">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -300,7 +311,7 @@ export const Chatbot: React.FC = () => {
           )}
 
           {/* Input */}
-          <form onSubmit={handleSend} className="p-4 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+          <form onSubmit={handleSend} className="p-4 border-t border-slate-200 dark:border-amber-400 bg-white dark:bg-amber-600">
             <div className="flex space-x-2 space-x-reverse">
               <input
                 ref={fileInputRef}
@@ -313,7 +324,7 @@ export const Chatbot: React.FC = () => {
               />
               <label
                 htmlFor="chat-file-input"
-                className="bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-900 dark:text-white px-3 py-2 rounded-lg transition cursor-pointer flex items-center"
+                className="bg-slate-200 dark:bg-amber-400 hover:bg-slate-300 dark:hover:bg-slate-600 text-amber-600 dark:text-white px-3 py-2 rounded-lg transition cursor-pointer flex items-center"
                 title={window.__t("إرفاق ملف")}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -325,13 +336,13 @@ export const Chatbot: React.FC = () => {
                 value={input}
                 onChange={handleInputChange}
                 placeholder={window.__t("اكتب رسالتك...")}
-                className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                className="flex-1 bg-slate-100 dark:bg-amber-500 text-amber-600 dark:text-white border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                 disabled={isConnecting}
               />
               <button
                 type="submit"
                 disabled={(!input.trim() && attachments.length === 0) || isConnecting}
-                className="bg-yellow-400 hover:bg-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed text-slate-900 px-4 py-2 rounded-lg transition"
+                className="bg-yellow-400 hover:bg-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed text-amber-600 px-4 py-2 rounded-lg transition"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />

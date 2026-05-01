@@ -5,7 +5,7 @@ Exports all route modules.
 from app.routers import (
     auth, users, cases, contracts, events, invoices, notifications, chat, admin,
     password_reset, device_security, admin_security, faculties,
-    subscriptions, automated_subscription
+    subscriptions, automated_subscription, analytics
 )
 
 
@@ -25,5 +25,6 @@ __all__ = [
     "faculties",
     "subscriptions",
     "automated_subscription",
+    "analytics",
 ]
 

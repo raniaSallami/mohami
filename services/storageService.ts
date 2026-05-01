@@ -600,6 +600,23 @@ class StorageService {
     }
   }
 
+  async upgradeUserPlan(userId: string, plan: string): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE}/users/${userId}/plan`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(this.getAccessToken() && { Authorization: `Bearer ${this.getAccessToken()}` }),
+        },
+        body: JSON.stringify({ plan }),
+      });
+      if (!response.ok) throw new Error('Failed to upgrade user plan');
+      return await response.json();
+    } catch (e) {
+      throw e;
+    }
+  }
+
   async addCase(caseData: any): Promise<{ pendingApproval: boolean }> {
     try {
       const payload = {

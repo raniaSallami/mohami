@@ -14,6 +14,24 @@ export interface VisitorData {
   session_id?: string;
 }
 
+export interface VisitorStats {
+  totalVisits: number;
+  uniqueVisitors: number;
+  visitsToday: number;
+  visitsThisWeek: number;
+  visitsThisMonth: number;
+}
+
+export interface VisitorChartPoint {
+  label: string;
+  visits: number;
+}
+
+export interface RegistrationChartPoint {
+  label: string;
+  count: number;
+}
+
 class VisitorService {
   private baseUrl = API_BASE;
   private sessionId: string;
@@ -113,6 +131,50 @@ class VisitorService {
 
   getSessionId(): string {
     return this.sessionId;
+  }
+
+  async getVisitorStats(): Promise<VisitorStats> {
+    try {
+      const response = await fetch(`${this.baseUrl}/admin/stats/visitors`, {
+        headers: this.getAuthHeaders(),
+      });
+      if (!response.ok) throw new Error('Failed to fetch stats');
+      return response.json();
+    } catch {
+      return { totalVisits: 0, uniqueVisitors: 0, visitsToday: 0, visitsThisWeek: 0, visitsThisMonth: 0 };
+    }
+  }
+
+  async getVisitsChartData(days = 14): Promise<VisitorChartPoint[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/admin/stats/visits-chart?days=${days}`, {
+        headers: this.getAuthHeaders(),
+      });
+      if (!response.ok) throw new Error('Failed to fetch data');
+      const data = await response.json();
+      return data.map((d: any) => ({
+        label: d.date,
+        visits: d.visits
+      }));
+    } catch {
+      return [];
+    }
+  }
+
+  async getRegistrationsChartData(months = 6): Promise<RegistrationChartPoint[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/admin/stats/registrations-chart?months=${months}`, {
+        headers: this.getAuthHeaders(),
+      });
+      if (!response.ok) throw new Error('Failed to fetch data');
+      const data = await response.json();
+      return data.map((d: any) => ({
+        label: d.month,
+        count: d.count
+      }));
+    } catch {
+      return [];
+    }
   }
 }
 

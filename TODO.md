@@ -1,45 +1,26 @@
-# ✅ MIGRATION 100% - COMPLÈTE
+# TODO: Match LoginPage Frontend to LandingPage Style
 
-## 🎉 EXPRESS.JS → FASTAPI: MIGRATION TERMINÉE
+✅ **Plan Approved** - User confirmed: Copy navbar/hero glassmorphism/animations from LandingPage to LoginPage. Preserve all logic.
 
-La migration complète du backend Express.js vers FastAPI est **COMPLÈTE À 100%**.
+## Steps:
 
-### ✅ Étapes migrées:
-1. ✅ **Core FastAPI** - Tous les routes implémentées
-2. ✅ **Admin API** - Routes admin avec JWT sécurisé
-3. ✅ **Email Worker** - Migré en Python (email_worker.py)
-4. ✅ **WebSocket** - Intégré dans FastAPI pour chat temps réel
-5. ✅ **Suppression Node.js** - `/server` et `/services` supprimés
-6. ✅ **Nettoyage package.json** - Dépendances Express supprimées
-
-### 📍 Démarrage du projet:
-
-**Terminal 1 - Frontend:**
-```bash
-npm run dev
-```
-
-**Terminal 2 - Backend (lance aussi email_worker automatiquement):**
-```bash
-python backend/run.py
-```
-
-### 🌐 URLs:
-- Frontend: http://localhost:2999
-- Backend API: http://localhost:3001
-- Swagger Docs: http://localhost:3001/docs
-
-### 🔗 WebSocket:
-```
-ws://localhost:3001/api/ws/conversations/{conversation_id}
-```
-
-### ☑️ Vérifications:
-- ✅ Aucun processus Node.js requis
-- ✅ FastAPI écoute sur port 3001 (proxy Vite configuré)
-- ✅ Email worker démarre automatiquement
-- ✅ WebSocket pour chat en temps réel fonctionnel
-- ✅ Base de données PostgreSQL (Neon) configurée
-
-**La migration est PRÊTE pour la production! 🚀**
-
+- [ ] **1. Create TODO.md** (current)
+- [ ] **2. Backup original LoginPage.tsx** (read + create LoginPage_backup.tsx)
+✅ **3. Implement new structure/styling in LoginPage.tsx**  
+  - Copied navbar/hero glass/animations from LandingPage  
+  - Added Tajawal font/orange theme  
+  - Form in glass shield with mini lock demo  
+  - **Feedback applied:** Simplified header (no fixed nav), new logo (M blue-purple), French ready  
+  - All original logic preserved
+  - Copy inline <style> (keyframes/classes) from LandingPage
+  - Add fixed glass navbar (logo, theme/language toggle, back/register)
+  - Hero bg (orbs, gradient, noise)
+  - Glass shield container for form (rounded-[4rem])
+  - Animated mini-demo (secure lock graphic)
+  - Glass inputs/buttons (amber metallic)
+  - Tajawal font + animations (float/shine/reveal)
+  - Style forgot modal glassmorphism
+- [ ] **4. Test functionality** (theme toggle, form submit, forgot modal, reCAPTCHA)
+- [ ] **5. Visual verification** (run dev server or browser)
+- [ ] **6. Update TODO progress**
+- [ ] **7. attempt_completion**

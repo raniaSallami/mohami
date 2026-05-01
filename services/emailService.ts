@@ -104,6 +104,14 @@ class EmailService {
       message: `تمت إضافة موعد جديد بنجاح: ${eventTitle} يوم ${date}`,
     });
   }
+  async sendPlanUpgradeEmail(email: string, name: string, planName: string): Promise<void> {
+    await this.sendNotificationEmail({
+      to_email: email,
+      to_name: name,
+      subject: 'تحديث الباقة - Mouhami AI',
+      message: `تم تحديث باقتك بنجاح. باقتك الحالية هي: ${planName}`,
+    });
+  }
 }
 
 export const emailService = new EmailService();

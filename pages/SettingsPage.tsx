@@ -47,17 +47,21 @@ export const SettingsPage = ({ user, onUpdateUser }: { user: User, onUpdateUser:
 
   useEffect(() => {
     const loadData = async () => {
-      const [invoicesData, pricingData, limitsData, freshUser] = await Promise.all([
-        storageService.getInvoices(),
-        storageService.getPlanPricing(),
-        storageService.getPlanLimits(),
-        storageService.getCurrentUserFresh()
-      ]);
-      setInvoices(invoicesData);
-      setPricing(pricingData);
-      setPlanLimits(limitsData);
-      if (freshUser && (freshUser.subscriptionPlan !== user.subscriptionPlan || freshUser.subscriptionStatus !== user.subscriptionStatus)) {
-        onUpdateUser(freshUser);
+      try {
+        const [invoicesData, pricingData, limitsData, freshUser] = await Promise.all([
+          storageService.getInvoices(),
+          storageService.getPlanPricing(),
+          storageService.getPlanLimits(),
+          storageService.getCurrentUserFresh()
+        ]);
+        setInvoices(invoicesData || []);
+        if (pricingData) setPricing(pricingData);
+        if (limitsData) setPlanLimits(limitsData);
+        if (freshUser && (freshUser.subscriptionPlan !== user.subscriptionPlan || freshUser.subscriptionStatus !== user.subscriptionStatus)) {
+          onUpdateUser(freshUser);
+        }
+      } catch (e) {
+        console.error("Failed to load settings data", e);
       }
     };
     loadData();

@@ -61,7 +61,7 @@ export const CaseDetail = ({ caseId, onBack }: { caseId: string, onBack: () => v
     const file = e.target.files[0];
     const maxBytes = maxFileSizeMB * 1024 * 1024;
     if (file.size > maxBytes) {
-      showNotification(`الملف كبير جداً. الحد الأقصى ${maxFileSizeMB} MB`, 'error');
+      showNotification(`${window.__t("الملف كبير جداً. الحد الأقصى")} ${maxFileSizeMB} MB`, 'error');
       e.target.value = '';
       return;
     }
@@ -241,7 +241,7 @@ export const CaseDetail = ({ caseId, onBack }: { caseId: string, onBack: () => v
                <>
                  <svg className="w-8 h-8 text-primary-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
                  <span className="text-sm font-bold text-primary-700">{window.__t("اضغط لرفع ملف")}</span>
-                 <span className="text-xs text-primary-400 mt-1">PDF, JPG, PNG (Max {maxFileSizeMB} MB)</span>
+                 <span className="text-xs text-primary-400 mt-1">PDF, JPG, PNG ({window.__t("الحد الأقصى")} {maxFileSizeMB} MB)</span>
                </>
             )}
           </label>

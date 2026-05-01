@@ -1,3 +1,9 @@
+declare global {
+  interface Window {
+    __t: (key: string) => string;
+    __i18n?: Record<string, string>;
+  }
+}
 
 export enum UserRole {
   ADMIN = 'ADMIN',

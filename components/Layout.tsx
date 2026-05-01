@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, UserRole } from '../types';
 import { storageService } from '../services/storageService';
 import { NotificationBell } from './NotificationBell';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, User as UserIcon } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -33,14 +33,17 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, curren
         onNavigate(page);
         setSidebarOpen(false);
       }}
-      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-500 relative group border border-transparent ${
         currentPage === page
-          ? 'bg-primary-900 text-white shadow-lg'
-          : 'text-gray-300 hover:bg-primary-800 hover:text-white'
+          ? 'bg-white/10 text-white border-white/5 shadow-xl'
+          : 'text-slate-400 hover:bg-white/5 hover:text-white'
       }`}
     >
-      <span className="text-xl">{icon}</span>
-      <span className="font-medium">{label}</span>
+      {currentPage === page && (
+        <div className={`absolute ${isRTL ? '-end-1' : '-end-1'} top-1/2 -translate-y-1/2 w-1.5 h-8 bg-orange-600 rounded-full shadow-[0_0_15px_rgba(234,88,12,0.6)]`}></div>
+      )}
+      <span className={`text-xl transition-transform duration-300 group-hover:scale-110 ${currentPage === page ? 'text-orange-500' : 'text-slate-500 group-hover:text-white'}`}>{icon}</span>
+      <span className="font-bold text-sm tracking-wide">{label}</span>
     </button>
   );
 
@@ -54,20 +57,26 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, curren
 
       {/* Sidebar */}
       <aside 
-        className={`sidebar-mobile fixed lg:relative z-30 w-64 h-full bg-slate-900 text-white flex flex-col shadow-2xl transition-transform transform ${
+        className={`sidebar-mobile fixed lg:relative z-30 w-72 h-full bg-[#1e1b4b] text-white flex flex-col shadow-2xl transition-transform transform border-e border-white/5 ${
           isRTL
             ? (isSidebarOpen ? 'translate-x-0 end-0' : 'translate-x-full end-0')
             : (isSidebarOpen ? 'translate-x-0 start-0' : '-translate-x-full start-0')
         } ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'} lg:translate-x-0 lg:start-auto lg:end-auto lg:relative`}
       >
-        <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gold-500 rounded-full flex items-center justify-center">
-              <span className="text-slate-900 font-bold text-lg">{window.__t("م")}</span>
+        <div className="p-8 flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 rounded-xl flex items-center justify-center shadow-lg shadow-orange-400/30 rotate-3 group transition-all hover:rotate-0 hover:scale-110 cursor-pointer">
+              <svg className="text-white drop-shadow-sm w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M12 3v18" />
+                <path d="M5 8l-2 5h8l-2-5" />
+                <path d="M19 8l-2 5h8l-2-5" />
+              </svg>
             </div>
-            <h1 className="text-2xl font-bold text-gold-500 tracking-tight">{window.__t("المحامي")}</h1>
+            <h1 className="text-2xl font-black text-white tracking-tighter" style={{ fontFamily: "'Tajawal', sans-serif" }}>
+              {window.__t("المحامي")}
+            </h1>
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-gray-400">
+          <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-slate-400 hover:text-white transition-colors">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
@@ -96,31 +105,32 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, curren
           )}
         </nav>
 
-        <div className="p-4 border-t border-slate-800">
+        <div className="p-6 border-t border-white/5 bg-black/10">
           <button
             onClick={() => {
               const dashboardPage = isAdmin ? 'admin-dashboard' : 'dashboard';
               onNavigate(currentPage === 'profile' ? dashboardPage : 'profile');
               setSidebarOpen(false);
             }}
-            className="w-full flex items-center gap-3 mb-4 hover:opacity-80 transition-opacity text-start"
+            className="w-full flex items-center gap-3 mb-6 group transition-all duration-300"
           >
-            <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center text-white font-bold flex-shrink-0 overflow-hidden border border-slate-700">
+            <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center text-slate-400 font-bold flex-shrink-0 overflow-hidden border border-white/10 group-hover:border-orange-500/50 group-hover:text-orange-500 transition-all duration-300">
               {user.avatar ? (
                 <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
               ) : (
-                user.name.charAt(0)
+                <UserIcon className="w-6 h-6" />
               )}
             </div>
-            <div>
-              <p className="text-sm font-medium text-white">{user.name}</p>
-              <p className="text-xs text-gray-400">{user.role === UserRole.LAWYER ? window.__t("محامي") : window.__t("مدير")}</p>
+            <div className="flex-1 overflow-hidden text-start">
+              <p className="text-sm font-bold text-white truncate">{user.name}</p>
+              <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{user.role === UserRole.LAWYER ? window.__t("محامي") : window.__t("مدير")}</p>
             </div>
           </button>
           <button 
             onClick={onLogout}
-            className="w-full py-2 bg-red-600 hover:bg-red-700 rounded text-sm transition-colors text-white"
+            className="w-full py-3 bg-red-500/10 border border-red-500/20 hover:bg-red-500 text-red-500 hover:text-white rounded-xl text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2"
           >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
             {window.__t("تسجيل الخروج")}
           </button>
         </div>

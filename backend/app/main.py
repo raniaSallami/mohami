@@ -466,7 +466,8 @@ from fastapi.staticfiles import StaticFiles
 from app.routers import (
     auth, password_reset, device_security, admin_security,
     users, cases, contracts, events, invoices,
-    notifications, chat, admin, settings as settings_router, gemini, faculties
+    notifications, chat, admin, settings as settings_router, gemini, faculties,
+    analytics
 )
 
 # Static files for uploads
@@ -477,7 +478,7 @@ app.include_router(auth.router, prefix="/api")
 app.include_router(password_reset.router, prefix="/api")
 app.include_router(device_security.router, prefix="/api")
 app.include_router(admin_security.router, prefix="/api")
-app.include_router(faculties.router)
+app.include_router(faculties.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
 app.include_router(cases.router, prefix="/api")
 app.include_router(contracts.router, prefix="/api")
@@ -488,8 +489,9 @@ app.include_router(chat.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(settings_router.router, prefix="/api")
 app.include_router(subscriptions.router, prefix="/api")
-app.include_router(automated_subscription.router)
+app.include_router(automated_subscription.router, prefix="/api")
 app.include_router(gemini.router, prefix="/api")
+app.include_router(analytics.router, prefix="/api")
 
 
 @app.get("/api/health")
