@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, UserRole } from '../types';
 import { storageService } from '../services/storageService';
+import { apiService } from '../services/apiService';
 import { NotificationBell } from './NotificationBell';
 import { ArrowRight, User as UserIcon } from 'lucide-react';
 
@@ -153,7 +154,21 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout, curren
              <h1 className="text-xl font-bold text-slate-800 lg:hidden">{window.__t("المحامي")}</h1>
            </div>
            <div className="flex items-center gap-4">
-             <button onClick={() => { window.__i18n?.changeLanguage(window.__i18n.language === 'ar' ? 'fr' : 'ar'); setSidebarOpen(false); /* Force re-render simple fallback */ window.location.reload(); }} className="px-3 py-1 bg-slate-100 rounded hover:bg-slate-200 font-medium text-slate-700">
+             <button onClick={async () => { 
+               const newLang = window.__i18n.language === 'ar' ? 'fr' : 'ar';
+               try {
+                 await apiService.updateLanguage(newLang);
+                 window.__i18n?.changeLanguage(newLang); 
+                 setSidebarOpen(false); 
+                 window.location.reload(); 
+               } catch (error) {
+                 console.error('Failed to update language:', error);
+                 // Still change language locally even if API fails
+                 window.__i18n?.changeLanguage(newLang); 
+                 setSidebarOpen(false); 
+                 window.location.reload(); 
+               }
+             }} className="px-3 py-1 bg-slate-100 rounded hover:bg-slate-200 font-medium text-slate-700">
                {window.__i18n?.language === 'ar' ? 'Français' : 'العربية'}
              </button>
              <NotificationBell

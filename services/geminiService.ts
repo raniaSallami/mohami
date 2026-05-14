@@ -3,7 +3,7 @@
  */
 import { storageService } from './storageService';
 
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = '/api';
 
 class GeminiService {
   private baseUrl = API_BASE;
@@ -16,13 +16,14 @@ class GeminiService {
     };
   }
 
-  async analyzeDocument(documentContent: string, caseContext: string): Promise<string> {
+  async analyzeDocument(documentContent: string, caseContext: string, prompt: string): Promise<string> {
     const response = await fetch(`${this.baseUrl}/cases/analyze-document`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
       body: JSON.stringify({
         document_content: documentContent,
         case_context: caseContext,
+        prompt,
       }),
     });
     if (!response.ok) throw new Error('Failed to analyze document');
@@ -80,8 +81,8 @@ class GeminiService {
 export const geminiService = new GeminiService();
 
 // Export individual functions for backward compatibility
-export async function analyzeDocument(content: string, context: string): Promise<string> {
-  return geminiService.analyzeDocument(content, context);
+export async function analyzeDocument(content: string, context: string, prompt: string): Promise<string> {
+  return geminiService.analyzeDocument(content, context, prompt);
 }
 
 export async function generateCreativeImage(prompt: string): Promise<string> {

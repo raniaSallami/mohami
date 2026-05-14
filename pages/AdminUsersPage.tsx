@@ -9,11 +9,15 @@ export const AdminUsersPage: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [editedUser, setEditedUser] = useState<User | null>(null);
   const [userStats, setUserStats] = useState<{ cases: number; contracts: number; events: number } | null>(null);
   const [filterPlan, setFilterPlan] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [upgradeLoading, setUpgradeLoading] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string>('basic');
 
   useEffect(() => {
@@ -23,9 +27,12 @@ export const AdminUsersPage: React.FC = () => {
   useEffect(() => {
     if (selectedUser) {
       setSelectedPlan(selectedUser.subscriptionPlan || (selectedUser as any).subscription_plan || 'basic');
+      setEditedUser({ ...selectedUser });
       loadUserStats(selectedUser.id);
     } else {
       setUserStats(null);
+      setEditedUser(null);
+      setConfirmDelete(false);
     }
   }, [selectedUser]);
 
@@ -53,17 +60,84 @@ export const AdminUsersPage: React.FC = () => {
     }
   };
 
+  const handleSaveChanges = async () => {
+    if (!editedUser) return;
+    setSaveLoading(true);
+    try {
+      await storageService.updateUser(editedUser);
+      setSelectedUser(editedUser);
+      setUsers((prev) => prev.map((u) => (u.id === editedUser.id ? editedUser : u)));
+      await loadUsers();
+      setConfirmDelete(false);
+    } catch (e) {
+      console.error('Error updating user:', e);
+      alert(window.__t('حدث خطأ أثناء تحديث المستخدم'));
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+    setDeleteLoading(true);
+    try {
+      const deleted = await storageService.deleteUser(selectedUser.id);
+      if (!deleted) throw new Error('Failed to delete user');
+      await loadUsers();
+      setSelectedUser(null);
+      setEditedUser(null);
+      setConfirmDelete(false);
+    } catch (e) {
+      console.error('Error deleting user:', e);
+      alert(window.__t('حدث خطأ أثناء حذف المستخدم'));
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleFieldChange = (field: keyof User, value: any) => {
+    if (!editedUser) return;
+    setEditedUser({ ...editedUser, [field]: value });
+  };
+
+  const handleResetChanges = () => {
+    if (selectedUser) setEditedUser({ ...selectedUser });
+  };
+
+  const hasChanges = editedUser && selectedUser && (
+    editedUser.name !== selectedUser.name ||
+    editedUser.email !== selectedUser.email ||
+    editedUser.phone !== selectedUser.phone ||
+    editedUser.account_type !== selectedUser.account_type ||
+    editedUser.bar_number !== selectedUser.bar_number ||
+    editedUser.cabinet_name !== selectedUser.cabinet_name ||
+    editedUser.university !== selectedUser.university
+  );
+
   const handleUpgrade = async () => {
     if (!selectedUser) return;
     setUpgradeLoading(true);
     try {
       await storageService.upgradeUserPlan(selectedUser.id, selectedPlan as any);
-      const planNames: Record<string, string> = { basic: window.__t("البداية"), pro: window.__t("المحترف"), enterprise: window.__t("المكتب") };
-      await emailService.sendPlanUpgradeEmail(selectedUser.email, selectedUser.name, planNames[selectedPlan] || selectedPlan);
-      setSelectedUser({ ...selectedUser, subscriptionPlan: selectedPlan as any, subscriptionStatus: 'active' });
-      loadUsers();
+      const planNames: Record<string, string> = {
+        basic: window.__t("البداية"),
+        pro: window.__t("المحترف"),
+        enterprise: window.__t("المكتب")
+      };
+      await emailService.sendPlanUpgradeEmail(
+        selectedUser.email,
+        selectedUser.name,
+        planNames[selectedPlan] || selectedPlan
+      );
+      setSelectedUser({
+        ...selectedUser,
+        subscriptionPlan: selectedPlan as any,
+        subscriptionStatus: 'active'
+      });
+      await loadUsers();
     } catch (e) {
-      console.error(e);
+      console.error('Error upgrading plan:', e);
+      alert(window.__t('حدث خطأ أثناء ترقية الباقة'));
     } finally {
       setUpgradeLoading(false);
     }
@@ -161,16 +235,52 @@ export const AdminUsersPage: React.FC = () => {
       </div>
 
       <Modal isOpen={!!selectedUser} onClose={() => setSelectedUser(null)} title={window.__t("تفاصيل المستخدم")}>
-        {selectedUser && (
+        {selectedUser && editedUser && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs text-gray-500 mb-1">{window.__t("الاسم")}</label>
-                <p className="font-medium">{selectedUser.name}</p>
+                <input
+                  type="text"
+                  value={editedUser.name}
+                  onChange={(e) => handleFieldChange('name', e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">{window.__t("البريد")}</label>
-                <p className="font-medium">{selectedUser.email}</p>
+                <input
+                  type="email"
+                  value={editedUser.email}
+                  onChange={(e) => handleFieldChange('email', e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">{window.__t("الهاتف")}</label>
+                <input
+                  type="text"
+                  value={editedUser.phone || ''}
+                  onChange={(e) => handleFieldChange('phone', e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">ID</label>
+                <p className="text-xs font-mono text-gray-600">{selectedUser.id}</p>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">{window.__t("نوع الحساب")}</label>
+                <select
+                  value={editedUser.account_type || ''}
+                  onChange={(e) => handleFieldChange('account_type', e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg"
+                >
+                  <option value="">{window.__t("اختر نوع الحساب")}</option>
+                  <option value="lawyer">{window.__t("محامي")}</option>
+                  <option value="student">{window.__t("طالب")}</option>
+                  <option value="cabinet">{window.__t("مكتب")}</option>
+                </select>
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">{window.__t("الباقة")}</label>
@@ -181,33 +291,32 @@ export const AdminUsersPage: React.FC = () => {
                 <p>{statusLabel(selectedUser.subscriptionStatus || (selectedUser as any).subscription_status || 'active')}</p>
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">ID</label>
-                <p className="text-xs font-mono text-gray-600">{selectedUser.id}</p>
+                <label className="block text-xs text-gray-500 mb-1">{window.__t("رقم البطاقة")}</label>
+                <input
+                  type="text"
+                  value={editedUser.bar_number || ''}
+                  onChange={(e) => handleFieldChange('bar_number', e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
               </div>
-              {selectedUser.account_type && (
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">{window.__t("نوع الحساب")}</label>
-                  <p className="font-medium">{selectedUser.account_type === 'lawyer' ? window.__t("محامي") : selectedUser.account_type === 'student' ? window.__t("طالب") : window.__t("مكتب")}</p>
-                </div>
-              )}
-              {selectedUser.bar_number && (
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">{window.__t("رقم البطاقة")}</label>
-                  <p className="font-medium">{selectedUser.bar_number}</p>
-                </div>
-              )}
-              {selectedUser.cabinet_name && (
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">{window.__t("اسم المكتب")}</label>
-                  <p className="font-medium">{selectedUser.cabinet_name}</p>
-                </div>
-              )}
-              {selectedUser.university && (
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">{window.__t("الجامعة")}</label>
-                  <p className="font-medium">{selectedUser.university}</p>
-                </div>
-              )}
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">{window.__t("اسم المكتب")}</label>
+                <input
+                  type="text"
+                  value={editedUser.cabinet_name || ''}
+                  onChange={(e) => handleFieldChange('cabinet_name', e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-xs text-gray-500 mb-1">{window.__t("الجامعة")}</label>
+                <input
+                  type="text"
+                  value={editedUser.university || ''}
+                  onChange={(e) => handleFieldChange('university', e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
               {selectedUser.organizationOwnerId && (
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">{window.__t("عضو فريق (المكتب)")}</label>
@@ -259,6 +368,47 @@ export const AdminUsersPage: React.FC = () => {
                 </div>
               </div>
             )}
+
+            <div className="border-t pt-4 space-y-3">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  onClick={handleSaveChanges}
+                  disabled={saveLoading || !hasChanges}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {saveLoading ? <Spinner /> : window.__t("حفظ التغييرات")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(true)}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700"
+                >
+                  {window.__t("حذف المستخدم")}
+                </button>
+              </div>
+
+              {confirmDelete && (
+                <div className="p-4 rounded-lg bg-red-50 border border-red-200 text-red-700">
+                  <p className="mb-3">{window.__t("هل أنت متأكد من حذف المستخدم")}</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleDeleteUser}
+                      disabled={deleteLoading}
+                      className="flex-1 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                    >
+                      {deleteLoading ? <Spinner /> : window.__t("حذف")}
+                    </button>
+                    <button
+                      onClick={() => setConfirmDelete(false)}
+                      disabled={deleteLoading}
+                      className="flex-1 py-2 border border-red-200 text-red-700 rounded-lg hover:bg-red-100"
+                    >
+                      {window.__t("إلغاء")}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </Modal>

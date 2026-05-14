@@ -15,8 +15,8 @@ class UserProfile(Base):
     """Store additional user profile information."""
     __tablename__ = "user_profiles"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id"), unique=True, nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), unique=True, nullable=False)
     
     # Account type (lawyer, cabinet, student)
     account_type: Mapped[str] = mapped_column(String(50), nullable=False)

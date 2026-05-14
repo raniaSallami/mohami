@@ -7,6 +7,7 @@ import { Toast, Spinner } from '../components/UI';
 export const CaseDetail = ({ caseId, onBack }: { caseId: string, onBack: () => void }) => {
   const [maxFileSizeMB, setMaxFileSizeMB] = useState(100);
   const [caseData, setCaseData] = useState<CaseFile | null>(null);
+  const [caseNotFound, setCaseNotFound] = useState(false);
   const [activeTab, setActiveTab] = useState<'analysis' | 'chat'>('analysis');
   
   // Analysis State
@@ -28,8 +29,11 @@ export const CaseDetail = ({ caseId, onBack }: { caseId: string, onBack: () => v
       const found = await storageService.getCaseById(caseId);
       if (found) {
         setCaseData(found);
+        setCaseNotFound(false);
         if (found.analysis) setAnalysisResult(found.analysis);
         if (found.chatHistory) setChatMessages(found.chatHistory);
+      } else {
+        setCaseNotFound(true);
       }
     };
     loadCase();
@@ -146,9 +150,7 @@ export const CaseDetail = ({ caseId, onBack }: { caseId: string, onBack: () => v
     const lastDoc = caseData.documents[caseData.documents.length - 1];
 
     const response = await chatWithCaseDocument(
-      lastDoc.content,
-      lastDoc.type,
-      newHistoryUser,
+      caseId,
       userMsg
     );
 
@@ -162,6 +164,20 @@ export const CaseDetail = ({ caseId, onBack }: { caseId: string, onBack: () => v
 
     setIsChatting(false);
   };
+
+  if (caseNotFound) {
+    return (
+      <div className="flex h-full items-center justify-center p-6 text-center">
+        <div>
+          <h2 className="text-xl font-bold text-slate-800 mb-2">{window.__t("القضية غير موجودة")}</h2>
+          <p className="text-sm text-slate-500">{window.__t("ربما تم حذف القضية أو ليس لديك إذن للوصول إليها.")}</p>
+          <button onClick={onBack} className="mt-4 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800">
+            {window.__t("العودة إلى القضايا")}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!caseData) return <div className="flex h-full items-center justify-center"><Spinner /></div>;
 

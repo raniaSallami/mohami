@@ -1,6 +1,5 @@
 
 import React, { useState, useMemo } from 'react';
-import { GoogleGenAI } from "@google/genai";
 import { Spinner } from '../components/UI';
 import { TUNISIAN_PENAL_CODE, Article } from '../data/tunisianPenalCode';
 
@@ -18,29 +17,41 @@ export const Courses = () => {
     setExplanation('');
 
     try {
-        if (!process.env.API_KEY) throw new Error("API Key missing");
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        const chapterTitle = TUNISIAN_PENAL_CODE.find(c => 
+        const chapterTitle = TUNISIAN_PENAL_CODE.find(c =>
           c.articles.some(a => a.num === article.num)
         )?.title || '';
-        
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: `اشرح الفصل ${article.num}${article.bis ? window.__t(" (مكرر)") : ''} من المجلة الجزائية التونسية - ${chapterTitle} - الذي ينص على: "${article.text}". 
-            
-            قدم شرحاً قانونياً شاملاً يتضمن:
-            1. شرح مفصل للنص القانوني
-            2. العناصر المكونة للجريمة
-            3. العقوبة المقررة والظروف المشددة أو المخففة
-            4. مثال عملي واقعي
-            5. أي فقه قضاء تونسي ذو صلة
-            6. العلاقة مع الفصول الأخرى إن وجدت
-            
-            استخدم لغة قانونية واضحة ومبسطة في نفس الوقت.`
+
+        const response = await fetch('/api/gemini/explain-article', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                article_num: String(article.num),
+                article_text: article.text,
+                chapter_title: chapterTitle,
+                is_bis: article.bis || false
+            })
         });
-        setExplanation(response.text || window.__t("لم يتمكن المساعد من الشرح."));
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        setExplanation(data.explanation || window.__t("لم يتمكن المساعد من الشرح."));
     } catch (e) {
-        setExplanation(window.__t("حدث خطأ أثناء الاتصال بالمساعد الذكي. يرجى المحاولة مرة أخرى."));
+        console.error("Gemini explain error:", e);
+        const message = e instanceof Error ? e.message : String(e);
+        const serviceUnavailable = /503|service unavailable|AI service unavailable/i.test(message);
+        const serverError = /500|server error|AI service error/i.test(message);
+        setExplanation(
+          serviceUnavailable
+            ? window.__t("خدمة الذكاء الاصطناعي غير متاحة حالياً. يرجى التواصل مع الدعم الفني.")
+            : serverError
+            ? window.__t("حدث خطأ في الخادم. يرجى المحاولة لاحقاً.")
+            : window.__t("حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.")
+        );
     } finally {
         setLoadingExplanation(false);
     }

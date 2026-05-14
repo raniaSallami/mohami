@@ -85,6 +85,10 @@ const validateEmail = (email: string) => {
     return isValid;
   };
 
+  const translateErrorMessage = (message: string) => {
+    return window.__t(message || "حدث خطأ");
+  };
+
   const getFreshRecaptchaToken = async (action: string): Promise<string | null> => {
     return await executeRecaptcha(action);
   };
@@ -108,7 +112,7 @@ const validateEmail = (email: string) => {
       setForgotSuccess(window.__t("تم إرسال رمز التحقق إلى بريدك الإلكتروني. صلاحيته 10 دقائق."));
       toast.success(window.__t("تم إرسال رمز التحقق"));
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : window.__t("حدث خطأ");
+      const errorMsg = err instanceof Error ? translateErrorMessage(err.message) : window.__t("حدث خطأ");
       setForgotError(errorMsg);
       toast.error(errorMsg);
     } finally {
@@ -144,7 +148,7 @@ const validateEmail = (email: string) => {
         setForgotEmail('');
       }, 1500);
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : window.__t("حدث خطأ");
+      const errorMsg = err instanceof Error ? translateErrorMessage(err.message) : window.__t("حدث خطأ");
       setForgotError(errorMsg);
       toast.error(errorMsg);
     } finally {
@@ -172,15 +176,17 @@ const validateEmail = (email: string) => {
       }
       setRecaptchaToken(freshToken);
 
-      const fingerprint = await (window as any).FingerprintJS?.get();
-      const fingerprintValue = fingerprint?.visitorId || 'unknown';
+      const fingerprintInstance = await (window as any).FingerprintJS?.get();
+      const fingerprintValue = fingerprintInstance?.visitorId || navigator.userAgent || 'unknown';
+      localStorage.setItem('device_fingerprint', fingerprintValue);
       
       const result = await apiService.loginEmailStep1(email.trim(), password, freshToken, fingerprintValue);
       
       if (result.needs_otp) {
         toast.success(window.__t("تم إرسال رمز التحقق إلى بريدك الإلكتروني"));
-        sessionStorage.setItem('login_user_id', result.user_id || '');
-        onNavigate('device_verification');
+        localStorage.setItem('pending_device_verification_user_id', result.user_id || '');
+        localStorage.setItem('pending_device_verification_email', email.trim());
+        onNavigate('deviceVerification');
       } else {
         if (result.user && result.token) {
           storageService.setToken(result.token);
@@ -192,7 +198,7 @@ const validateEmail = (email: string) => {
         }
       }
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : window.__t("فشل تسجيل الدخول");
+      const errorMsg = err instanceof Error ? translateErrorMessage(err.message) : window.__t("فشل تسجيل الدخول");
       setError(errorMsg);
       toast.error(errorMsg);
     } finally {
@@ -217,7 +223,7 @@ const validateEmail = (email: string) => {
   // Landing-like JSX - FIXED SYNTAX
   return (
 
-    <div className={`min-h-screen font-['Tajawal'] overflow-hidden scroll-smooth transition-colors duration-500 ${theme === 'dark' ? 'bg-[#0a0a0f] text-white' : 'bg-[#fafaf9] text-slate-900'}`} dir={window.__i18n?.language === 'ar' ? 'rtl' : 'ltr'}>
+    <div className={`min-h-screen font-['Tajawal'] overflow-hidden scroll-smooth transition-colors duration-500 ${theme === 'dark' ? 'bg-[#0B1121] text-white' : 'bg-[#f9f6f1] text-slate-900'} glass`} dir={window.__i18n?.language === 'ar' ? 'rtl' : 'ltr'}>
 
       {/* ─── Global Animations & Custom Scrollbar ─── */}
       <style>{`
@@ -294,12 +300,12 @@ const validateEmail = (email: string) => {
 
       {/* ─── Floating Decorative Orbs (Sunset Mastery) ─── */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className={`absolute -top-40 -end-[10%] w-[900px] h-[900px] rounded-full anim-float-d ${theme === 'dark' ? 'bg-orange-600/[0.12]' : 'bg-orange-200/[0.4]'} blur-[120px]`}></div>
-        <div className={`absolute top-[15%] -start-[15%] w-[700px] h-[700px] rounded-full anim-float ${theme === 'dark' ? 'bg-amber-600/[0.08]' : 'bg-amber-100/[0.3]'} blur-[100px]`}></div>
+        <div className={`absolute inset-0 ${theme === 'dark' ? 'bg-[#0B1121]' : 'bg-[#f9f6f1]'}`}></div>
+        <div className={`absolute -top-40 -end-[10%] w-[900px] h-[900px] rounded-full anim-float-d ${theme === 'dark' ? 'bg-orange-600/[0.12]' : 'bg-orange-200/[0.35]'} blur-[120px]`}></div>
+        <div className={`absolute top-[15%] -start-[15%] w-[700px] h-[700px] rounded-full anim-float ${theme === 'dark' ? 'bg-amber-600/[0.08]' : 'bg-amber-100/[0.25]'} blur-[100px]`}></div>
         <div className={`absolute bottom-[10%] end-[5%] w-[800px] h-[800px] rounded-full anim-glow ${theme === 'dark' ? 'bg-indigo-500/[0.05]' : 'bg-orange-50/[0.2]'} blur-[130px]`}></div>
-        
-        {/* Subtle Noise Texture Overlay */}
-        <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-repeat"></div>
+        <div className={`absolute top-1/3 start-1/2 -translate-x-1/2 w-[420px] h-[420px] rounded-full ${theme === 'dark' ? 'bg-white/5' : 'bg-white/70'} blur-[140px]`}></div>
+        <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[url('/noise.svg')] bg-repeat"></div>
       </div>
 
       {/* ─── FLOATING CONTROLS (Theme, Language, Home) ─── */}
@@ -338,16 +344,20 @@ const validateEmail = (email: string) => {
       <header className="relative overflow-hidden min-h-screen flex items-center justify-center">
         <div className={`absolute inset-0 z-0 ${theme === 'dark' ? 'bg-gradient-to-b from-[#0B1121] via-[#0B1121]/98 to-[#0B1121]' : 'bg-gradient-to-b from-[#fafaf9] via-[#fafaf9]/95 to-[#fafaf9]'}`}></div>
 
-        <div className="container mx-auto px-4 py-8 lg:px-6 relative z-10 w-full flex justify-center">
+        <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+          <div className={`absolute inset-0 mx-auto w-full max-w-[94rem] rounded-[3rem] border transition duration-700 ${theme === 'dark' ? 'border-white/10 bg-white/5 shadow-[0_40px_120px_-50px_rgba(0,0,0,0.4)]' : 'border-white/15 bg-white/70 shadow-[0_40px_120px_-50px_rgba(15,23,42,0.22)]'}`}></div>
+        </div>
+
+        <div className="container mx-auto px-4 py-8 lg:px-6 relative z-20 w-full flex justify-center">
           <div className="max-w-4xl mx-auto w-full relative rounded-[2.5rem] overflow-hidden flex flex-col md:flex-row shadow-[0_32px_120px_-20px_rgba(0,0,0,0.3)]">
             {/* 💎 Ultra Glassmorphism Shield Background */}
-            <div className={`absolute inset-0 -z-10 transition-all duration-700 ${theme === 'dark' ? 'bg-[#131B2E]/85 border-white/10 shadow-2xl' : 'bg-white/30 border-white/60 shadow-xl shadow-slate-200/40'} backdrop-blur-[40px] border`}></div>
+            <div className={`absolute inset-0 -z-10 transition-all duration-700 ${theme === 'dark' ? 'bg-[#131B2E]/92 border-white/12 shadow-2xl' : 'bg-white/50 border-white/70 shadow-xl shadow-slate-200/40'} backdrop-blur-[40px] border`}></div>
             <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/10 to-transparent pointer-events-none -z-10"></div>
 
             {/* IMAGE / FEATURES PANEL */}
-            <div className={`hidden md:flex w-5/12 flex-col justify-center p-10 relative overflow-hidden ${theme === 'dark' ? 'bg-[#0B1121]/40' : 'bg-slate-50/50 border-e border-slate-200/50'}`}>
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 via-transparent to-orange-500/5 z-0"></div>
-              <div className="absolute -top-24 -left-24 w-64 h-64 bg-orange-500/10 rounded-full blur-[100px]"></div>
+            <div className={`hidden md:flex w-5/12 flex-col justify-center p-10 relative overflow-hidden ${theme === 'dark' ? 'bg-[#0B1121]/40' : 'bg-slate-50/90 border-e border-slate-200/70'}`}>
+              <div className="absolute inset-0 bg-gradient-to-br from-white/70 via-transparent to-slate-100/70 z-0"></div>
+              <div className="absolute -top-24 -left-24 w-64 h-64 bg-slate-200/30 rounded-full blur-[100px]"></div>
               
               <div className="relative z-10 w-full h-full flex flex-col items-center justify-center text-center">
                 <div className="relative w-full h-48 mb-8 rounded-[2rem] shadow-[0_20px_60px_-10px_rgba(0,0,0,0.2)] overflow-hidden border border-white/20 group">
@@ -395,9 +405,9 @@ const validateEmail = (email: string) => {
                 {/* Form Header */}
                 <div className="text-center mb-6">
                   <div className="flex justify-center mb-4">
-                    <div className="relative group cursor-default">
-                      <div className="absolute inset-0 bg-orange-500 rounded-xl blur-lg opacity-40 group-hover:opacity-70 transition-opacity duration-500"></div>
-                      <div className="relative flex items-center justify-center transition-all duration-700 w-12 h-12 rounded-xl orange-metallic shine-effect border border-white/20 shadow-xl">
+                    <div className="relative group cursor-pointer hover:-translate-y-1 transition-transform duration-500">
+                      <div className="absolute inset-0 bg-orange-500 rounded-xl blur-lg opacity-40 group-hover:opacity-90 transition-opacity duration-500"></div>
+                      <div className="relative flex items-center justify-center transition-all duration-700 w-12 h-12 rounded-xl orange-metallic shine-effect border border-white/20 shadow-xl group-hover:shadow-2xl">
                         <svg className="w-7 h-7 text-white drop-shadow-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                           <path d="M12 3v18" />
                           <path d="M5 8l-2 5h8l-2-5" />

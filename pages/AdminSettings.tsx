@@ -76,22 +76,15 @@ export const AdminSettings = () => {
 
   const loadStatistics = async () => {
     try {
-      const users = await storageService.getAllUsers();
-      const cases = await storageService.getCases();
-      
-      // Get all contracts from database
-      const { pool } = await import('../services/db');
-      const contractsResult = await pool.query('SELECT COUNT(*) as count FROM contracts');
-      const revenueResult = await pool.query(
-        "SELECT SUM(amount) as total FROM invoices WHERE status = 'paid'"
-      );
-      
-      setStats({
-        totalUsers: users.length,
-        totalCases: cases.length,
-        totalContracts: parseInt(contractsResult.rows[0]?.count || '0'),
-        totalRevenue: parseFloat(revenueResult.rows[0]?.total || '0')
-      });
+      const adminStats = await storageService.getAdminStats();
+      if (adminStats) {
+        setStats({
+          totalUsers: adminStats.users?.total || 0,
+          totalCases: adminStats.advancedStats?.totalCases || 0,
+          totalContracts: adminStats.advancedStats?.totalContracts || 0,
+          totalRevenue: adminStats.advancedStats?.revenueTotal || 0
+        });
+      }
     } catch (error) {
       console.error('Error loading statistics:', error);
     }

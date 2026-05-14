@@ -4,7 +4,7 @@
 import { storageService } from './storageService';
 import { fetchWithTokenRefresh } from './apiInterceptor';
 
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = '/api';
 
 export interface ChatMessage {
   id?: string;
@@ -48,6 +48,11 @@ class ChatService {
     return response.json();
   }
 
+  // Alias for AdminChat compatibility
+  async getAllConversations(page: number = 1): Promise<any> {
+    return this.listConversations(page);
+  }
+
   async getConversation(conversationId: string): Promise<any> {
     const response = await fetchWithTokenRefresh(
       `${this.baseUrl}/conversations/${conversationId}`,
@@ -55,6 +60,11 @@ class ChatService {
     );
     if (!response.ok) throw new Error('Failed to fetch conversation');
     return response.json();
+  }
+
+  // Alias for AdminChat compatibility
+  async getConversationWithMessages(conversationId: string): Promise<any> {
+    return this.getConversation(conversationId);
   }
 
   async createConversation(data: Partial<ChatConversation>): Promise<ChatConversation> {
@@ -108,6 +118,12 @@ class ChatService {
     });
     if (!response.ok) throw new Error('Failed to send team message');
     return response.json();
+  }
+
+  // Mark messages as read (handled via WebSocket)
+  async markMessagesAsRead(conversationId: string, senderType: string): Promise<void> {
+    // This is handled via WebSocket in the backend
+    // No API call needed
   }
 }
 

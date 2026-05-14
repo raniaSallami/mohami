@@ -183,12 +183,23 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    # Cast string user_id to uuid.UUID for proper type matching with UUID column
+    import uuid as _uuid
+    try:
+        user_uuid = _uuid.UUID(user_id)
+    except (ValueError, AttributeError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
     # Fetch user from database with eagerly loaded profile to avoid lazy-loading issues
     from sqlalchemy.orm import selectinload
     result = await db.execute(
         select(User)
         .options(selectinload(User.profile))
-        .where(User.id == user_id)
+        .where(User.id == user_uuid)
     )
     user = result.scalar_one_or_none()
     

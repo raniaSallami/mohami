@@ -33,23 +33,21 @@ def new_device_login_alert(
     <style>
         body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }}
         .container {{ max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }}
-        .header {{ background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%); color: white; padding: 30px 20px; text-align: center; }}
+        .header {{ background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%); color: white; padding: 30px 20px; text-align: center; }}
         .header h1 {{ margin: 0; font-size: 24px; font-weight: 600; }}
         .content {{ padding: 30px 20px; }}
-        .alert-box {{ background-color: #fff3cd; border-right: 4px solid #ff9800; padding: 20px; margin-bottom: 20px; border-radius: 4px; }}
-        .alert-box p {{ margin: 0; color: #856404; font-size: 14px; line-height: 1.6; }}
+        .alert-box {{ background-color: #e3f2fd; border-right: 4px solid #2196f3; padding: 20px; margin-bottom: 20px; border-radius: 4px; }}
+        .alert-box p {{ margin: 0; color: #0d47a1; font-size: 14px; line-height: 1.6; }}
         .details-table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
         .details-table td {{ padding: 12px; border-bottom: 1px solid #eeeeee; font-size: 14px; }}
         .details-table .label {{ width: 35%; color: #666666; font-weight: 500; background-color: #f9f9f9; }}
         .details-table .value {{ color: #333333; }}
-        .buttons {{ display: flex; gap: 15px; margin: 30px 0; flex-direction: row-reverse; justify-content: center; }}
-        .btn {{ padding: 14px 30px; font-size: 15px; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; display: inline-block; font-weight: 600; transition: all 0.3s; }}
-        .btn-confirm {{ background-color: #4caf50; color: white; }}
-        .btn-confirm:hover {{ background-color: #45a049; }}
-        .btn-deny {{ background-color: #dc3545; color: white; }}
-        .btn-deny:hover {{ background-color: #c82333; }}
-        .otp-box {{ background-color: #f0f0f0; border: 2px dashed #2196f3; padding: 20px; text-align: center; margin: 20px 0; border-radius: 4px; }}
-        .otp-code {{ font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #1976d2; font-family: 'Courier New', monospace; margin: 10px 0; }}
+        .buttons {{ text-align: center; margin: 30px 0; }}
+        .btn {{ padding: 14px 30px; font-size: 15px; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; display: inline-block; font-weight: 700; min-width: 160px; text-align: center; margin: 0 5px; }}
+        .btn-confirm {{ background-color: #0d6efd; color: white; }}
+        .btn-deny {{ background-color: #d32f2f; color: white; }}
+        .otp-box {{ background-color: #f0f4ff; border: 2px dashed #0d6efd; padding: 20px; text-align: center; margin: 20px 0; border-radius: 4px; }}
+        .otp-code {{ font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #0d6efd; font-family: 'Courier New', monospace; margin: 10px 0; }}
         .otp-note {{ color: #666666; font-size: 12px; margin-top: 10px; }}
         .footer {{ background-color: #f5f5f5; border-top: 1px solid #eeeeee; padding: 20px; text-align: center; font-size: 12px; color: #999999; }}
         .security-note {{ background-color: #e3f2fd; border-right: 4px solid #2196f3; padding: 15px; margin: 20px 0; border-radius: 4px; }}
@@ -112,9 +110,9 @@ def new_device_login_alert(
             ''' if otp_code else ''}
             
             <!-- Action Buttons -->
-            <div class="buttons">
-                <a href="https://mouhami-ai.tn/#security-alert/password-change?email={user_email}" class="btn btn-deny">هذا ليس أنا</a>
-                <a href="https://mouhami-ai.tn/#security-alert/confirm-otp?email={user_email}" class="btn btn-confirm">هذا أنا</a>
+            <div class="buttons" style="text-align:center; margin: 30px 0;">
+                <a href="https://mouhami-ai.tn/#security-alert/not-me/{user_email}" class="btn btn-deny" style="background-color: #d32f2f; color: white; padding: 14px 30px; border-radius: 6px; text-decoration: none; display: inline-block; font-weight: 700; min-width: 160px; margin: 0 5px; text-align: center;">هذا ليس أنا</a>
+                <a href="https://mouhami-ai.tn/#security-alert/confirm/{user_email}" class="btn btn-confirm" style="background-color: #0d6efd; color: white; padding: 14px 30px; border-radius: 6px; text-decoration: none; display: inline-block; font-weight: 700; min-width: 160px; margin: 0 5px; text-align: center;">هذا أنا</a>
             </div>
             
             <!-- Security Note -->
@@ -163,16 +161,16 @@ def suspicious_activity_alert(
     <style>
         body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }}
         .container {{ max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }}
-        .header {{ background: linear-gradient(135deg, #c62828 0%, #b71c1c 100%); color: white; padding: 30px 20px; text-align: center; }}
+        .header {{ background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%); color: white; padding: 30px 20px; text-align: center; }}
         .header h1 {{ margin: 0; font-size: 24px; font-weight: 600; }}
-        .critical-alert {{ background-color: #ffebee; border-right: 4px solid #d32f2f; padding: 20px; margin: 20px; border-radius: 4px; }}
-        .critical-alert h2 {{ color: #c62828; margin-top: 0; }}
-        .critical-alert p {{ color: #b71c1c; margin: 10px 0; }}
-        .action-box {{ background-color: #fff3e0; border-right: 4px solid #ff9800; padding: 20px; margin: 20px; border-radius: 4px; }}
-        .action-box h3 {{ color: #e65100; margin-top: 0; }}
-        .action-list {{ color: #bf360c; padding-right: 20px; }}
+        .critical-alert {{ background-color: #e3f2fd; border-right: 4px solid #2196f3; padding: 20px; margin: 20px; border-radius: 4px; }}
+        .critical-alert h2 {{ color: #0d47a1; margin-top: 0; }}
+        .critical-alert p {{ color: #0d47a1; margin: 10px 0; }}
+        .action-box {{ background-color: #f0f4ff; border-right: 4px solid #0d6efd; padding: 20px; margin: 20px; border-radius: 4px; }}
+        .action-box h3 {{ color: #0d47a1; margin-top: 0; }}
+        .action-list {{ color: #1565c0; padding-right: 20px; }}
         .action-list li {{ margin: 8px 0; }}
-        .btn-reset {{ background-color: #d32f2f; color: white; padding: 12px 24px; font-size: 14px; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block; font-weight: 600; margin: 20px; }}
+        .btn-reset {{ background-color: #0d6efd; color: white; padding: 12px 24px; font-size: 14px; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block; font-weight: 700; margin: 20px auto; }}
         .details {{ background-color: #f5f5f5; padding: 15px; margin: 20px; border-radius: 4px; }}
         .details p {{ margin: 8px 0; font-size: 13px; color: #666666; }}
         .footer {{ background-color: #f5f5f5; border-top: 1px solid #eeeeee; padding: 20px; text-align: center; font-size: 12px; color: #999999; }}
@@ -210,7 +208,7 @@ def suspicious_activity_alert(
         </div>
         
         <center>
-            <a href="{immediate_actions_link}" class="btn-reset">الانتقال إلى إجراءات الأمان</a>
+            <a href="{immediate_actions_link}" class="btn-reset" style="background-color: #0d6efd; color: white; padding: 12px 24px; font-size: 14px; border-radius: 4px; text-decoration: none; display: inline-block; font-weight: 700;">الانتقال إلى إجراءات الأمان</a>
         </center>
         
         <div class="footer">

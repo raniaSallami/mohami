@@ -325,6 +325,8 @@ async def delete_user_by_admin(
     if user.role == UserRole.ADMIN.value:
         return {"error": "Cannot delete admin users"}, 400
     
+    # Remove any lingering refresh tokens before deleting the user
+    await db.execute(text("DELETE FROM refresh_tokens WHERE user_id = :user_id"), {"user_id": str(user_id)})
     await db.delete(user)
     await db.commit()
     

@@ -3,7 +3,7 @@
  */
 import { storageService } from './storageService';
 
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = '/api';
 
 export interface VisitorData {
   id?: string;
@@ -138,9 +138,10 @@ class VisitorService {
       const response = await fetch(`${this.baseUrl}/admin/stats/visitors`, {
         headers: this.getAuthHeaders(),
       });
-      if (!response.ok) throw new Error('Failed to fetch stats');
+      if (!response.ok) throw new Error(`Failed to fetch stats: ${response.status}`);
       return response.json();
-    } catch {
+    } catch (error) {
+      console.error('Failed to fetch visitor stats:', error);
       return { totalVisits: 0, uniqueVisitors: 0, visitsToday: 0, visitsThisWeek: 0, visitsThisMonth: 0 };
     }
   }

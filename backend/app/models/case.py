@@ -4,8 +4,9 @@ Case model for legal case management.
 from datetime import datetime
 from typing import Optional, List
 from sqlalchemy import String, Text, DateTime, ForeignKey, Enum as SQLEnum
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 import uuid
 import enum
 
@@ -63,7 +64,7 @@ class Case(Base):
     chat_history: Mapped[list] = mapped_column(JSONB, default=list)
     
     # Foreign keys
-    user_id: Mapped[Optional[str]] = mapped_column(String(100), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    user_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_by_user_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     assigned_to_user_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     

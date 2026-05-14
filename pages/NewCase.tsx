@@ -9,9 +9,44 @@ export const NewCase = ({ onNavigate }: { onNavigate: (page: string) => void }) 
   const [type, setType] = useState('criminal');
   const [loading, setLoading] = useState(false);
   const [showPendingModal, setShowPendingModal] = useState(false);
+  const [errors, setErrors] = useState<{ title?: string; clientName?: string }>({});
+
+  const validateFields = () => {
+    const newErrors: { title?: string; clientName?: string } = {};
+    const trimmedTitle = title.trim();
+    const trimmedClient = clientName.trim();
+
+    if (!trimmedTitle) {
+      newErrors.title = window.__t("يرجى إدخال عنوان القضية أو رقم الملف.");
+    } else if (trimmedTitle.length < 5) {
+      newErrors.title = window.__t("يجب أن يحتوي عنوان القضية على 5 أحرف على الأقل.");
+    } else if (trimmedTitle.length > 120) {
+      newErrors.title = window.__t("يجب أن يكون عنوان القضية أقل من 120 حرفًا.");
+    } else if (!/^[\p{L}\d\s\/\-\.]+$/u.test(trimmedTitle)) {
+      newErrors.title = window.__t("عنوان القضية يمكن أن يحتوي فقط على حروف وأرقام ومسافات ورموز بسيطة.");
+    }
+
+    if (!trimmedClient) {
+      newErrors.clientName = window.__t("يرجى إدخال اسم العميل.");
+    } else if (trimmedClient.length < 3) {
+      newErrors.clientName = window.__t("يجب أن يحتوي اسم العميل على 3 أحرف على الأقل.");
+    } else if (trimmedClient.length > 80) {
+      newErrors.clientName = window.__t("يجب أن يكون اسم العميل أقل من 80 حرفًا.");
+    } else if (!/^[\p{L}\s'\-\.]+$/u.test(trimmedClient)) {
+      newErrors.clientName = window.__t("اسم العميل يمكن أن يحتوي فقط على أحرف ومسافات وفواصل بسيطة.");
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateFields()) {
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -71,23 +106,28 @@ export const NewCase = ({ onNavigate }: { onNavigate: (page: string) => void }) 
               <label className="block text-sm font-medium text-gray-700 mb-2">{window.__t("عنوان القضية / رقم الملف")}</label>
               <input 
                 type="text" 
-                required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-primary-500 focus:border-primary-500 ${errors.title ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
                 placeholder={window.__t("مثال: قضية رقم 124/2024")}
               />
+              {errors.title ? (
+                <p className="mt-2 text-sm text-red-600">{errors.title}</p>
+              ) : null}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">{window.__t("اسم الموكل")}</label>
               <input 
                 type="text" 
-                required
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-primary-500 focus:border-primary-500 ${errors.clientName ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
                 placeholder={window.__t("الاسم الكامل")}
               />
+              {errors.clientName ? (
+                <p className="mt-2 text-sm text-red-600">{errors.clientName}</p>
+              ) : null}
+
             </div>
           </div>
 

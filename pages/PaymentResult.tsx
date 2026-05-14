@@ -22,11 +22,13 @@ export const PaymentResult: React.FC<PaymentResultProps> = ({ status, onNavigate
 
       try {
         const hash = window.location.hash;
-        const queryIndex = hash.indexOf('?');
-        const queryString = queryIndex >= 0 ? hash.slice(queryIndex + 1) : '';
-        const params = new URLSearchParams(queryString);
-        const orderId = params.get('orderId');
-        const invoiceIdFromUrl = params.get('invoiceId');
+        const hashQueryIndex = hash.indexOf('?');
+        const hashQueryString = hashQueryIndex >= 0 ? hash.slice(hashQueryIndex + 1) : '';
+        const hashParams = new URLSearchParams(hashQueryString);
+        const searchParams = new URLSearchParams(window.location.search);
+
+        const orderId = hashParams.get('orderId') || searchParams.get('orderId') || hashParams.get('mdOrder') || searchParams.get('mdOrder');
+        const invoiceIdFromUrl = hashParams.get('invoiceId') || searchParams.get('invoiceId');
 
         if (!orderId && !invoiceIdFromUrl) {
           setMessage(window.__t('تعذر العثور على معرف الدفع.'));

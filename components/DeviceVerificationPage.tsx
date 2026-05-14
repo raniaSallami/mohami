@@ -187,11 +187,11 @@ export const DeviceVerificationPage: React.FC<DeviceVerificationPageProps> = ({ 
       await fetch('/api/device-security/resend-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId }),
+        body: JSON.stringify({ user_id: finalUserId }),
       });
       
       // Show success message
-      setError(window.__t("تم إرسال رمز التحقق الجديد إلى بريدك الإلكتروني")); // Show as info
+      setError(window.__t("تم إرسال رمز التحقق الجديد إلى بريدك الإلكتروني"));
     } catch (err) {
       setError(window.__t("فشل إرسال الرمز. يرجى المحاولة مجددا"));
     }

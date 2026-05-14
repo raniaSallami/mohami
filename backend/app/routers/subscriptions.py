@@ -154,9 +154,8 @@ async def checkout_subscription(
 
             # Send localized success email and notification for free subscription
             try:
-                lang = get_user_lang(None)  # Use default or detect from context if possible
-                
-                notif_title = "Abonnement activé" if lang == "fr" else "تم تفعيل الاشتراك"
+                lang = get_user_lang(None, current_user)
+                notif_title = "Succès de l'abonnement gratuit" if lang == "fr" else "تم تفعيل الاشتراك المجاني"
                 notif_message = "Votre abonnement gratuit a été activé avec succès." if lang == "fr" else "تم تفعيل اشتراكك المجاني بنجاح."
                 
                 db.add(Notification(
@@ -261,13 +260,15 @@ async def checkout_subscription(
 async def verify_subscription(
     request: Request,
     orderId: str | None = Query(None, alias="orderId"),
+    mdOrder: str | None = Query(None, alias="mdOrder"),
     invoiceId: str | None = Query(None, alias="invoiceId"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ) -> Dict[str, str]:
     """Verify payment status via ClicToPay and activate subscription only on status=2."""
+    orderId = orderId or mdOrder
     if not orderId and not invoiceId:
-        raise HTTPException(status_code=400, detail="orderId or invoiceId is required")
+        raise HTTPException(status_code=400, detail="orderId, mdOrder, or invoiceId is required")
 
     if orderId:
         result = await db.execute(select(Invoice).where(Invoice.clictopay_order_id == orderId))
@@ -330,7 +331,7 @@ async def verify_subscription(
 
         # Send localized success email and notification
         try:
-            lang = get_user_lang(request)
+            lang = get_user_lang(request, current_user)
             
             notif_title = "Paiement confirmé avec succès" if lang == "fr" else "تم تأكيد الدفع بنجاح"
             notif_message = (

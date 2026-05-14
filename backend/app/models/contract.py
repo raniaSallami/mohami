@@ -4,6 +4,7 @@ Contract model for legal document management.
 from datetime import datetime
 from typing import Optional, List
 from sqlalchemy import String, Text, DateTime, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 import uuid
 
@@ -33,7 +34,7 @@ class Contract(Base):
     status: Mapped[str] = mapped_column(String(50), default="draft")  # draft, signed, expired
     
     # Foreign keys - use String(36) to store UUID as string
-    user_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    user_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     
     # Tenant (organization)
     tenant_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)

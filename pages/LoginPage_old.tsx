@@ -106,7 +106,7 @@
       console.log('✅ Fresh reCAPTCHA token generated');
 
       // Step 1: send email + password + recaptcha
-      const response = await fetch(`http://localhost:3001/api/auth/login/step1`, {
+      const response = await fetch(`/api/auth/login/step1`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, recaptcha_token: freshToken }),

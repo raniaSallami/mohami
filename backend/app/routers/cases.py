@@ -1,8 +1,12 @@
 """
 Case management routes.
 """
+import base64
+import re
+import os
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, func
 
@@ -17,6 +21,17 @@ from app.schemas.case import (
 )
 from app.utils.security import get_current_active_user
 from app.utils.tenants import require_tenant_access
+from app.config import settings
+
+# Configure Gemini API (lazy import)
+GEMINI_API_KEY = settings.gemini_api_key
+genai_client = None
+if GEMINI_API_KEY:
+    try:
+        import google.genai as genai_module
+        genai_client = genai_module.Client(api_key=GEMINI_API_KEY)
+    except ImportError:
+        print("Warning: google-genai not installed, AI analysis disabled")
 
 
 router = APIRouter(prefix="/cases", tags=["Cases"])
@@ -144,6 +159,116 @@ async def create_case(
     await db.refresh(case)
     
     return CaseResponse.model_validate(case)
+
+
+class DocumentAnalysisRequest(BaseModel):
+    document_content: str
+    case_context: Optional[str] = None
+    prompt: Optional[str] = None
+
+
+class CaseChatRequest(BaseModel):
+    message: str
+
+
+def extract_text_from_bytes(raw_bytes: bytes) -> str:
+    if raw_bytes.startswith(b"%PDF"):
+        # Try to extract readable PDF text blocks from raw binary.
+        matches = re.findall(rb"\(([^)]+)\)", raw_bytes)
+        readable = []
+        for match in matches:
+            text = match.decode('latin-1', errors='ignore').strip()
+            if len(text) >= 20:
+                readable.append(text)
+        return ' '.join(readable[:10]).strip() or ''
+
+    # Fallback: decode text-like bytes
+    try:
+        decoded = raw_bytes.decode('utf-8', errors='ignore')
+    except Exception:
+        decoded = ''
+    if decoded.strip():
+        return decoded
+
+    # Extract ASCII-like fragments for binary files
+    fragments = re.findall(rb"[A-Za-z0-9\u00C0-\u017F\s\.,;:'\-]{20,}", raw_bytes)
+    return ' '.join(fragment.decode('latin-1', errors='ignore') for fragment in fragments[:10]).strip()
+
+
+@router.post("/analyze-document")
+async def analyze_document(
+    analysis_request: DocumentAnalysisRequest,
+    current_user: User = Depends(get_current_active_user)
+):
+    """Analyze uploaded case document using Gemini AI or local fallback."""
+    try:
+        raw_bytes = base64.b64decode(analysis_request.document_content)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid document content")
+
+    content_preview = extract_text_from_bytes(raw_bytes)
+    file_type = analysis_request.case_context or 'unknown'
+    file_size = len(raw_bytes)
+
+    prompt = (
+        f"Analyze the following legal document:\n\n"
+        f"Document Type: {file_type}\n"
+        f"Content: {content_preview}\n\n"
+        f"User Prompt: {analysis_request.prompt or 'Provide a comprehensive analysis'}\n\n"
+        f"Case Context: {analysis_request.case_context or 'General'}\n\n"
+        f"Please provide a detailed legal analysis including:\n"
+        f"1. Document Summary\n"
+        f"2. Key Points\n"
+        f"3. Legal Implications\n"
+        f"4. Recommended Actions"
+    )
+
+    # Try to use Gemini AI if configured and available
+    if genai_client and GEMINI_API_KEY and content_preview:
+        try:
+            response = genai_client.models.generate_content(
+                model='gemini-2.0-flash',
+                contents=prompt
+            )
+            analysis_text = response.text or "Unable to generate analysis"
+            return {"analysis": analysis_text}
+        except Exception as e:
+            # Fall back to local analysis if Gemini fails
+            print(f"Gemini API error: {str(e)}")
+
+    # Fallback: local analysis
+    if not content_preview:
+        analysis_text = (
+            f"Local analysis of document ({file_type}, {file_size} bytes). "
+            "No readable text was extracted from the uploaded file. "
+            "This can happen for scanned PDFs or image-only documents. "
+            "Please upload a text-based file or configure a valid GEMINI_API_KEY in the backend .env file."
+        )
+    else:
+        preview = content_preview[:1000].replace('\n', ' ').strip()
+        if GEMINI_API_KEY:
+            ai_note = "Note: Gemini AI was unavailable or returned an error."
+        else:
+            ai_note = "Note: GEMINI_API_KEY is not configured, so AI-powered analysis is disabled."
+
+        analysis_text = (
+            f"Local analysis of document ({file_type}, {file_size} bytes). "
+            f"Extracted content: {preview}... "
+            f"User prompt: {analysis_request.prompt or 'N/A'}. "
+            f"{ai_note}"
+        )
+
+    return {"analysis": analysis_text}
+
+
+@router.post("/{case_id}/chat")
+async def chat_with_case_document(
+    case_id: str,
+    chat_request: CaseChatRequest,
+    current_user: User = Depends(get_current_active_user)
+):
+    """Chat about a case document and return a mock model response."""
+    return {"response": f"Mock chat reply for case {case_id}: {chat_request.message}"}
 
 
 @router.patch("/{case_id}", response_model=CaseResponse)

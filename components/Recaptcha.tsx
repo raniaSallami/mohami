@@ -71,16 +71,22 @@ export const Recaptcha: React.FC<RecaptchaProps> = ({
 
 // Export function to execute reCAPTCHA manually
 export const executeRecaptcha = async (action: string = 'login'): Promise<string | null> => {
-  if (window.grecaptcha) {
-    try {
-      const token = await window.grecaptcha.execute(RECAPTCHA_SITE_KEY, { action });
-      return token;
-    } catch (error) {
-      console.error('reCAPTCHA error:', error);
-      return null;
-    }
+  if (!window.grecaptcha) {
+    return null;
   }
-  return null;
+
+  try {
+    if (typeof window.grecaptcha.ready === 'function') {
+      await new Promise<void>((resolve) => {
+        window.grecaptcha.ready(() => resolve());
+      });
+    }
+    const token = await window.grecaptcha.execute(RECAPTCHA_SITE_KEY, { action });
+    return token;
+  } catch (error) {
+    console.error('reCAPTCHA error:', error);
+    return null;
+  }
 };
 
 // Export function to reset reCAPTCHA

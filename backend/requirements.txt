@@ -2,6 +2,7 @@
 fastapi>=0.110.0
 uvicorn[standard]>=0.28.0
 sqlalchemy[asyncio]>=2.0.25
+asyncpg>=0.29.0
 psycopg[binary]>=3.3.3
 alembic>=1.13.1
 python-jose[cryptography]>=3.3.0
@@ -15,6 +16,7 @@ redis>=5.0.1
 httpx>=0.26.0
 pyotp>=2.9.0
 python-dotenv>=1.0.0
+google-genai>=0.8.0
 
 # Invoice & Email Services
 reportlab>=4.0.8

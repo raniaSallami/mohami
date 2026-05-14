@@ -95,10 +95,19 @@ async def init_db():
     async with engine.begin() as conn:
         print("✓ Connection acquired")
         await conn.run_sync(Base.metadata.create_all)
-    print("✅ Database tables created/verified")
+        # Ensure the contracts.status column exists in existing databases.
+        await conn.execute(
+            text("ALTER TABLE contracts ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'draft'")
+        )
+        # Ensure system settings column uses JSONB for structured payloads.
+        try:
+            await conn.execute(
+                text("ALTER TABLE system_settings ALTER COLUMN value TYPE JSONB USING value::jsonb")
+            )
+        except Exception:
+            pass
 
 
 async def close_db():
     """Close database connections."""
     await engine.dispose()
-

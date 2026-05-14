@@ -21,6 +21,7 @@ from app.utils.security import (
     get_password_hash,
     create_token_pair,
     get_current_user,
+    get_current_active_user,
 )
 from app.utils.device_security import (
     check_known_device,
@@ -159,7 +160,7 @@ async def _create_and_send_device_otp(user: User, req: Request, db: AsyncSession
         otp_code = await create_login_otp(user.id, db, expiry_minutes=5)
         
         # Detect language
-        lang = get_user_lang(req)
+        lang = get_user_lang(req, user)
         
         # Send email with template
         await send_new_device_otp_email(user.email, user.name, otp_code, req, db, lang=lang)
@@ -341,16 +342,21 @@ async def login_step1(
     fingerprint = request.fingerprint or req.headers.get("User-Agent", "unknown")
     ip_address = _get_client_ip(req)
     
-    # ✓ Check if IP is known (only IP verification, not fingerprint)
-    from app.utils.device_security import check_ip_known
-    is_ip_known = await check_ip_known(user.id, ip_address, db)
+    # ✓ Check if this device has been seen before.
+    from app.utils.device_security import check_known_device, check_ip_known
+    is_known_device = False
+
+    if fingerprint and fingerprint != "unknown":
+        is_known_device = await check_known_device(user.id, fingerprint, ip_address, db)
+    else:
+        is_known_device = await check_ip_known(user.id, ip_address, db)
 
     # ✓ SKIP new device alert for admin@admin.com only
-    if not is_ip_known and user.email.lower() != "admin@admin.com":
+    if not is_known_device and user.email.lower() != "admin@admin.com":
         await _create_and_send_device_otp(user, req, db)
         return LoginStep1Response(
             needs_otp=True,
-            user_id=user.id,
+            user_id=str(user.id),
             message="تم إرسال رمز التحقق إلى بريدكم الإلكتروني. يرجى إدخاله للمتابعة."
         )
 
@@ -514,7 +520,7 @@ async def register(
     if result.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="البريد الإلكتروني مستخدم بالفعل."
+            detail="البريد الإلكتروني مستخدم بالفعل"
         )
 
     allowed_roles = {UserRole.LAWYER.value, UserRole.CLIENT.value}
@@ -547,6 +553,9 @@ async def register(
     )
     db.add(user_profile)
     await db.commit()
+
+    # Attach profile to the user object so Pydantic can serialize attributes without lazy-loading
+    user.profile = user_profile
 
     # Register the current device so user doesn't get OTP on first login
     fingerprint = req.headers.get("User-Agent", "unknown")
@@ -1240,3 +1249,17 @@ class VerifyIPOTPRequest(BaseModel):
 async def verify_ip_otp(request: VerifyIPOTPRequest, current_user: User = Depends(get_current_user)):
     """Mock endpoint to verify an IP OTP code."""
     return {"verified": True}
+
+class UpdateLanguageRequest(BaseModel):
+    language: str = Field(..., pattern="^(ar|fr)$")
+
+@router.post("/update-language")
+async def update_user_language(
+    request: UpdateLanguageRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update user's preferred language for emails and interface."""
+    current_user.language = request.language
+    await db.commit()
+    return {"message": "Language updated successfully", "language": request.language}

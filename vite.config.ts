@@ -6,24 +6,25 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
       server: {
-        port: 5173,
+        port: 5174,
         strictPort: true,
         host: '0.0.0.0',
         hmr: {
-          clientPort: 5173,
+          clientPort: 5174,
           host: 'localhost'
         },
         proxy: {
           '/api': {
-            target: 'http://localhost:3001',
+            target: 'http://127.0.0.1:3002',
             changeOrigin: true,
+            secure: false,
           }
         }
       },
       plugins: [react()],
       define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+        'process.env.API_KEY': JSON.stringify(env.VITE_GEMINI_API_KEY),
+        'process.env.GEMINI_API_KEY': JSON.stringify(env.VITE_GEMINI_API_KEY),
         'process.env.DATABASE_URL': JSON.stringify(env.DATABASE_URL),
         'process.env.EMAILJS_SERVICE_ID': JSON.stringify(env.VITE_EMAILJS_SERVICE_ID),
         'process.env.EMAILJS_TEMPLATE_ID': JSON.stringify(env.VITE_EMAILJS_TEMPLATE_ID),

@@ -39,6 +39,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
@@ -103,6 +104,11 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field as keyof FormErrors]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+
+    // Clear email error when user changes the email
+    if (field === 'email' && emailError) {
+      setEmailError(null);
     }
 
     if (field === 'password') {
@@ -272,6 +278,8 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
         accountType: userType,
       });
       
+      setEmailError(null);
+      
       await apiService.sendRegistrationOTP(
         formData.email.trim(),
         formData.password,
@@ -283,23 +291,38 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
       toast.success(window.__t("✅ تم إرسال الرمز إلى بريدك الإلكتروني"));
       return true;
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : window.__t("فشل إرسال الرمز");
-      
-      // If email already exists error, highlight the email field
-      if (errorMsg.includes(window.__t("البريد مسجل")) || errorMsg.includes('already')) {
+      const errorMsg = error instanceof Error ? error.message : String(error || window.__t("فشل إرسال الرمز"));
+      const duplicateEmailPatterns = [
+        'هذا البريد مسجل',
+        'مسبقاً',
+        'مستخدم بالفعل',
+        'البريد الإلكتروني مستخدم بالفعل',
+        'البريد مسجل',
+        'already',
+        'email is already',
+      ];
+
+      const isDuplicateEmail = duplicateEmailPatterns.some((pattern) =>
+        errorMsg.toLowerCase().includes(pattern.toLowerCase())
+      );
+
+      if (isDuplicateEmail) {
+        const emailAlreadyRegisteredMsg = window.__t("هذا البريد موجود بالفعل، حاول باستخدام بريد آخر");
+        setEmailError(emailAlreadyRegisteredMsg);
         setErrors((prev) => ({
           ...prev,
-          email: window.__t("هذا البريد موجود بالفعل، حاول باستخدام بريد آخر"),
+          email: window.__t("البريد موجود بالفعل"),
         }));
-        toast.error(window.__t("⚠️ البريد الإلكتروني مستخدم بالفعل"));
+        toast.error(emailAlreadyRegisteredMsg);
       } else {
         toast.error(`❌ ${errorMsg}`);
       }
-      
+
       console.error('❌ OTP Error:', errorMsg);
       return false;
     }
   };
+
 
   const handleVerifyOTP = async () => {
     if (!otpCode || otpCode.length !== 6) {
@@ -335,6 +358,8 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
         setOtpSent(false);
         setOtpCode('');
       }
+      setEmailError(null);
+      setErrors({});
       setStep((step - 1) as any);
     }
   };
@@ -364,7 +389,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
         return;
       }
 
-      // Complete registration
+      // Complete registration - always create with basic plan first
       const response = await apiService.register(
         formData.email.trim(),
         formData.password,
@@ -372,7 +397,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
         token,
         formData.phone,
         userType || 'lawyer',
-        selectedPlan,
+        'basic', // Always start with basic plan
         formData.barNumber,
         formData.cabinetName,
         formData.university,
@@ -383,16 +408,30 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
       );
 
       console.log('Registration successful:', response);
-      alert(window.__t("تم إنشاء حسابك بنجاح! مرحباً بك في المحامي"));
-      toast.success(window.__t("تم إنشاء حسابك بنجاح!"), {
-        description: window.__t("مرحباً بك في المحامي - سيتم توجيهك إلى الصفحة الرئيسية"),
+
+      if (selectedPlan && selectedPlan !== 'basic') {
+        toast.success(window.__t("تم إنشاء الحساب بنجاح! يتم توجيهك إلى صفحة الدفع..."), {
+          duration: 4000,
+        });
+
+        const checkoutResult = await storageService.checkoutSubscription(selectedPlan);
+        if (checkoutResult.formUrl) {
+          window.location.href = checkoutResult.formUrl;
+          return;
+        }
+
+        toast.error(window.__t("حدث خطأ أثناء فتح صفحة الدفع. يمكنك تسجيل الدخول ومحاولة الدفع مرة أخرى."));
+        storageService.logout();
+        onNavigate('login');
+        return;
+      }
+
+      storageService.logout();
+      toast.success(window.__t("تم إنشاء الحساب بنجاح! يرجى تسجيل الدخول للمتابعة."), {
         duration: 5000,
       });
-      
-      // Navigate after showing the toast
-      setTimeout(() => {
-        onLogin(response.user);
-      }, 500);
+      onNavigate('login');
+      return;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : window.__t("فشل إنشاء الحساب");
       toast.error(errorMsg);
@@ -403,13 +442,48 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
 
   return (
     <div
-      className={`min-h-screen ${theme === 'dark' ? 'bg-[#0B1121]' : 'bg-gradient-to-br from-white via-gray-50 to-orange-50'} flex items-center justify-center p-4 relative`}
-      style={{ fontFamily: "var(--font-sans)" }}
+      className={`min-h-screen ${theme === 'dark' ? 'bg-gradient-to-br from-[#0B1121] via-[#111423] to-[#151b2a] text-white' : 'bg-gradient-to-br from-[#f9f6f1] via-[#f4ece0] to-[#ead8b2] text-slate-900'} flex items-center justify-center p-4 relative`}
+      style={{ fontFamily: "'Tajawal', sans-serif" }}
     >
+      <style>{`
+        .orange-metallic {
+          background: linear-gradient(120deg, #ea580c 0%, #fb923c 25%, #c2410c 50%, #fdba74 75%, #9a3412 100%);
+          background-size: 200% auto;
+          color: white !important;
+          transition: all 0.5s ease;
+        }
+        .orange-metallic:hover {
+          background-position: right center;
+          box-shadow: 0 20px 40px -10px rgba(234, 88, 12, 0.4);
+        }
+        .shine-effect {
+          position: relative;
+          overflow: hidden;
+        }
+        .shine-effect::after {
+          content: "";
+          position: absolute;
+          top: -50%;
+          left: -100%;
+          width: 50%;
+          height: 200%;
+          background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.4), transparent);
+          transform: rotate(30deg);
+          animation: shine 4s infinite;
+        }
+        @keyframes shine {
+          0% { left: -100%; }
+          20% { left: 100%; }
+          100% { left: 100%; }
+        }
+      `}</style>
       {/* Decorative Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <div className={`absolute inset-0 ${theme === 'dark' ? 'bg-[#0B1121]' : 'bg-[#f9f6f1]'}`}></div>
         <div className="absolute top-10 end-10 w-96 h-96 bg-orange-100/20 dark:bg-slate-700/15 rounded-full blur-3xl"></div>
         <div className="absolute bottom-10 start-10 w-96 h-96 bg-orange-100/20 dark:bg-slate-700/15 rounded-full blur-3xl"></div>
+        <div className={`absolute top-[20%] start-1/2 -translate-x-1/2 w-[460px] h-[460px] rounded-full ${theme === 'dark' ? 'bg-white/6' : 'bg-white/90'} blur-[150px]`}></div>
+        <div className="absolute inset-0 opacity-[0.06] pointer-events-none bg-[url('/noise.svg')] bg-repeat"></div>
       </div>
 
       {/* Floating Controls Overlay */}
@@ -449,34 +523,33 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
         <span className="hidden sm:inline-block">{window.__t("العودة للرئيسية")}</span>
       </button>
 
-      <div className="w-full max-w-3xl relative z-10">
-        {/* Logo */}
-        <div className="text-center mb-4">
-          <div className="inline-flex items-center justify-center mb-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 flex items-center justify-center shadow-lg shadow-orange-400/30">
-              <svg
-                className="w-9 h-9 text-white"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              >
-                <path d="M12 3v18" />
-                <path d="M5 8l-2 5h8l-2-5" />
-                <path d="M19 8l-2 5h8l-2-5" />
-              </svg>
+      <div className="w-full max-w-5xl relative z-10">
+        <div className={`absolute inset-0 rounded-[3rem] border transition duration-700 ${theme === 'dark' ? 'border-white/10 bg-white/5 shadow-[0_40px_120px_-50px_rgba(0,0,0,0.35)]' : 'border-white/20 bg-white/70 shadow-[0_40px_120px_-50px_rgba(15,23,42,0.22)]'} backdrop-blur-3xl`}></div>
+        <div className="relative">
+          {/* Logo */}
+        <div className="text-center mb-4 mt-6">
+          <div className="flex justify-center mb-4">
+            <div className="relative group cursor-pointer hover:-translate-y-1 transition-transform duration-500">
+              <div className="absolute inset-0 bg-orange-500 rounded-xl blur-lg opacity-40 group-hover:opacity-90 transition-opacity duration-500"></div>
+              <div className="relative flex items-center justify-center transition-all duration-700 w-12 h-12 rounded-xl orange-metallic shine-effect border border-white/20 shadow-xl group-hover:shadow-2xl">
+                <svg className="w-7 h-7 text-white drop-shadow-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M12 3v18" />
+                  <path d="M5 8l-2 5h8l-2-5" />
+                  <path d="M19 8l-2 5h8l-2-5" />
+                </svg>
+              </div>
             </div>
           </div>
-          <h1 className="text-3xl text-orange-900 dark:text-orange-200 font-bold" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>
+          <h1 className="text-3xl text-slate-900 dark:text-white font-bold" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>
             {window.__t("إنشاء حساب جديد")}
           </h1>
-          <p className="text-orange-700 dark:text-orange-400 text-sm mt-1" style={{ fontFamily: "'Tajawal', sans-serif" }}>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1" style={{ fontFamily: "'Tajawal', sans-serif" }}>
             {window.__t("انضم إلى المحامي اليوم")}
           </p>
         </div>
 
         {/* Main Card */}
-        <div className={`relative rounded-3xl overflow-hidden shadow-2xl p-6 md:p-8 border transition-all duration-700 ${theme === 'dark' ? 'bg-[#131B2E]/80 border-white/10' : 'bg-white/40 border-white/60'} backdrop-blur-[40px]`} style={{ fontFamily: "'Tajawal', sans-serif" }}>
+        <div className={`relative rounded-3xl overflow-hidden shadow-2xl p-4 md:p-6 border transition-all duration-700 ${theme === 'dark' ? 'bg-[#131B2E]/80 border-white/10' : 'bg-white/40 border-white/60'} backdrop-blur-[40px]`}>
           <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/10 to-transparent pointer-events-none -z-10"></div>
           
           {/* Progress Steps - Updated to 4 steps */}
@@ -509,10 +582,10 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
             {step === 1 && (
               <div className="space-y-5">
                 <div className="text-center mb-6">
-                  <h2 className="text-2xl text-orange-900 dark:text-orange-200 font-bold" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>
+                  <h2 className="text-2xl text-slate-900 dark:text-white font-bold" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>
                     {window.__t("اختر نوع الحساب")}
                   </h2>
-                  <p className="text-orange-700 dark:text-orange-400 text-sm mt-1" style={{ fontFamily: "'Tajawal', sans-serif" }}>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm mt-1" style={{ fontFamily: "'Tajawal', sans-serif" }}>
                     {window.__t("حدد الخيار المناسب لاحتياجاتك")}
                   </p>
                 </div>
@@ -522,7 +595,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                   <button
                     type="button"
                     onClick={() => setUserType('lawyer')}
-                    className={`flex flex-col items-center justify-center p-6 rounded-[1.5rem] border transition-all text-center bg-white dark:bg-slate-800 group ${
+                    className={`flex flex-col items-center justify-center p-6 min-h-[220px] rounded-[1.5rem] border transition-all text-center bg-white dark:bg-slate-800 group ${
                       userType === 'lawyer'
                         ? 'border-orange-500 shadow-xl shadow-orange-500/10 scale-[1.02]'
                         : 'border-slate-100 dark:border-slate-700 hover:border-orange-200 dark:hover:border-orange-800 hover:shadow-md'
@@ -531,10 +604,10 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                     <div className={`w-16 h-16 rounded-[1.25rem] flex items-center justify-center mb-4 transition-colors ${userType === 'lawyer' ? 'bg-orange-500 text-white' : 'bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400'} border border-slate-100/50 dark:border-slate-800 shadow-sm`}>
                       <Scale className="w-7 h-7" />
                     </div>
-                    <h3 className="text-lg text-slate-900 dark:text-white font-bold mb-1" style={{ fontFamily: "var(--font-sans)", fontWeight: 700 }}>
+                    <h3 className="text-lg text-slate-900 dark:text-white font-bold mb-1 whitespace-normal break-words" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>
                       {window.__t("محامي")}
                     </h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400" style={{ fontFamily: "var(--font-sans)" }}>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 whitespace-normal break-words" style={{ fontFamily: "'Tajawal', sans-serif" }}>
                       {window.__t("للمحامين المرخصين والممارسين")}
                     </p>
                   </button>
@@ -543,7 +616,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                   <button
                     type="button"
                     onClick={() => setUserType('cabinet')}
-                    className={`flex flex-col items-center justify-center p-6 rounded-[1.5rem] border transition-all text-center bg-white dark:bg-slate-800 group ${
+                    className={`flex flex-col items-center justify-center p-6 min-h-[220px] rounded-[1.5rem] border transition-all text-center bg-white dark:bg-slate-800 group ${
                       userType === 'cabinet'
                         ? 'border-orange-500 shadow-xl shadow-orange-500/10 scale-[1.02]'
                         : 'border-slate-100 dark:border-slate-700 hover:border-orange-200 dark:hover:border-orange-800 hover:shadow-md'
@@ -552,10 +625,10 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                     <div className={`w-16 h-16 rounded-[1.25rem] flex items-center justify-center mb-4 transition-colors ${userType === 'cabinet' ? 'bg-orange-500 text-white' : 'bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400'} border border-slate-100/50 dark:border-slate-800 shadow-sm`}>
                       <Building2 className="w-7 h-7" />
                     </div>
-                    <h3 className="text-lg text-slate-900 dark:text-white font-bold mb-1" style={{ fontFamily: "var(--font-sans)", fontWeight: 700 }}>
+                    <h3 className="text-lg text-slate-900 dark:text-white font-bold mb-1 whitespace-normal break-words" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>
                       {window.__t("مكتب محاماة")}
                     </h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400" style={{ fontFamily: "var(--font-sans)" }}>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 whitespace-normal break-words" style={{ fontFamily: "'Tajawal', sans-serif" }}>
                       {window.__t("لإدارة فريق عمل متكامل")}
                     </p>
                   </button>
@@ -564,7 +637,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                   <button
                     type="button"
                     onClick={() => setUserType('student')}
-                    className={`flex flex-col items-center justify-center p-6 rounded-[1.5rem] border transition-all text-center bg-white dark:bg-slate-800 group ${
+                    className={`flex flex-col items-center justify-center p-6 min-h-[220px] rounded-[1.5rem] border transition-all text-center bg-white dark:bg-slate-800 group ${
                       userType === 'student'
                         ? 'border-orange-500 shadow-xl shadow-orange-500/10 scale-[1.02]'
                         : 'border-slate-100 dark:border-slate-700 hover:border-orange-200 dark:hover:border-orange-800 hover:shadow-md'
@@ -573,10 +646,10 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                     <div className={`w-16 h-16 rounded-[1.25rem] flex items-center justify-center mb-4 transition-colors ${userType === 'student' ? 'bg-orange-500 text-white' : 'bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400'} border border-slate-100/50 dark:border-slate-800 shadow-sm`}>
                       <GraduationCap className="w-7 h-7" />
                     </div>
-                    <h3 className="text-lg text-slate-900 dark:text-white font-bold mb-1" style={{ fontFamily: "var(--font-sans)", fontWeight: 700 }}>
+                    <h3 className="text-lg text-slate-900 dark:text-white font-bold mb-1 whitespace-normal break-words" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>
                       {window.__t("طالب قانون")}
                     </h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400" style={{ fontFamily: "var(--font-sans)" }}>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 whitespace-normal break-words" style={{ fontFamily: "'Tajawal', sans-serif" }}>
                       {window.__t("للأغراض التعليمية والبحثية")}
                     </p>
                   </button>
@@ -624,7 +697,7 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                 <div className="space-y-4">
                   {/* Full Name */}
                   <div className="space-y-2">
-                    <label className="text-sm text-orange-900 dark:text-orange-200 block text-start font-bold" style={{ fontFamily: "var(--font-sans)", fontWeight: 700 }}>
+                    <label className="text-sm text-orange-900 dark:text-orange-200 block text-start font-bold" style={{ fontFamily: "'Tajawal', sans-serif", fontWeight: 700 }}>
                       {window.__t("الاسم الكامل")}
                       {errors.fullName && <span className="text-red-600"> {window.__t("مطلوب")}</span>}
                     </label>
@@ -664,6 +737,12 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                         <Mail className={`absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 ${errors.email ? 'text-red-500' : 'text-muted-foreground'}`} />
                       </div>
                       {errors.email && <p className="text-red-500 text-xs text-end">{errors.email}</p>}
+                      {emailError && (
+                        <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 flex items-start gap-2">
+                          <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                          <p className="text-sm text-red-700 dark:text-red-300 text-end flex-1">{emailError}</p>
+                        </div>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -894,11 +973,11 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                     type="button"
                     onClick={handleNextStep2}
                     className={`flex-1 h-12 rounded-lg font-bold text-sm transition-all duration-300 border-2 ${
-                      isValidStep2 && !isLoading
-                        ? 'bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 text-white border-transparent shadow-lg shadow-orange-500/20'
-                        : 'bg-slate-50 dark:bg-white/5 text-slate-400 dark:text-white/30 border-slate-200 dark:border-white/10 cursor-not-allowed opacity-60'
+                      isLoading
+                        ? 'bg-slate-50 dark:bg-white/5 text-slate-400 dark:text-white/30 border-slate-200 dark:border-white/10 cursor-not-allowed opacity-60'
+                        : 'bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 text-white border-transparent shadow-lg shadow-orange-500/20'
                     }`}
-                    disabled={!isValidStep2 || isLoading}
+                    disabled={isLoading}
                   >
                     {isLoading ? (
                       <span className="flex items-center gap-2">
@@ -1182,6 +1261,12 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                   {window.__t("بالاشتراك، توافق على شروط الخدمة وسياسة الخصوصية")}
                 </p>
 
+                {selectedPlan && selectedPlan !== 'basic' && (
+                  <p className="text-sm text-orange-600 dark:text-orange-300 text-center mt-4">
+                    {window.__t("سيتم توجيهك إلى صفحة الدفع بعد إنشاء الحساب")}
+                  </p>
+                )}
+
                 {/* Navigation Buttons */}
                 <div className="flex gap-3 pt-4">
                   <Button
@@ -1208,7 +1293,9 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
                         {window.__t("جارٍ الإنشاء...")}
                       </span>
                     ) : (
-                      window.__t("إنشاء الحساب")
+                      selectedPlan && selectedPlan !== 'basic'
+                        ? window.__t("إنشاء الحساب والدفع")
+                        : window.__t("إنشاء الحساب")
                     )}
                   </Button>
                 </div>
@@ -1222,6 +1309,11 @@ export const RegisterPage = ({ onLogin, onNavigate }: { onLogin: (user: UserType
           {window.__t("© 2026 المحامي - جميع الحقوق محفوظة")}
         </div>
       </div>
+    </div>
+
+      <style>{`
+        .glass { backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+      `}</style>
     </div>
   );
 };

@@ -4,7 +4,7 @@
 import { storageService } from './storageService';
 import { fetchWithTokenRefresh } from './apiInterceptor';
 
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = '/api';
 
 export interface Notification {
   id: string;

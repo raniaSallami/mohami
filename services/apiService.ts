@@ -3,7 +3,7 @@ import { fetchWithTokenRefresh } from './apiInterceptor';
 import { User } from '../types';
 import i18n from 'i18next';
 
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = '/api';
 
 export interface LoginStep1Response {
   needs_otp: boolean;
@@ -14,8 +14,7 @@ export interface LoginStep1Response {
 }
 
 export interface LoginStep2Response {
-  access_token: string;
-  token_type: string;
+  token: any;
   user: any;
   message?: string;
 }
@@ -27,6 +26,10 @@ export interface AuthError {
 
 class APIService {
   private baseUrl = API_BASE;
+
+  private translateError(message: string): string {
+    return i18n.t(message);
+  }
 
   getAuthHeaders(): HeadersInit {
     const token = storageService.getAccessToken();
@@ -58,7 +61,7 @@ class APIService {
 
     if (!response.ok) {
       const error: AuthError = await response.json();
-      throw new Error(error.detail || 'Login failed');
+      throw new Error(this.translateError(error.detail || 'Login failed'));
     }
 
     return response.json();
@@ -83,11 +86,11 @@ class APIService {
 
     if (!response.ok) {
       const error: AuthError = await response.json();
-      throw new Error(error.detail || 'OTP verification failed');
+      throw new Error(this.translateError(error.detail || 'OTP verification failed'));
     }
 
     const data = await response.json();
-    storageService.setToken(data);
+    storageService.setToken(data.token);
     storageService.setUser(data.user);
     return data;
   }
@@ -139,7 +142,7 @@ class APIService {
           errorMsg = errorData.detail.map((e: any) => e.msg || e).join(', ');
         }
         
-        throw new Error(errorMsg);
+        throw new Error(this.translateError(errorMsg));
       }
 
       const result = await response.json();
@@ -148,7 +151,7 @@ class APIService {
     } catch (error: any) {
       clearTimeout(timeoutId);
       if (error.name === 'AbortError') {
-        throw new Error('الطلب استغرق وقتاً طويلاً، يرجى التحقق من اتصالك بالإنترنت');
+        throw new Error(this.translateError('الطلب استغرق وقتاً طويلاً، يرجى التحقق من اتصالك بالإنترنت'));
       }
       throw error;
     }
@@ -181,7 +184,7 @@ class APIService {
         errorMsg = errorData.detail.map((e: any) => e.msg || e).join(', ');
       }
       
-      throw new Error(errorMsg);
+      throw new Error(this.translateError(errorMsg));
     }
 
     const result = await response.json();
@@ -242,7 +245,7 @@ class APIService {
         errorMsg = errorData.detail.map((e: any) => e.msg).join(', ');
       }
       
-      throw new Error(errorMsg);
+      throw new Error(this.translateError(errorMsg));
     }
 
     const data = await response.json();
@@ -281,7 +284,7 @@ class APIService {
 
     if (!response.ok) {
       const error: AuthError = await response.json();
-      throw new Error(error.detail || 'Email verification failed');
+      throw new Error(this.translateError(error.detail || 'Email verification failed'));
     }
 
     return response.json();
@@ -302,7 +305,7 @@ class APIService {
 
     if (!response.ok) {
       const error: AuthError = await response.json();
-      throw new Error(error.detail || 'Failed to initiate password reset');
+      throw new Error(this.translateError(error.detail || 'Failed to initiate password reset'));
     }
 
     return response.json();
@@ -327,7 +330,7 @@ class APIService {
 
     if (!response.ok) {
       const error: AuthError = await response.json();
-      throw new Error(error.detail || 'Password reset failed');
+      throw new Error(this.translateError(error.detail || 'Password reset failed'));
     }
 
     return response.json();
@@ -356,7 +359,7 @@ class APIService {
 
     if (!response.ok) {
       const error: AuthError = await response.json();
-      throw new Error(error.detail || 'Emergency reset failed');
+      throw new Error(this.translateError(error.detail || 'Emergency reset failed'));
     }
 
     return response.json();
@@ -550,6 +553,24 @@ class APIService {
     });
 
     if (!response.ok) throw new Error('Failed to create case');
+    return response.json();
+  }
+
+  /**
+   * Update user language preference
+   */
+  async updateLanguage(language: 'ar' | 'fr'): Promise<any> {
+    const response = await fetchWithTokenRefresh(`${this.baseUrl}/auth/update-language`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify({ language }),
+    });
+
+    if (!response.ok) {
+      const error: AuthError = await response.json();
+      throw new Error(error.detail || 'Failed to update language');
+    }
+
     return response.json();
   }
 

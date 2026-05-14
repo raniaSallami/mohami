@@ -294,7 +294,7 @@ export const AdminDashboard = ({ onNavigate }: { onNavigate?: (page: string) => 
   const loadAdvancedStats = async () => {
     try {
       const token = storageService.getAccessToken();
-      const response = await fetch('http://localhost:3001/api/admin/stats', {
+      const response = await fetch('/api/admin/stats', {
         headers: {
           'Content-Type': 'application/json',
           ...(token && { Authorization: `Bearer ${token}` }),
@@ -410,7 +410,12 @@ export const AdminDashboard = ({ onNavigate }: { onNavigate?: (page: string) => 
 
       {/* Advanced Metrics */}
       {advancedStats && showAdvancedMetrics && (
-        <div id="advanced-metrics" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6 scroll-mt-6">
+        <div id="advanced-metrics" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mt-6 scroll-mt-6">
+          <div className="bg-[#1e1b4b] text-white p-6 rounded-2xl shadow-xl border border-white/5 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/10 blur-2xl rounded-full -mr-10 -mt-10"></div>
+            <p className="text-slate-400 text-[10px] uppercase tracking-widest font-bold mb-2">{window.__t("إيرادات هذا الشهر")}</p>
+            <h3 className="text-3xl font-black tracking-tight text-orange-400">{advancedStats.revenueThisMonth.toFixed(2)} {window.__t("د.ت")}</h3>
+          </div>
           <div className="bg-[#1e1b4b] text-white p-6 rounded-2xl shadow-xl border border-white/5 relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/10 blur-2xl rounded-full -mr-10 -mt-10"></div>
             <p className="text-slate-400 text-[10px] uppercase tracking-widest font-bold mb-2">{window.__t("إجمالي الإيرادات")}</p>

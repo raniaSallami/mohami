@@ -4,7 +4,7 @@
 import { User } from '../types';
 import { fetchWithTokenRefresh } from './apiInterceptor';
 
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = '/api';
 
 class StorageService {
   private readonly CURRENT_USER_KEY = 'mouhami_current_user';
@@ -87,10 +87,29 @@ class StorageService {
       });
       if (response.ok) {
         const freshUser = await response.json();
-        this.setUser(freshUser);
+        const currentUser = this.getCurrentUser();
+        if (currentUser?.id === freshUser.id) {
+          this.setUser(freshUser);
+        }
       }
     } catch (error) {
       console.error('Failed to update user profile:', error);
+    }
+  }
+
+  async deleteUser(userId: string): Promise<boolean> {
+    try {
+      const response = await fetch(`${API_BASE}/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(this.getAccessToken() && { Authorization: `Bearer ${this.getAccessToken()}` }),
+        },
+      });
+      return response.ok;
+    } catch (error) {
+      console.error('Failed to delete user:', error);
+      return false;
     }
   }
 
@@ -153,7 +172,7 @@ class StorageService {
 
   getAccessToken(): string | null {
     const token = this.getToken();
-    return token?.access_token || null;
+    return token?.access_token || localStorage.getItem('almohami_access_token') || null;
   }
 
   isTokenExpired(): boolean {
@@ -203,6 +222,62 @@ class StorageService {
       if (response.ok) return response.json();
     } catch {}
     return null; // caller uses defaults
+  }
+
+  async getSystemSetting(key: string): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE}/settings/${key}`, {
+        headers: {
+          ...(this.getAccessToken() && { Authorization: `Bearer ${this.getAccessToken()}` }),
+        },
+      });
+      if (response.ok) {
+        const result = await response.json();
+        if (key === 'general_settings') {
+          this.setGeneralSettings(result);
+        }
+        return result;
+      }
+    } catch (error) {
+      console.error(`Failed to fetch system setting ${key}:`, error);
+    }
+    return null;
+  }
+
+  async setSystemSetting(key: string, value: any): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE}/settings/${key}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(this.getAccessToken() && { Authorization: `Bearer ${this.getAccessToken()}` }),
+        },
+        body: JSON.stringify(value),
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to save system setting ${key}`);
+      }
+      const result = await response.json();
+      if (key === 'general_settings') {
+        this.setGeneralSettings(result);
+      }
+      return result;
+    } catch (error) {
+      console.error(`Failed to save system setting ${key}:`, error);
+      throw error;
+    }
+  }
+
+  async getAdminStats(): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE}/admin/stats`, {
+        headers: {
+          ...(this.getAccessToken() && { Authorization: `Bearer ${this.getAccessToken()}` }),
+        },
+      });
+      if (response.ok) return response.json();
+    } catch {}
+    return null;
   }
 
   // Cases Cache - Local storage methods

@@ -75,8 +75,7 @@ class ResetPasswordResponse(BaseModel):
 # ═══════════════════════════════════════════════════════════
 
 async def _send_reset_otp_email(
-    user_email: str,
-    user_name: str,
+    user: User,
     otp_code: str,
     request: Request,
     db: AsyncSession
@@ -92,7 +91,7 @@ async def _send_reset_otp_email(
             location = await get_location_from_ip(ip)
             now = datetime.utcnow().strftime("%d/%m/%Y - %H:%M UTC")
 
-            lang = get_user_lang(request)
+            lang = get_user_lang(request, user)
             if lang == "fr":
                 subject = "Réinitialisation de mot de passe — Code de vérification"
                 body_txt = f"Votre code de réinitialisation est : {otp_code}. Il est valide 15 minutes."
@@ -107,7 +106,7 @@ async def _send_reset_otp_email(
 <h1 style="color:#fff;font-size:22px;font-weight:700;margin:0;">Réinitialisation de mot de passe</h1>
 </td></tr>
 <tr><td style="padding:40px;">
-<p style="color:#1e293b;font-size:15px;font-weight:600;margin:0 0 8px 0;">Bonjour {user_name},</p>
+<p style="color:#1e293b;font-size:15px;font-weight:600;margin:0 0 8px 0;">Bonjour {user.name},</p>
 <p style="color:#475569;font-size:14px;line-height:1.8;margin:0 0 28px 0;">
 Nous avons reçu une demande de réinitialisation de votre mot de passe. Utilisez le code ci-dessous pour terminer l'opération.
 </p>
@@ -135,7 +134,7 @@ Nous avons reçu une demande de réinitialisation de votre mot de passe. Utilise
 <h1 style="color:#fff;font-size:22px;font-weight:700;margin:0;">إعادة تعيين كلمة المرور</h1>
 </td></tr>
 <tr><td style="padding:40px;">
-<p style="color:#1e293b;font-size:15px;font-weight:600;margin:0 0 8px 0;">المحامي/ة {user_name}،</p>
+<p style="color:#1e293b;font-size:15px;font-weight:600;margin:0 0 8px 0;">المحامي/ة {user.name}،</p>
 <p style="color:#475569;font-size:14px;line-height:1.8;margin:0 0 28px 0;">
 تلقينا طلباً لإعادة تعيين كلمة المرور الخاصة بحسابكم. استخدم الرمز أدناه لإتمام العملية.
 </p>
@@ -241,7 +240,7 @@ async def _handle_forgot_password_logic(
 
         # *** SEND the email (this was the missing critical call) ***
         try:
-            await _send_reset_otp_email(user.email, user.name, otp_code, req, db)
+            await _send_reset_otp_email(user, otp_code, req, db)
             print(f"✅ Reset OTP email queued for {user.email}")
         except Exception as e:
             print(f"❌ Failed to queue reset email: {e}")

@@ -8,19 +8,56 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(to bottom, #fafaf9 0%, #f5f5f4 50%, #fafaf9 100%);
   padding: 20px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+  position: relative;
+  overflow: hidden;
+  
+  /* Decorative gradient blobs */
+  &::before {
+    content: '';
+    position: absolute;
+    top: -40%;
+    right: -10%;
+    width: 900px;
+    height: 900px;
+    background: radial-gradient(circle, rgba(249, 115, 22, 0.08) 0%, transparent 70%);
+    border-radius: 50%;
+    filter: blur(120px);
+    animation: float-d 6s ease-in-out infinite;
+  }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 10%;
+    right: 5%;
+    width: 800px;
+    height: 800px;
+    background: radial-gradient(circle, rgba(251, 146, 60, 0.05) 0%, transparent 70%);
+    border-radius: 50%;
+    filter: blur(130px);
+    animation: float-d 7s ease-in-out infinite;
+  }
+}
+
+@keyframes float-d {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-30px); }
 }
 
 .verification-card {
   background: white;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-  padding: 40px;
-  max-width: 450px;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(229, 231, 235, 0.5);
+  padding: 48px;
+  max-width: 480px;
   width: 100%;
   animation: slideUp 0.3s ease-out;
+  position: relative;
+  z-index: 10;
 }
 
 @keyframes slideUp {
@@ -48,7 +85,7 @@
 .verification-header h1 {
   font-size: 28px;
   font-weight: 700;
-  color: #1e293b;
+  color: #0B1121;
   margin: 0 0 8px 0;
   letter-spacing: -0.5px;
 }
@@ -57,7 +94,7 @@
   font-size: 14px;
   color: #64748b;
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 /* OTP Input Group */
@@ -84,15 +121,15 @@
   border: 2px solid #e2e8f0;
   border-radius: 12px;
   background: #f8fafc;
-  color: #1e293b;
+  color: #0B1121;
   transition: all 0.3s ease;
   font-family: 'Courier New', monospace;
 
   &:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #f97316;
     background: #fff;
-    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.1);
   }
 
   &:disabled {
@@ -178,10 +215,10 @@
 .submit-button {
   width: 100%;
   padding: 14px 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(120deg, #ea580c 0%, #fb923c 50%, #f97316 100%);
   color: white;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
@@ -190,10 +227,12 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.2);
 
   &:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 8px 25px rgba(249, 115, 22, 0.3);
+    background: linear-gradient(120deg, #dc2626 0%, #ea580c 50%, #f97316 100%);
   }
 
   &:active:not(:disabled) {
@@ -238,7 +277,7 @@
 .resend-button {
   background: none;
   border: none;
-  color: #667eea;
+  color: #f97316;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -247,7 +286,7 @@
   transition: all 0.3s ease;
 
   &:hover:not(:disabled) {
-    color: #764ba2;
+    color: #ea580c;
     text-decoration: underline;
   }
 

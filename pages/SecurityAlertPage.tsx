@@ -86,12 +86,12 @@ export const SecurityAlertPage: React.FC<SecurityAlertPageProps> = ({ onNavigate
       const fingerprint = navigator.userAgent;
       const response = await apiService.loginEmailStep2(userId, otp, fingerprint);
 
-      if (response.ok && response.user && response.token) {
+      if (response.user && response.token) {
         setMessage(window.__t("✅ تم التحقق بنجاح! جاري تسجيل الدخول..."));
         setMessageType('success');
         
-        storageService.setCurrentUser(response.user);
-        localStorage.setItem('almohami_access_token', response.token);
+        storageService.setToken(response.token);
+        storageService.setUser(response.user);
         
         localStorage.removeItem('pending_device_verification_user_id');
         localStorage.removeItem('pending_device_verification_email');
@@ -137,20 +137,15 @@ export const SecurityAlertPage: React.FC<SecurityAlertPageProps> = ({ onNavigate
 
     try {
       const { apiService } = await import('../services/apiService');
-      const response = await apiService.emergencyResetPassword(email, newPassword, logoutAllDevices);
+      await apiService.emergencyResetPassword(email, newPassword, logoutAllDevices);
 
-      if (response.ok) {
-        setMessage(window.__t("✅ تم تغيير كلمة المرور بنجاح! يرجى تسجيل الدخول مجدداً."));
-        setMessageType('success');
-        
-        localStorage.removeItem('pending_device_verification_user_id');
-        localStorage.removeItem('pending_device_verification_email');
-        
-        setTimeout(() => onNavigate('login'), 2000);
-      } else {
-        setMessage(response.message || window.__t("حدث خطأ أثناء تغيير كلمة المرور"));
-        setMessageType('error');
-      }
+      setMessage(window.__t("✅ تم تغيير كلمة المرور بنجاح! يرجى تسجيل الدخول مجدداً."));
+      setMessageType('success');
+      
+      localStorage.removeItem('pending_device_verification_user_id');
+      localStorage.removeItem('pending_device_verification_email');
+      
+      setTimeout(() => onNavigate('login'), 2000);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : window.__t("حدث خطأ"));
       setMessageType('error');

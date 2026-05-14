@@ -2,7 +2,7 @@
  * API Interceptor - Gère le refresh automatique du access token
  * Intercepte toutes les requêtes et retry avec token refresh si 401
  */
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = '/api';
 
 function getStoredToken() {
   const token = localStorage.getItem('mouhami_token');

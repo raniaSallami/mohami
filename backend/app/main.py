@@ -6,6 +6,14 @@ import sys
 import asyncio
 import socket
 
+# Fix Windows console encoding to support emoji/unicode characters
+if sys.platform == 'win32':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
+
 # Force IPv4 for local resolution to avoid gaierror [Errno 11001] on Windows
 original_getaddrinfo = socket.getaddrinfo
 
@@ -253,7 +261,7 @@ async def _create_raw_tables():
             await db.execute(text("""
                 CREATE TABLE IF NOT EXISTS refresh_tokens (
                     id SERIAL PRIMARY KEY,
-                    user_id VARCHAR(36) NOT NULL,
+                    user_id VARCHAR(36) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                     token TEXT NOT NULL,
                     device_name VARCHAR(255),
                     ip_address VARCHAR(100),
@@ -262,31 +270,157 @@ async def _create_raw_tables():
                     created_at TIMESTAMP DEFAULT NOW()
                 )
             """))
+
+            await db.execute(text("""
+                CREATE TABLE IF NOT EXISTS platform_visitors (
+                    id VARCHAR(36) PRIMARY KEY,
+                    session_id VARCHAR(255) NOT NULL,
+                    ip_address VARCHAR(100),
+                    user_agent TEXT,
+                    page_visited VARCHAR(500),
+                    country VARCHAR(100),
+                    visit_date VARCHAR(20) NOT NULL,
+                    is_unique BOOLEAN DEFAULT TRUE,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
+            await db.execute(text("""
+                CREATE INDEX IF NOT EXISTS idx_platform_visitors_session_id ON platform_visitors(session_id)
+            """))
+            await db.execute(text("""
+                CREATE INDEX IF NOT EXISTS idx_platform_visitors_visit_date ON platform_visitors(visit_date)
+            """))
+            
+            # Ensure the refresh_tokens foreign key exists and uses cascade delete for legacy schemas
+            try:
+                await db.execute(text("""
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (
+                            SELECT 1 FROM pg_constraint c
+                            JOIN pg_class t ON c.conrelid = t.oid
+                            JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = ANY(c.conkey)
+                            WHERE t.relname = 'refresh_tokens'
+                            AND a.attname = 'user_id'
+                            AND c.contype = 'f'
+                        ) THEN
+                            ALTER TABLE refresh_tokens
+                            ADD CONSTRAINT refresh_tokens_user_id_fkey
+                            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+                        END IF;
+                    END;
+                    $$;
+                """))
+            except Exception:
+                # Ignore if the constraint already exists or cannot be added.
+                pass
             
             # ═══════════════════════════════════════════════════════════
-            # PROACTIVE SCHEMA SYNC: Add missing columns to existing tables
+            # PROACTIVE SCHEMA SYNC: Fix legacy UUID/text mismatches and add missing columns
             # ═══════════════════════════════════════════════════════════
+            
+            # Drop foreign key constraint to allow column drops
+            await db.execute(text("ALTER TABLE events DROP CONSTRAINT IF EXISTS events_case_id_fkey;"))
+            
+            # Special handling: migrate text ID columns to UUID
+            # (numeric timestamp strings need to be converted to valid UUIDs first)
+            try:
+                await db.execute(text("""
+                    -- Create new UUID column for cases
+                    ALTER TABLE cases ADD COLUMN IF NOT EXISTS id_new UUID;
+                """))
+                await db.execute(text("""
+                    -- Populate new UUID column with generated UUIDs
+                    UPDATE cases SET id_new = gen_random_uuid() WHERE id_new IS NULL;
+                """))
+                await db.execute(text("""
+                    -- Drop old id column
+                    ALTER TABLE cases DROP COLUMN id;
+                """))
+                await db.execute(text("""
+                    -- Rename new UUID column to id
+                    ALTER TABLE cases RENAME COLUMN id_new TO id;
+                """))
+                await db.execute(text("""
+                    -- Add primary key on id
+                    ALTER TABLE cases ADD PRIMARY KEY (id);
+                """))
+                if settings.debug:
+                    print("✓ Migrated cases.id to UUID")
+            except Exception as e:
+                await db.rollback()
+                if settings.debug:
+                    print(f"DEBUG: cases.id UUID migration: {e}")
+            
+            # Similar for events.id and events.case_id
+            try:
+                await db.execute(text("""
+                    ALTER TABLE events ADD COLUMN IF NOT EXISTS id_new UUID;
+                """))
+                await db.execute(text("""
+                    UPDATE events SET id_new = gen_random_uuid() WHERE id_new IS NULL;
+                """))
+                await db.execute(text("""
+                    ALTER TABLE events DROP COLUMN id;
+                """))
+                await db.execute(text("""
+                    ALTER TABLE events RENAME COLUMN id_new TO id;
+                """))
+                await db.execute(text("""
+                    ALTER TABLE events ADD PRIMARY KEY (id);
+                """))
+                if settings.debug:
+                    print("✓ Migrated events.id to UUID")
+            except Exception as e:
+                await db.rollback()
+                if settings.debug:
+                    print(f"DEBUG: events.id UUID migration: {e}")
+            
+            # Migrate events.case_id to UUID (foreign key)
+            try:
+                # First drop the foreign key constraint if it exists
+                await db.execute(text("""
+                    ALTER TABLE events DROP CONSTRAINT IF EXISTS events_case_id_fkey;
+                """))
+                await db.execute(text("""
+                    ALTER TABLE events ADD COLUMN IF NOT EXISTS case_id_new UUID;
+                """))
+                # Copy UUIDs from cases that match the old numeric IDs
+                await db.execute(text("""
+                    UPDATE events e SET case_id_new = c.id 
+                    FROM cases c WHERE c.id IS NOT NULL;
+                """))
+                await db.execute(text("""
+                    UPDATE events SET case_id_new = gen_random_uuid() WHERE case_id_new IS NULL;
+                """))
+                await db.execute(text("""
+                    ALTER TABLE events DROP COLUMN case_id;
+                """))
+                await db.execute(text("""
+                    ALTER TABLE events RENAME COLUMN case_id_new TO case_id;
+                """))
+                await db.execute(text("""
+                    ALTER TABLE events ADD CONSTRAINT events_case_id_fkey FOREIGN KEY (case_id) REFERENCES cases(id);
+                """))
+                if settings.debug:
+                    print("✓ Migrated events.case_id to UUID")
+            except Exception as e:
+                await db.rollback()
+                if settings.debug:
+                    print(f"DEBUG: events.case_id UUID migration: {e}")
+            
+            # Add missing columns (safe operations)
             sync_statements = [
-                # Cases column fixes
                 "ALTER TABLE cases ADD COLUMN IF NOT EXISTS date_updated TIMESTAMP DEFAULT NOW()",
-                
-                # Contracts column fixes
                 "ALTER TABLE contracts ADD COLUMN IF NOT EXISTS date_updated TIMESTAMP DEFAULT NOW()",
-                
-                # Invoices column fixes
                 "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()",
                 "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()",
-                
-                # Chat & Messaging column fixes
                 "ALTER TABLE chat_conversations ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()",
                 "ALTER TABLE chat_conversations ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()",
                 "ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()",
                 "ALTER TABLE team_chat_messages ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()",
-                
-                # Notifications fixes
                 "ALTER TABLE notifications ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()",
-                
-                # Tenant/Multi-organization fixes
+                "ALTER TABLE chat_conversations ADD COLUMN IF NOT EXISTS tenant_id VARCHAR(36)",
                 "ALTER TABLE events ADD COLUMN IF NOT EXISTS tenant_id VARCHAR(36)",
                 "ALTER TABLE contracts ADD COLUMN IF NOT EXISTS tenant_id VARCHAR(36)",
                 "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS tenant_id VARCHAR(36)"
@@ -296,9 +430,93 @@ async def _create_raw_tables():
                 try:
                     await db.execute(text(stmt))
                 except Exception as e:
-                    # Silently ignore if column already exists or other non-critical issues
                     if settings.debug:
                         print(f"DEBUG: Schema sync skip: {stmt} | Reason: {e}")
+            
+            # ═══════════════════════════════════════════════════════════
+            # Migrate user_id FK columns from VARCHAR to UUID
+            # (Models now use UUID(as_uuid=True) to match users.id)
+            # Each migration runs independently so one failure won't
+            # abort the transaction for the rest.
+            # ═══════════════════════════════════════════════════════════
+            uuid_migration_pairs = [
+                # (table, column, fk_constraint_name, fk_references, nullable)
+                ("cases", "user_id", "cases_user_id_fkey", "users(id)", True),
+                ("events", "user_id", "events_user_id_fkey", "users(id)", True),
+                ("contracts", "user_id", "contracts_user_id_fkey", "users(id)", True),
+                ("notifications", "user_id", "notifications_user_id_fkey", "users(id)", False),
+                ("chat_conversations", "user_id", "chat_conversations_user_id_fkey", "users(id)", True),
+            ]
+            
+            # Commit current work before running independent migrations
+            await db.commit()
+            
+            # Each migration runs in its own session/transaction so that
+            # a failure in one does NOT put the connection into PostgreSQL's
+            # "aborted transaction" state and block all subsequent queries.
+            for tbl, col, fk_name, fk_ref, nullable in uuid_migration_pairs:
+                try:
+                    async with AsyncSessionLocal() as mig_db:
+                        # Check if column is already UUID type
+                        check = await mig_db.execute(text(
+                            f"SELECT data_type FROM information_schema.columns "
+                            f"WHERE table_name = '{tbl}' AND column_name = '{col}'"
+                        ))
+                        row = check.fetchone()
+                        if row and row[0] == 'uuid':
+                            # Column already UUID — just ensure FK constraint exists
+                            # First clean up orphaned references
+                            if nullable:
+                                await mig_db.execute(text(
+                                    f"UPDATE {tbl} SET {col} = NULL "
+                                    f"WHERE {col} IS NOT NULL AND {col} NOT IN (SELECT id FROM users)"
+                                ))
+                            else:
+                                await mig_db.execute(text(
+                                    f"DELETE FROM {tbl} "
+                                    f"WHERE {col} NOT IN (SELECT id FROM users)"
+                                ))
+                            # Ensure FK constraint exists (ignore if already present)
+                            on_delete = "SET NULL" if nullable else "CASCADE"
+                            try:
+                                await mig_db.execute(text(
+                                    f"ALTER TABLE {tbl} ADD CONSTRAINT {fk_name} "
+                                    f"FOREIGN KEY ({col}) REFERENCES {fk_ref} ON DELETE {on_delete}"
+                                ))
+                                print(f"  ✓ Added FK constraint {fk_name}")
+                            except Exception:
+                                pass  # Constraint already exists
+                            await mig_db.commit()
+                            continue
+                        
+                        # Drop FK constraint if exists
+                        await mig_db.execute(text(f"ALTER TABLE {tbl} DROP CONSTRAINT IF EXISTS {fk_name}"))
+                        # Alter column type
+                        await mig_db.execute(text(
+                            f"ALTER TABLE {tbl} ALTER COLUMN {col} TYPE UUID USING {col}::UUID"
+                        ))
+                        # Clean up orphaned references before adding FK constraint
+                        if nullable:
+                            await mig_db.execute(text(
+                                f"UPDATE {tbl} SET {col} = NULL "
+                                f"WHERE {col} IS NOT NULL AND {col} NOT IN (SELECT id FROM users)"
+                            ))
+                        else:
+                            await mig_db.execute(text(
+                                f"DELETE FROM {tbl} "
+                                f"WHERE {col} NOT IN (SELECT id FROM users)"
+                            ))
+                        # Re-add FK constraint
+                        on_delete = "SET NULL" if nullable else "CASCADE"
+                        await mig_db.execute(text(
+                            f"ALTER TABLE {tbl} ADD CONSTRAINT {fk_name} "
+                            f"FOREIGN KEY ({col}) REFERENCES {fk_ref} ON DELETE {on_delete}"
+                        ))
+                        await mig_db.commit()
+                        print(f"  ✓ Migrated {tbl}.{col} to UUID")
+                except Exception as e:
+                    if settings.debug:
+                        print(f"DEBUG: UUID migration skip {tbl}.{col}: {e}")
             
             await db.commit()
             print("✅ Database schema synchronized (Raw SQL & Alterations)")

@@ -1,15 +1,20 @@
 """
 Application configuration using Pydantic Settings.
 """
+import os
+from pathlib import Path
+from typing import List, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import List
+
+ROOT_DIR = Path(__file__).resolve().parents[2]
+ENV_FILE = ROOT_DIR / ".env"
 
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=str(ENV_FILE),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore"
@@ -19,13 +24,13 @@ class Settings(BaseSettings):
     database_url: str = ""
 
     # JWT
-    jwt_secret_key: str = "mouhami-secret-key-change-in-production"
+    jwt_secret_key: str = "mouhami-jwt-secret-2024-change-in-production"
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 7
 
     # Server
-    api_port: int = 3001
+    api_port: int = 3002
     api_host: str = "0.0.0.0"
     debug: bool = False
 
@@ -49,6 +54,9 @@ class Settings(BaseSettings):
     clictopay_password: str = "sN2WZU8d"
     clictopay_base_url: str = "https://test.clictopay.com/payment/rest"
     clictopay_currency: str = "788"  # TND
+
+    # AI
+    gemini_api_key: Optional[str] = None
 
     # Encryption
     encryption_key: str = ""

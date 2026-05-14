@@ -23,10 +23,7 @@ from app.utils.device_security import (
     save_known_device,
     get_client_ip,
 )
-from app.templates.email_templates_ar import (
-    device_confirmed_alert,
-    suspicious_activity_alert,
-)
+from app.utils.email_localization import get_user_lang, get_email_template
 
 router = APIRouter(prefix="/device-security", tags=["Device Security"])
 
@@ -236,15 +233,18 @@ async def verify_new_device_otp(
     
     # Send confirmation email
     try:
+        lang = get_user_lang(req, user)
         device_name = parse_device_name(req.headers.get("User-Agent", ""))
         now_dt = datetime.utcnow()
-        now_str = f"{now_dt.strftime('%d/%m/%Y')} الساعة {now_dt.strftime('%H:%M')}"
-        subject, html_content = device_confirmed_alert(
+        now_str = f"{now_dt.strftime('%d/%m/%Y')} {'à' if lang == 'fr' else 'الساعة'} {now_dt.strftime('%H:%M')}"
+        template_fn = get_email_template("device_confirmed_alert", lang)
+        if not template_fn:
+            template_fn = get_email_template("device_confirmed_alert", "ar")
+        subject, html_content = template_fn(
             user_name=user.name,
             device_name=device_name,
             confirmation_time=now_str
         )
-        
         await db.execute(
             text("""
                 INSERT INTO email_queue (id, to_email, subject, html_content, text_content, status, created_at)
@@ -375,7 +375,11 @@ async def report_unauthorized_access(
     
     # Send alert email  
     try:
-        subject, html_content = suspicious_activity_alert(
+        lang = get_user_lang(req, user)
+        template_fn = get_email_template("suspicious_activity_alert", lang)
+        if not template_fn:
+            template_fn = get_email_template("suspicious_activity_alert", "ar")
+        subject, html_content = template_fn(
             user_name=user.name,
             device_name=device_name,
             ip_address=ip,
